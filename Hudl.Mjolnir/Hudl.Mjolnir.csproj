@@ -38,11 +38,11 @@
   <ItemGroup>
     <Reference Include="Hudl.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Common.1.0.0.0\lib\net35\Hudl.Common.dll</HintPath>
+      <HintPath>..\packages\Hudl.Common.1.1.0.0\lib\net35\Hudl.Common.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Config, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Config.1.0.0.0\lib\net40\Hudl.Config.dll</HintPath>
+      <HintPath>..\packages\Hudl.Config.1.1.0.0\lib\net40\Hudl.Config.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Riemann, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
