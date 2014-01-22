@@ -11,6 +11,7 @@ using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
 using Hudl.Stats;
 using log4net;
+using Nito.AsyncEx;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -154,6 +155,15 @@ namespace Hudl.Mjolnir.Command
         }
 
         /// <summary>
+        /// Synchronous pass-through to InvokeAsync().
+        /// </summary>
+        /// <returns></returns>
+        public TResult Invoke()
+        {
+            return AsyncContext.Run(() => InvokeAsync());
+        }
+
+        /// <summary>
         /// Runs this command, returning the result or throwing an exception if the command failed
         /// or couldn't be completed.
         /// 
@@ -176,7 +186,7 @@ namespace Hudl.Mjolnir.Command
                 Log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
                 var cancellationTokenSource = new CancellationTokenSource(Timeout);
-                var result = await ExecuteInIsolation(cancellationTokenSource.Token);
+                var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
                 return result;
             }
