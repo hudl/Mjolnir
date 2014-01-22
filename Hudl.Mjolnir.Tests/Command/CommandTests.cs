@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Hudl.Config;
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
@@ -94,6 +95,26 @@ namespace Hudl.Mjolnir.Tests.Command
 
             Assert.Equal("Hudl.Mjolnir.Tests", GetType().Assembly.GetName().Name);
             Assert.False(command.Name.EndsWith("Command"));
+        }
+
+        [Fact]
+        public void Invoke_ReturnsResultSynchronously()
+        {
+            var expected = new { };
+            var command = new SuccessfulEchoCommandWithoutFallback(expected);
+            Assert.Equal(expected, command.Invoke());
+        }
+
+        [Fact]
+        public void InvokeAsync_WhenUsingResult_DoesntDeadlock()
+        {
+            ConfigurationUtility.Init();
+
+            var expected = new { };
+            var command = new SuccessfulEchoCommandWithoutFallback(expected);
+
+            var result = command.InvokeAsync().Result; // Will deadlock if we don't .ConfigureAwait(false) when awaiting.
+            Assert.Equal(expected, result);
         }
 
         private sealed class NameTestCommand : BaseTestCommand<object>

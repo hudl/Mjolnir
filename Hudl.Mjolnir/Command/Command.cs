@@ -167,9 +167,9 @@ namespace Hudl.Mjolnir.Command
         /// Runs this command, returning the result or throwing an exception if the command failed
         /// or couldn't be completed.
         /// 
-        /// <b>Important:</b> You <b>MUST</b> await on this method; <b>do not block on the returned <code>Task</code></b>.<br/>
-        /// Calling a blocking method on the task (e.g. <code>Task.Result</code> or <code>Wait()</code>) will cause
-        /// deadlocks in your code.
+        /// Note that this uses <code>async/await</code>. ASP.NET MVC callers that require
+        /// SynchronizationContext to be retained should make sure that httpRuntime.targetFramework
+        /// is set to 4.5 in their web.config.
         /// </summary>
         public async Task<TResult> InvokeAsync()
         {
