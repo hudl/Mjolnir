@@ -49,9 +49,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Config.1.3.0.0\lib\net40\Hudl.Config.dll</HintPath>
     </Reference>
-    <Reference Include="Hudl.Config.Backends, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Config.Backends.1.7.0.0\lib\net40\Hudl.Config.Backends.dll</HintPath>
+    <Reference Include="Hudl.Eureka">
+      <HintPath>..\packages\Hudl.Eureka.1.6.0.0\lib\net40\Hudl.Eureka.dll</HintPath>
+    </Reference>
+    <Reference Include="Hudl.Eureka.Heartbeat">
+      <HintPath>..\packages\Hudl.Eureka.Heartbeat.1.4.0.0\lib\net40\Hudl.Eureka.Heartbeat.dll</HintPath>
+    </Reference>
+    <Reference Include="Hudl.Logging">
+      <HintPath>..\packages\Hudl.Logging.1.3.0.0\lib\net40\Hudl.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Hudl.Multiverse.Core">
+      <HintPath>..\packages\Hudl.Multiverse.Core.1.13.0.0\lib\net40\Hudl.Multiverse.Core.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Riemann, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
