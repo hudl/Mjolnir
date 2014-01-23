@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.ThreadPool
 {
-    public class StpWorkItemTests
+    public class StpWorkItemTests : TestFixture
     {
         [Fact]
         public void Get_UnderlyingGetResultThrowsException_RethrowsWrapped()

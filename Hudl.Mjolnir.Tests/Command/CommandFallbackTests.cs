@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
-    public class CommandFallbackTests
+    public class CommandFallbackTests : TestFixture
     {
         private readonly Random _random = new Random();
 

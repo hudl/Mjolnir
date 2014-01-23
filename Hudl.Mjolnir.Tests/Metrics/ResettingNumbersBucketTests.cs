@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Metrics
 {
-    public class ResettingNumbersBucketTests
+    public class ResettingNumbersBucketTests : TestFixture
     {
         [Fact]
         public void Construct_StartsWithZeroMetrics()

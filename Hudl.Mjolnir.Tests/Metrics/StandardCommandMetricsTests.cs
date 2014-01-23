@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Metrics
 {
-    public class StandardCommandMetricsTests
+    public class StandardCommandMetricsTests : TestFixture
     {
         [Fact]
         public void MarkCommandSuccess_BeforeFirstSnapshot_GetsIncludedInSnapshot()

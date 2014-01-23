@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Hudl.Config;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.ThreadPool;
 using Hudl.Riemann;
 using Moq;
@@ -9,7 +10,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Stats
 {
-    public class StpIsolationThreadPoolStatsTests
+    public class StpIsolationThreadPoolStatsTests : TestFixture
     {
         [Fact]
         public async Task Construct_CreatesGauges()

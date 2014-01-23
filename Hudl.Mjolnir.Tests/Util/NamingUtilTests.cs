@@ -1,9 +1,10 @@
-﻿using Hudl.Mjolnir.Util;
+﻿using Hudl.Mjolnir.Tests.Helper;
+using Hudl.Mjolnir.Util;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Util
 {
-    public class NamingUtilTests
+    public class NamingUtilTests : TestFixture
     {
         [Fact]
         public void GetLastAssemblyPart_WithDotSeparatedAssembly_ReturnsLastPart()

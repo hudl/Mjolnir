@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
-    public class CommandTests
+    public class CommandTests : TestFixture
     {
         [Fact]
         public void Construct_ZeroTimeoutConfigValue_ThrowsException()

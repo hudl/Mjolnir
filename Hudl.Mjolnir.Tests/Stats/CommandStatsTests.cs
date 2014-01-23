@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Stats
 {
-    public class CommandStatsTests
+    public class CommandStatsTests : TestFixture
     {
         [Fact]
         public async Task InvokeAsync_Success()
@@ -83,8 +83,8 @@ namespace Hudl.Mjolnir.Tests.Stats
             var mockBreaker = new Mock<ICircuitBreaker>();
             mockBreaker.Setup(m => m.IsAllowing()).Returns(false);
 
-            // TODO rob.hruska 11/19/2013 - Don't like this, find a better way.
-            ConfigurationUtility.Set("mjolnir.useCircuitBreakers", true);
+            // Will have been set by TestFixture constructor.
+            Assert.True(new ConfigurableValue<bool>("mjolnir.useCircuitBreakers").Value);
 
             var command = new SuccessfulEchoCommandWithoutFallback("Test")
             {

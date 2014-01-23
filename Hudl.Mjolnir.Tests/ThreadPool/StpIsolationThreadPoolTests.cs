@@ -2,12 +2,13 @@
 using System.Threading;
 using Hudl.Config;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.ThreadPool;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.ThreadPool
 {
-    public class StpIsolationThreadPoolTests
+    public class StpIsolationThreadPoolTests : TestFixture
     {
         [Fact]
         public void Enqueue_PoolSizeOneQueueSizeZero_AcceptsOneAndRejectsRemaining()

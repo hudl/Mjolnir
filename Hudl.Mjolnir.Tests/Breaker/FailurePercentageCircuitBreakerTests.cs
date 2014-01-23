@@ -6,13 +6,14 @@ using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
+using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Riemann;
 using Moq;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Breaker
 {
-    public class FailurePercentageCircuitBreakerTests
+    public class FailurePercentageCircuitBreakerTests : TestFixture
     {
         /// <summary>
         /// The breaker should be created in a good state (fixed).

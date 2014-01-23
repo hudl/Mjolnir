@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hudl.Mjolnir.Metrics;
+using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Metrics
 {
-    public class InterlockingLongCounterTests
+    public class InterlockingLongCounterTests : TestFixture
     {
         [Fact]
         public void Increment_Increments()
