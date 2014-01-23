@@ -155,7 +155,10 @@ namespace Hudl.Mjolnir.Command
         }
 
         /// <summary>
-        /// Synchronous pass-through to InvokeAsync().
+        /// Synchronous pass-through to <see cref="InvokeAsync()"/>.
+        /// 
+        /// Prefer <see cref="InvokeAsync()"/>, but use this when integrating commands into
+        /// synchronous code that's difficult to port to async.
         /// </summary>
         /// <returns></returns>
         public TResult Invoke()
@@ -169,7 +172,9 @@ namespace Hudl.Mjolnir.Command
         /// 
         /// Note that this uses <code>async/await</code>. ASP.NET MVC callers that require
         /// SynchronizationContext to be retained should make sure that httpRuntime.targetFramework
-        /// is set to 4.5 in their web.config.
+        /// is set to 4.5 in their web.config. If not, context (e.g. <code>HttpContext.Current</code>)
+        /// may be null when executing code that occurs after <code>await</code>ing the Task returned
+        /// by this method.
         /// </summary>
         public async Task<TResult> InvokeAsync()
         {

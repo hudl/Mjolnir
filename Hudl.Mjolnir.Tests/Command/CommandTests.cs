@@ -106,7 +106,7 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public void InvokeAsync_WhenUsingResult_DoesntDeadlock()
+        public void InvokeAsync_WhenUsingDotResult_DoesntDeadlock()
         {
             ConfigurationUtility.Init();
 
@@ -115,6 +115,34 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var result = command.InvokeAsync().Result; // Will deadlock if we don't .ConfigureAwait(false) when awaiting.
             Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void InvokeAsync_WhenExceptionThrown_HasExpectedExceptionInsideAggregateException()
+        {
+            var expected = new ExpectedTestException("Exception");
+            var command = new FaultingEchoCommandWithoutFallback(expected);
+
+            var result = Assert.Throws<AggregateException>(() => {
+                var foo = command.InvokeAsync().Result;
+            });
+
+            // AggregateException -> CommandFailedException -> ExpectedTestException
+            Assert.Equal(expected, result.InnerException.InnerException);
+        }
+
+        [Fact]
+        public void Invoke_PropagatesExceptions()
+        {
+            var expected = new ExpectedTestException("Exception");
+            var command = new FaultingEchoCommandWithoutFallback(expected);
+
+            var result = Assert.Throws<CommandFailedException>(() =>
+            {
+                command.Invoke();
+            });
+
+            Assert.Equal(expected, result.InnerException);
         }
 
         private sealed class NameTestCommand : BaseTestCommand<object>
