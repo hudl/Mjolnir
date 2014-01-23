@@ -1,10 +1,11 @@
 ﻿using System;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Key
 {
-    public class GroupKeyTests
+    public class GroupKeyTests : TestFixture
     {
         [Fact]
         public void Equals_WhenNamesEqual_ReturnsTrue()

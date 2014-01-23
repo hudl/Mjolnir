@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Breaker
 {
-    public class CommandCircuitBreakerTests
+    public class CommandCircuitBreakerTests : TestFixture
     {
         [Fact]
         public async Task InvokeAsync_WhenBreakerNotAllowing_ThrowsException()

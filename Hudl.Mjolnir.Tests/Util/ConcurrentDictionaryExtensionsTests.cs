@@ -2,12 +2,13 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Util;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Util
 {
-    class ConcurrentDictionaryExtensionsTests
+    class ConcurrentDictionaryExtensionsTests : TestFixture
     {
         [Fact]
         public async Task GetOrAddSafe_OnConcurrentAccess_ReturnsSameInstance()

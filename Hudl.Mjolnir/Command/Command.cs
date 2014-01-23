@@ -11,6 +11,7 @@ using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
 using Hudl.Stats;
 using log4net;
+using Nito.AsyncEx;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -154,12 +155,26 @@ namespace Hudl.Mjolnir.Command
         }
 
         /// <summary>
+        /// Synchronous pass-through to <see cref="InvokeAsync()"/>.
+        /// 
+        /// Prefer <see cref="InvokeAsync()"/>, but use this when integrating commands into
+        /// synchronous code that's difficult to port to async.
+        /// </summary>
+        /// <returns></returns>
+        public TResult Invoke()
+        {
+            return AsyncContext.Run(() => InvokeAsync());
+        }
+
+        /// <summary>
         /// Runs this command, returning the result or throwing an exception if the command failed
         /// or couldn't be completed.
         /// 
-        /// <b>Important:</b> You <b>MUST</b> await on this method; <b>do not block on the returned <code>Task</code></b>.<br/>
-        /// Calling a blocking method on the task (e.g. <code>Task.Result</code> or <code>Wait()</code>) will cause
-        /// deadlocks in your code.
+        /// Note that this uses <code>async/await</code>. ASP.NET MVC callers that require
+        /// SynchronizationContext to be retained should make sure that httpRuntime.targetFramework
+        /// is set to 4.5 in their web.config. If not, context (e.g. <code>HttpContext.Current</code>)
+        /// may be null when executing code that occurs after <code>await</code>ing the Task returned
+        /// by this method.
         /// </summary>
         public async Task<TResult> InvokeAsync()
         {
@@ -176,7 +191,7 @@ namespace Hudl.Mjolnir.Command
                 Log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
                 var cancellationTokenSource = new CancellationTokenSource(Timeout);
-                var result = await ExecuteInIsolation(cancellationTokenSource.Token);
+                var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
                 return result;
             }

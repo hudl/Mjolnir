@@ -3,11 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
-    public class CommandGroupKeyTests
+    public class CommandGroupKeyTests : TestFixture
     {
         [Fact]
         public void Construct_WithoutAnyKeys_UsesGroupKeyAsAllKeys()

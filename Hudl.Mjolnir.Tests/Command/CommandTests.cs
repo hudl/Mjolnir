@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Hudl.Config;
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
@@ -9,7 +10,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
-    public class CommandTests
+    public class CommandTests : TestFixture
     {
         [Fact]
         public void Construct_ZeroTimeoutConfigValue_ThrowsException()
@@ -94,6 +95,54 @@ namespace Hudl.Mjolnir.Tests.Command
 
             Assert.Equal("Hudl.Mjolnir.Tests", GetType().Assembly.GetName().Name);
             Assert.False(command.Name.EndsWith("Command"));
+        }
+
+        [Fact]
+        public void Invoke_ReturnsResultSynchronously()
+        {
+            var expected = new { };
+            var command = new SuccessfulEchoCommandWithoutFallback(expected);
+            Assert.Equal(expected, command.Invoke());
+        }
+
+        [Fact]
+        public void InvokeAsync_WhenUsingDotResult_DoesntDeadlock()
+        {
+            ConfigurationUtility.Init();
+
+            var expected = new { };
+            var command = new SuccessfulEchoCommandWithoutFallback(expected);
+
+            var result = command.InvokeAsync().Result; // Will deadlock if we don't .ConfigureAwait(false) when awaiting.
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void InvokeAsync_WhenExceptionThrown_HasExpectedExceptionInsideAggregateException()
+        {
+            var expected = new ExpectedTestException("Exception");
+            var command = new FaultingEchoCommandWithoutFallback(expected);
+
+            var result = Assert.Throws<AggregateException>(() => {
+                var foo = command.InvokeAsync().Result;
+            });
+
+            // AggregateException -> CommandFailedException -> ExpectedTestException
+            Assert.Equal(expected, result.InnerException.InnerException);
+        }
+
+        [Fact]
+        public void Invoke_PropagatesExceptions()
+        {
+            var expected = new ExpectedTestException("Exception");
+            var command = new FaultingEchoCommandWithoutFallback(expected);
+
+            var result = Assert.Throws<CommandFailedException>(() =>
+            {
+                command.Invoke();
+            });
+
+            Assert.Equal(expected, result.InnerException);
         }
 
         private sealed class NameTestCommand : BaseTestCommand<object>

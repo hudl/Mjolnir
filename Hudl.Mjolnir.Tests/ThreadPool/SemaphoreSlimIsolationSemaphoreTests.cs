@@ -1,12 +1,13 @@
 ﻿using System.Diagnostics;
 using Hudl.Config;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.ThreadPool;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.ThreadPool
 {
-    public class SemaphoreSlimIsolationSemaphoreTests
+    public class SemaphoreSlimIsolationSemaphoreTests : TestFixture
     {
         [Fact]
         public void TryEnter_WhenSemaphoreIsAvailable_ReturnsTrueImmediately()

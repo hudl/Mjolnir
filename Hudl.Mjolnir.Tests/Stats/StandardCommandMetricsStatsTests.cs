@@ -4,13 +4,14 @@ using Hudl.Common.Clock;
 using Hudl.Config;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
+using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Riemann;
 using Moq;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Stats
 {
-    public class StandardCommandMetricsStatsTests
+    public class StandardCommandMetricsStatsTests : TestFixture
     {
         [Fact]
         public async Task Construct_CreatesGauges()

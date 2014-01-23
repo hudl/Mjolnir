@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
-    public class CommandThreadPoolTests
+    public class CommandThreadPoolTests : TestFixture
     {
         [Fact]
         public async Task InvokeAsync_ThreadPoolRejects_ThrowsCommandFailedExceptionWithRejectedStatusAndInnerException()

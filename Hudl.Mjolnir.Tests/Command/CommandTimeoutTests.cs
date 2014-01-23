@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
-    public class CommandTimeoutTests
+    public class CommandTimeoutTests : TestFixture
     {
         private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(1000);
 
