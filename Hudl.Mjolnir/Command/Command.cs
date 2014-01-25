@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Hudl.Common.Extensions;
@@ -11,7 +12,6 @@ using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
 using Hudl.Stats;
 using log4net;
-using Nito.AsyncEx;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -163,7 +163,16 @@ namespace Hudl.Mjolnir.Command
         /// <returns></returns>
         public TResult Invoke()
         {
-            return AsyncContext.Run(() => InvokeAsync());
+            try
+            {
+                return InvokeAsync().Result;
+            }
+            catch (AggregateException e)
+            {
+                ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+            }
+
+            throw new InvalidOperationException("Unexpectedly reached the end of Invoke() without returning or throwing");
         }
 
         /// <summary>
