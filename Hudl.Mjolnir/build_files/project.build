@@ -17,7 +17,7 @@
   </target>
 
   <target name="UnitTest" description="Run unit tests" depends="Build">
-	<msbuild project="${codeDir}\Hudl.Mjolnir.Tests\Hudl.Mjolnir.Tests.csproj" target="UnitTest">
+	<msbuild project="${codeDir}\Hudl.Mjolnir.Tests\Hudl.Mjolnir.Tests.csproj" target="Rebuild,UnitTest">
 	  <property name="Configuration" value="Release"/>
 	</msbuild>
   </target>
