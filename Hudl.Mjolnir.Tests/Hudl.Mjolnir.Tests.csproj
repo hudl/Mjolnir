@@ -180,4 +180,10 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+
+  <UsingTask AssemblyFile="../packages/xunit.1.9.1/lib/net20/xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit"/>
+
+  <Target Name="UnitTest">
+	<xunit Assembly="bin\Release\Hudl.Mjolnir.Tests.dll"/>
+  </Target>
 </Project>

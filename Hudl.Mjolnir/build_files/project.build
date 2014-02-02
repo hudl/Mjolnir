@@ -14,5 +14,11 @@
 	  <arg value="/m" />
 	  <arg value="/nologo" />
     </msbuild>
-  </target>  
+  </target>
+
+  <target name="UnitTest" description="Run unit tests" depends="Build">
+	<msbuild project="${codeDir}\Hudl.Mjolnir.Tests\Hudl.Mjolnir.Tests.csproj" target="UnitTest">
+	  <property name="Configuration" value="Release"/>
+	</msbuild>
+  </target>
 </project>
