@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Hudl.Common.Extensions;
 using Hudl.Config;
 using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Tests.TestCommands;
 using Xunit;
@@ -86,6 +87,46 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.False(command.Name.EndsWith("Command"));
         }
 
+        /// <summary>
+        /// For consistency, we'll try to keep Command names with two parts,
+        /// separated by a dot (i.e. group.ClassName). If groups get provided
+        /// with dots, replace them with dashes to maintain that consistency.
+        /// This also helps out with Graphite namespacing, which also uses
+        /// dots as delimiters.
+        /// </summary>
+        [Fact]
+        public void Name_ReplacesDotsWithDashes()
+        {
+            var command = new NameTestCommand("test.test");
+
+            Assert.Equal("test-test.NameTest", command.Name);
+        }
+
+        [Fact]
+        public void Name_IsCached()
+        {
+            var type = typeof (NameCacheTestCommand);
+            var command1 = new NameCacheTestCommand("test");
+
+            var cachedName = command1.GetCachedName(type);
+            Assert.Equal(command1.Name, cachedName);
+
+            var command2 = new NameCacheTestCommand("test");
+
+            Assert.True(ReferenceEquals(command1.Name, command2.Name));
+        }
+
+        [Fact]
+        public void Name_TwoCommandsWithDifferentGroups_ReturnsCorrectNameForEach()
+        {
+            var type = typeof (NameTestCommand);
+            var command1 = new NameCacheTestCommand("test-one");
+            var command2 = new NameCacheTestCommand("test-two");
+
+            Assert.Equal("test-one.NameCacheTest", command1.Name);
+            Assert.Equal("test-two.NameCacheTest", command2.Name);
+        }
+
         [Fact]
         public void Invoke_ReturnsResultSynchronously()
         {
@@ -137,6 +178,21 @@ namespace Hudl.Mjolnir.Tests.Command
         private sealed class NameTestCommand : BaseTestCommand<object>
         {
             public NameTestCommand(string group) : base(group, "asdf", 1.Seconds()) {}
+
+            protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private sealed class NameCacheTestCommand : BaseTestCommand<object>
+        {
+            public NameCacheTestCommand(string group) : base(group, "test", 1.Seconds()) {}
+
+            public string GetCachedName(Type type)
+            {
+                return NameCache[new Tuple<Type, GroupKey>(type, Group)];
+            }
 
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {

@@ -21,9 +21,11 @@ namespace Hudl.Mjolnir.Command
         protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers");
 
         /// <summary>
-        /// Cache of known command names, keyed by Type. Helps avoid repeatedly generating the same Name for every distinct command instance.
+        /// Cache of known command names, keyed by Type and group key. Helps
+        /// avoid repeatedly generating the same Name for every distinct command
+        /// instance.
         /// </summary>
-        protected static readonly ConcurrentDictionary<Type, string> NameCache = new ConcurrentDictionary<Type, string>(); 
+        protected static readonly ConcurrentDictionary<Tuple<Type, GroupKey>, string> NameCache = new ConcurrentDictionary<Tuple<Type, GroupKey>, string>(); 
     }
 
     /// <summary>
@@ -75,24 +77,38 @@ namespace Hudl.Mjolnir.Command
         private int _hasInvoked = 0;
 
         /// <summary>
-        /// Constructs the command.
+        /// Constructs the Command.
+        /// 
+        /// The group is used as part of the Command's <see cref="Name">Name</see>.
+        /// If the group contains dots, they'll be converted to dashes.
         /// 
         /// The provided <code>isolationKey</code> will be used as both the
         /// breaker and pool keys.
         /// 
-        /// The key will be something like "Mongo", "Recruit", "Football", "Stripe", "Mongo-SpecificCollection", etc.
+        /// Command timeouts can be configured at runtime. Configuration keys
+        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
+        /// (i.e. <code>mjolnir.[Command.Name].Timeout</code>). If not
+        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// 
         /// </summary>
-        /// <param name="group">Logical grouping for the command, usually the owning team</param>
+        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="isolationKey">Breaker and pool key to use.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
         protected Command(string group, string isolationKey, TimeSpan defaultTimeout) : this(group, isolationKey, isolationKey, defaultTimeout) {}
 
         /// <summary>
-        /// Constructs the command.
+        /// Constructs the Command.
         /// 
-        /// The key will be something like "Mongo", "Recruit", "Football", "Stripe", "Mongo-SpecificCollection", etc.
+        /// The group is used as part of the Command's <see cref="Name">Name</see>.
+        /// If the group contains dots, they'll be converted to dashes.
+        /// 
+        /// Command timeouts can be configured at runtime. Configuration keys
+        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
+        /// (i.e. <code>mjolnir.[Command.Name].Timeout</code>). If not
+        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// 
         /// </summary>
-        /// <param name="group">Logical grouping for the command, usually the owning team.</param>
+        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="breakerKey">Breaker to use for this command.</param>
         /// <param name="poolKey">Pool to use for this command.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
@@ -142,15 +158,16 @@ namespace Hudl.Mjolnir.Command
                 }
 
                 var type = GetType();
-                return _name = NameCache.GetOrAdd(type, t =>
+                var cacheKey = new Tuple<Type, GroupKey>(type, Group);
+                return _name = NameCache.GetOrAdd(cacheKey, t =>
                 {
-                    var className = t.Name;
+                    var className = cacheKey.Item1.Name;
                     if (className.EndsWith("Command", StringComparison.InvariantCulture))
                     {
                         className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
                     }
 
-                    return Group.Name.Replace(".", "-") + "." + className;
+                    return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
                 });
             }
         }
