@@ -31,32 +31,26 @@ namespace Hudl.Mjolnir.Tests.Key
             Assert.Equal("Foo", GroupKey.Named("Foo").ToString());
         }
 
-        [Fact]
-        public void Construct_WithNullName_ThrowsException()
-        {
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                GroupKey.Named(null);
-            });
-        }
 
         [Fact]
         public void Construct_Validation()
         {
-            AssertInvalidName(""); // Must be at least three chars
-            AssertInvalidName("a"); // Must be at least three chars
-            AssertInvalidName("A"); // Must be at least three chars
-            AssertInvalidName("0"); // Must be at least three chars
-            AssertInvalidName("_"); // Must be at least three chars
-            AssertInvalidName("."); // Must be at least three chars
-            AssertInvalidName("_ab"); // Must start with a letter
-            AssertInvalidName("0ab"); // Must start with a letter
-            AssertInvalidName("abc."); // Cannot contain invalid chars
-            AssertInvalidName("abc#"); // Cannot contain invalid chars
-            AssertInvalidName("abc-"); // Cannot contain invalid chars
-            AssertInvalidName("abc$"); // Cannot contain invalid chars
-            AssertInvalidName("abc/"); // Cannot contain invalid chars
+            AssertInvalidName(""); // Cannot be empty.
+            AssertInvalidName(" "); // Cannot be empty.
+            AssertInvalidName(null); // Cannot be null.
 
+            AssertValidName("a");
+            AssertValidName("A");
+            AssertValidName("0");
+            AssertValidName("_");
+            AssertValidName(".");
+            AssertValidName("_ab");
+            AssertValidName("0ab");
+            AssertValidName("abc.");
+            AssertValidName("abc#");
+            AssertValidName("abc-");
+            AssertValidName("abc$");
+            AssertValidName("abc/");
             AssertValidName("abc");
             AssertValidName("Abc");
             AssertValidName("ABC");
