@@ -1,10 +1,9 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Mvc;
+using Hudl.Common.Extensions;
 using Hudl.Config;
 using Hudl.Mjolnir.Command;
-using Hudl.Mjolnir.Key;
 
 namespace TestMvc40WebApp.Controllers
 {
@@ -31,7 +30,7 @@ namespace TestMvc40WebApp.Controllers
 
         private class TestCommand : Command<string>
         {
-            public TestCommand() : base(GroupKey.Named("test"), TimeSpan.FromSeconds(5)) {}
+            public TestCommand() : base("test", "test", 5.Seconds()) {}
             protected override async Task<string> ExecuteAsync(CancellationToken cancellationToken)
             {
                 await Task.Run(() => Thread.Sleep(1000));

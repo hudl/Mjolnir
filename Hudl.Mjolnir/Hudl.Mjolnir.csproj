@@ -104,7 +104,6 @@
     <Compile Include="ThreadPool\WoodringThreadPool.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Util\GaugeTimer.cs" />
-    <Compile Include="Util\NamingUtil.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

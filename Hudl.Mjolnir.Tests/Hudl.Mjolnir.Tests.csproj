@@ -141,7 +141,6 @@
     <Compile Include="ThreadPool\StpIsolationThreadPoolTests.cs" />
     <Compile Include="ThreadPool\StpWorkItemTests.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensionsTests.cs" />
-    <Compile Include="Util\NamingUtilTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

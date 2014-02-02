@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Hudl.Common.Extensions;
 using Hudl.Config;
 using Hudl.Mjolnir.Command;
-using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Tests.TestCommands;
 using Xunit;
@@ -23,7 +23,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
         private class ZeroTimeoutCommand : Command<object>
         {
-            public ZeroTimeoutCommand() : base(GroupKey.Named("Test"), TimeSpan.FromMilliseconds(0)) {}
+            public ZeroTimeoutCommand() : base("test", "test", "test", TimeSpan.Zero) {}
 
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {
@@ -42,7 +42,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
         private class NegativeTimeoutCommand : Command<object>
         {
-            public NegativeTimeoutCommand() : base(GroupKey.Named("Test"), TimeSpan.FromMilliseconds(-1)) {}
+            public NegativeTimeoutCommand() : base("test", "test", "test", TimeSpan.FromMilliseconds(-1)) {}
 
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {
@@ -71,29 +71,18 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public void Name_UsesAssemblyWithClassName()
+        public void Name_UsesGroupAndClassName()
         {
-            var command = new NameTestCommand();
+            var command = new NameTestCommand("test");
 
-            Assert.Equal("Hudl.Mjolnir.Tests", GetType().Assembly.GetName().Name);
-            Assert.Equal("Tests.NameTest", command.Name);
-        }
-
-        [Fact]
-        public void Name_UsesLastAssemblyPart()
-        {
-            var command = new NameTestCommand();
-
-            Assert.Equal("Hudl.Mjolnir.Tests", GetType().Assembly.GetName().Name);
-            Assert.True(command.Name.StartsWith("Tests."));
+            Assert.Equal("test.NameTest", command.Name);
         }
 
         [Fact]
         public void Name_StripsCommandFromClassName()
         {
-            var command = new NameTestCommand();
+            var command = new NameTestCommand("test");
 
-            Assert.Equal("Hudl.Mjolnir.Tests", GetType().Assembly.GetName().Name);
             Assert.False(command.Name.EndsWith("Command"));
         }
 
@@ -147,6 +136,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
         private sealed class NameTestCommand : BaseTestCommand<object>
         {
+            public NameTestCommand(string group) : base(group, "asdf", 1.Seconds()) {}
+
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
