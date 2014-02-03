@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -8,7 +9,6 @@ using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.ThreadPool;
-using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
 using Hudl.Stats;
 using log4net;
@@ -19,6 +19,13 @@ namespace Hudl.Mjolnir.Command
     {
         protected static readonly ILog Log = LogManager.GetLogger(typeof(Command<>));
         protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers");
+
+        /// <summary>
+        /// Cache of known command names, keyed by Type and group key. Helps
+        /// avoid repeatedly generating the same Name for every distinct command
+        /// instance.
+        /// </summary>
+        protected static readonly ConcurrentDictionary<Tuple<Type, GroupKey>, string> NameCache = new ConcurrentDictionary<Tuple<Type, GroupKey>, string>(); 
     }
 
     /// <summary>
@@ -31,6 +38,7 @@ namespace Hudl.Mjolnir.Command
     public abstract class Command<TResult> : Command
     {
         internal readonly TimeSpan Timeout;
+        private readonly GroupKey _group;
         private readonly GroupKey _breakerKey;
         private readonly GroupKey _poolKey;
 
@@ -69,33 +77,54 @@ namespace Hudl.Mjolnir.Command
         private int _hasInvoked = 0;
 
         /// <summary>
-        /// Constructs the command.
+        /// Constructs the Command.
+        /// 
+        /// The group is used as part of the Command's <see cref="Name">Name</see>.
+        /// If the group contains dots, they'll be converted to dashes.
         /// 
         /// The provided <code>isolationKey</code> will be used as both the
         /// breaker and pool keys.
         /// 
-        /// The key will be something like "Mongo", "Recruit", "Football", "Stripe", "Mongo-SpecificCollection", etc.
+        /// Command timeouts can be configured at runtime. Configuration keys
+        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
+        /// (i.e. <code>mjolnir.[Command.Name].Timeout</code>). If not
+        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// 
         /// </summary>
+        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="isolationKey">Breaker and pool key to use.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected Command(GroupKey isolationKey, TimeSpan defaultTimeout) : this(isolationKey, isolationKey, defaultTimeout) {}
+        protected Command(string group, string isolationKey, TimeSpan defaultTimeout) : this(group, isolationKey, isolationKey, defaultTimeout) {}
 
         /// <summary>
-        /// Constructs the command.
+        /// Constructs the Command.
         /// 
-        /// The key will be something like "Mongo", "Recruit", "Football", "Stripe", "Mongo-SpecificCollection", etc.
+        /// The group is used as part of the Command's <see cref="Name">Name</see>.
+        /// If the group contains dots, they'll be converted to dashes.
+        /// 
+        /// Command timeouts can be configured at runtime. Configuration keys
+        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
+        /// (i.e. <code>mjolnir.[Command.Name].Timeout</code>). If not
+        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// 
         /// </summary>
+        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="breakerKey">Breaker to use for this command.</param>
         /// <param name="poolKey">Pool to use for this command.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected Command(GroupKey breakerKey, GroupKey poolKey, TimeSpan defaultTimeout)
+        protected Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)
         {
-            if (breakerKey == null)
+            if (string.IsNullOrWhiteSpace(group))
+            {
+                throw new ArgumentNullException("group");
+            }
+
+            if (string.IsNullOrWhiteSpace(breakerKey))
             {
                 throw new ArgumentNullException("breakerKey");
             }
 
-            if (poolKey == null)
+            if (string.IsNullOrWhiteSpace(poolKey))
             {
                 throw new ArgumentNullException("poolKey");
             }
@@ -105,6 +134,10 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
             }
 
+            _group = GroupKey.Named(group);
+            _breakerKey = GroupKey.Named(breakerKey);
+            _poolKey = GroupKey.Named(poolKey);
+
             var timeout = new ConfigurableValue<long>("command." + Name + ".Timeout").Value;
             if (timeout <= 0)
             {
@@ -112,9 +145,6 @@ namespace Hudl.Mjolnir.Command
             }
 
             Timeout = TimeSpan.FromMilliseconds(timeout);
-
-            _breakerKey = breakerKey;
-            _poolKey = poolKey;
         }
 
         private string _name;
@@ -127,16 +157,24 @@ namespace Hudl.Mjolnir.Command
                     return _name;
                 }
 
-                var lastAssemblyPart = NamingUtil.GetLastAssemblyPart(GetType());
-                var name = GetType().Name;
-                if (name.EndsWith("Command", StringComparison.InvariantCulture))
+                var type = GetType();
+                var cacheKey = new Tuple<Type, GroupKey>(type, Group);
+                return _name = NameCache.GetOrAdd(cacheKey, t =>
                 {
-                    name = name.Substring(0, name.LastIndexOf("Command", StringComparison.InvariantCulture));
-                }
-                
-                _name = lastAssemblyPart + "." + name;
-                return _name;
+                    var className = cacheKey.Item1.Name;
+                    if (className.EndsWith("Command", StringComparison.InvariantCulture))
+                    {
+                        className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
+                    }
+
+                    return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
+                });
             }
+        }
+
+        internal GroupKey Group
+        {
+            get { return _group; }
         }
 
         internal GroupKey BreakerKey

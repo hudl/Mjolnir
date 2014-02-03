@@ -11,35 +11,35 @@ namespace Hudl.Mjolnir.Tests.Command
     public class CommandGroupKeyTests : TestFixture
     {
         [Fact]
-        public void Construct_WithoutAnyKeys_UsesGroupKeyAsAllKeys()
+        public void Construct_WithIsolationKey_UsesIsolationKeyAsAllKeys()
         {
-            var command = new KeyTestCommand(GroupKey.Named("Foo"));
+            var command = new KeyTestCommand("test", "foo");
 
-            Assert.Equal(GroupKey.Named("Foo"), command.BreakerKey);
-            Assert.Equal(GroupKey.Named("Foo"), command.PoolKey);
+            Assert.Equal(GroupKey.Named("foo"), command.BreakerKey);
+            Assert.Equal(GroupKey.Named("foo"), command.PoolKey);
         }
 
         [Fact]
-        public void Construct_WithBreakerKey_UsesProvidedBreakerKey()
+        public void Construct_WithSpecificBreakerKey_UsesProvidedBreakerKey()
         {
-            var command = new KeyTestCommand(GroupKey.Named("Foo"), GroupKey.Named("Test"));
-            Assert.Equal(GroupKey.Named("Foo"), command.BreakerKey);
+            var command = new KeyTestCommand("test", "foo", "test");
+            Assert.Equal(GroupKey.Named("foo"), command.BreakerKey);
         }
 
         [Fact]
-        public void Construct_WithPoolKey_UsesProvidedPoolKey()
+        public void Construct_WithSpecificPoolKey_UsesProvidedPoolKey()
         {
-            var command = new KeyTestCommand(GroupKey.Named("Test"), GroupKey.Named("Bar"));
-            Assert.Equal(GroupKey.Named("Bar"), command.PoolKey);
+            var command = new KeyTestCommand("test", "test", "bar");
+            Assert.Equal(GroupKey.Named("bar"), command.PoolKey);
         }
 
         private sealed class KeyTestCommand : Command<object>
         {
-            internal KeyTestCommand(GroupKey isolationKey)
-                : base(isolationKey, TimeSpan.FromMilliseconds(10000)) { }
+            internal KeyTestCommand(string group, string isolationKey)
+                : base(group, isolationKey, TimeSpan.FromMilliseconds(10000)) { }
 
-            internal KeyTestCommand(GroupKey breakerKey, GroupKey poolKey)
-                : base(breakerKey, poolKey, TimeSpan.FromMilliseconds(10000)) {}
+            internal KeyTestCommand(string group, string breakerKey, string poolKey)
+                : base(group, breakerKey, poolKey, TimeSpan.FromMilliseconds(10000)) {}
 
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {

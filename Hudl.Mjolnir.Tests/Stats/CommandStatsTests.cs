@@ -24,8 +24,8 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             await command.InvokeAsync();
 
-            mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.ImmediatelyReturningCommandWithoutFallback InvokeAsync", "RanToCompletion", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
-            mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.ImmediatelyReturningCommandWithoutFallback ExecuteInIsolation", "RanToCompletion", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+            mockRiemann.Verify(m => m.Elapsed("mjolnir command test.ImmediatelyReturningCommandWithoutFallback InvokeAsync", "RanToCompletion", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+            mockRiemann.Verify(m => m.Elapsed("mjolnir command test.ImmediatelyReturningCommandWithoutFallback ExecuteInIsolation", "RanToCompletion", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
         }
 
         [Fact]
@@ -43,8 +43,8 @@ namespace Hudl.Mjolnir.Tests.Stats
             }
             catch (CommandFailedException)
             {
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.FaultingWithoutFallback InvokeAsync", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.FaultingWithoutFallback ExecuteInIsolation", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithoutFallback InvokeAsync", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithoutFallback ExecuteInIsolation", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -67,8 +67,8 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (CommandFailedException e)
             {
                 Assert.True(e.GetBaseException() is OperationCanceledException);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.TimingOutWithoutFallback InvokeAsync", "Canceled", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.TimingOutWithoutFallback ExecuteInIsolation", "Canceled", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback InvokeAsync", "Canceled", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback ExecuteInIsolation", "Canceled", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -99,8 +99,8 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (CommandFailedException e)
             {
                 Assert.True(e.GetBaseException() is CircuitBreakerRejectedException);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.SuccessfulEchoCommandWithoutFallback InvokeAsync", "Rejected", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.SuccessfulEchoCommandWithoutFallback ExecuteInIsolation", "Rejected", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback InvokeAsync", "Rejected", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback ExecuteInIsolation", "Rejected", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -124,7 +124,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (ExpectedTestException e)
             {
                 if (e != expected) throw;
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.FaultingWithEchoThrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithEchoThrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -147,7 +147,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (CommandFailedException e)
             {
                 Assert.True(e.IsFallbackImplemented);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.FaultingWithInstigatorRethrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithInstigatorRethrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -165,7 +165,7 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             await command.InvokeAsync();
 
-            mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.FaultingWithSuccessfulFallback TryFallback", "Success", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+            mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithSuccessfulFallback TryFallback", "Success", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
         }
 
         [Fact]
@@ -185,7 +185,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (CommandFailedException e)
             {
                 if (e.GetBaseException() != exception) throw;
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command Tests.EchoThrowingCommandWithoutFallback TryFallback", "NotImplemented", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.EchoThrowingCommandWithoutFallback TryFallback", "NotImplemented", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
