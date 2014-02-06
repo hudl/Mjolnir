@@ -15,6 +15,12 @@ using log4net;
 
 namespace Hudl.Mjolnir.Command
 {
+    public interface ICommand<TResult>
+    {
+        TResult Invoke();
+        Task<TResult> InvokeAsync();
+    }
+
     public abstract class Command
     {
         protected static readonly ILog Log = LogManager.GetLogger(typeof(Command<>));
@@ -35,7 +41,7 @@ namespace Hudl.Mjolnir.Command
     /// circuit breakers, and thread pools.
     /// </summary>
     /// <typeparam name="TResult">The type of the result returned by this command's execution.</typeparam>
-    public abstract class Command<TResult> : Command
+    public abstract class Command<TResult> : Command, ICommand<TResult>
     {
         internal readonly TimeSpan Timeout;
         private readonly GroupKey _group;
