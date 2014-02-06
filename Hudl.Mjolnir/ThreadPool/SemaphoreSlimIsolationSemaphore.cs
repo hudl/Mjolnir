@@ -21,7 +21,7 @@ namespace Hudl.Mjolnir.ThreadPool
         public SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent)
             : this(key, maxConcurrent, null) {}
 
-        public SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent, IRiemann riemann)
+        internal SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent, IRiemann riemann, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _riemann = (riemann ?? RiemannStats.Instance);
@@ -35,7 +35,7 @@ namespace Hudl.Mjolnir.ThreadPool
                 var count = _semaphore.CurrentCount;
                 _riemann.ConfigGauge(RiemannPrefix + " conf.maxConcurrent", _maxConcurrent);
                 _riemann.Gauge(RiemannPrefix + " available", (count == 0 ? "Full" : "Available"), count);
-            });
+            }, gaugeIntervalMillisOverride);
         }
 
         private string RiemannPrefix

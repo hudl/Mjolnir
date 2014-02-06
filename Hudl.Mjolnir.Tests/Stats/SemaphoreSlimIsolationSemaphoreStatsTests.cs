@@ -15,10 +15,12 @@ namespace Hudl.Mjolnir.Tests.Stats
         [Fact]
         public async Task Construct_CreatesGauges()
         {
-            var mockRiemann = new Mock<IRiemann>();
-            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(10), mockRiemann.Object);
+            const long gaugeIntervalMillis = 50;
 
-            await Task.Delay(TimeSpan.FromMilliseconds(5010)); // TODO This is jank, but the interval's not injectable at the moment.
+            var mockRiemann = new Mock<IRiemann>();
+            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(10), mockRiemann.Object, new TransientConfigurableValue<long>(gaugeIntervalMillis));
+
+            await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
 
             mockRiemann.Verify(m => m.ConfigGauge("mjolnir fallback-semaphore Test conf.maxConcurrent", 10), Times.Once);
             mockRiemann.Verify(m => m.Gauge("mjolnir fallback-semaphore Test available", "Available", 10, null, null, null), Times.Once);

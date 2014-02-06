@@ -43,7 +43,7 @@ namespace Hudl.Mjolnir.Breaker
         public FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, FailurePercentageCircuitBreakerProperties properties)
             : this(key, new SystemClock(), metrics, RiemannStats.Instance, properties) {}
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IRiemann riemann, FailurePercentageCircuitBreakerProperties properties)
+        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IRiemann riemann, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _clock = clock;
@@ -74,7 +74,7 @@ namespace Hudl.Mjolnir.Breaker
 
                 _riemann.Gauge(RiemannPrefix + " total", snapshot.Total >= properties.MinimumOperations.Value ? "Above" : "Below", snapshot.Total);
                 _riemann.Gauge(RiemannPrefix + " error", snapshot.ErrorPercentage >= properties.ThresholdPercentage.Value ? "Above" : "Below", snapshot.ErrorPercentage);
-            });
+            }, gaugeIntervalMillisOverride);
         }
 
         public ICommandMetrics Metrics

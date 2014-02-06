@@ -16,10 +16,12 @@ namespace Hudl.Mjolnir.Tests.Stats
         [Fact]
         public async Task Construct_CreatesGauges()
         {
+            const long gaugeIntervalMillis = 50;
+
             var mockRiemann = new Mock<IRiemann>();
-            var metrics = CreateMetrics("Test", mockRiemann);
-            
-            await Task.Delay(TimeSpan.FromMilliseconds(5010)); // TODO This is jank, but the interval's not injectable at the moment.
+            var metrics = CreateMetrics("Test", mockRiemann, null, null, null, new TransientConfigurableValue<long>(gaugeIntervalMillis));
+
+            await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
 
             mockRiemann.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.windowMillis", It.IsAny<long>()));
             mockRiemann.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.snapshotTtlMillis", It.IsAny<long>()));
@@ -79,14 +81,15 @@ namespace Hudl.Mjolnir.Tests.Stats
         }
 
         private static StandardCommandMetrics CreateMetrics(string key, IMock<IRiemann> mockRiemann, IClock clock = null,
-            long? windowMillis = null, long? snapshotTtlMillis = null)
+            long? windowMillis = null, long? snapshotTtlMillis = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             return new StandardCommandMetrics(
                 GroupKey.Named(key),
                 new TransientConfigurableValue<long>(windowMillis ?? 30000),
                 new TransientConfigurableValue<long>(snapshotTtlMillis ?? 10000),
                 (clock ?? new ManualTestClock()),
-                mockRiemann.Object);
+                mockRiemann.Object,
+                gaugeIntervalMillisOverride);
         }
     }
 }

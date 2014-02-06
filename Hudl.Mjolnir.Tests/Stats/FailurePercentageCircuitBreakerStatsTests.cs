@@ -14,18 +14,21 @@ namespace Hudl.Mjolnir.Tests.Stats
         [Fact]
         public async Task Construct_CreatesGauges()
         {
+            const long gaugeIntervalMillis = 50;
+
             var mockRiemann = new Mock<IRiemann>();
             var breaker = new BreakerBuilder(10, 50, "Test")
                 .WithRiemann(mockRiemann.Object)
+                .WithGaugeIntervalOverride(gaugeIntervalMillis)
                 .Create();
 
-            await Task.Delay(TimeSpan.FromMilliseconds(5010)); // TODO This is jank, but the interval's not injectable at the moment.
+            await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
             
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.minimumOperations", It.IsAny<long>()), Times.Once);
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.thresholdPercentage", It.IsAny<long>()), Times.Once);
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.trippedDurationMillis", It.IsAny<long>()), Times.Once);
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceTripped", It.IsAny<long>()), Times.Once);
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceFixed", It.IsAny<long>()), Times.Once);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.minimumOperations", It.IsAny<long>()), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.thresholdPercentage", It.IsAny<long>()), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.trippedDurationMillis", It.IsAny<long>()), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceTripped", It.IsAny<long>()), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceFixed", It.IsAny<long>()), Times.AtLeastOnce);
 
             mockRiemann.Verify(m => m.Gauge("mjolnir breaker Test total", It.IsIn("Above", "Below"), It.IsAny<long>(), null, null, null), Times.Once);
             mockRiemann.Verify(m => m.Gauge("mjolnir breaker Test error", It.IsIn("Above", "Below"), It.IsAny<int>(), null, null, null), Times.Once);
