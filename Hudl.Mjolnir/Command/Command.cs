@@ -262,8 +262,15 @@ namespace Hudl.Mjolnir.Command
                     Pool = PoolKey,
                 });
 
-                // Log here because we don't know if a fallback implementer is going to rethrow this or eat it.
-                Log.Error(instigator);
+                // We don't log the exception here - that's intentional.
+                
+                // If a fallback is not implemented, the exception will get re-thrown and (hopefully) caught
+                // and logged by an upstream container. This is the majority of cases, so logging here
+                // results in a lot of extra, unnecessary logs and stack traces.
+
+                // If a fallback is implemented, the burden is on the implementation to log or rethrow the
+                // exception. Otherwise it'll be eaten. This is documented on the Fallback() method.
+
                 return TryFallback(instigator);
             }
             finally
@@ -420,7 +427,8 @@ namespace Hudl.Mjolnir.Command
         /// to do it via a Command.
         /// 
         /// Although the triggering Exception (<see cref="instigator"/>) is provided, you don't have to use it. You
-        /// may ignore it, rethrow it, wrap it, etc.
+        /// may ignore it, rethrow it, wrap it, etc. If you decide not to rethrow the exception, it's recommended
+        /// that you log it here; it won't be logged anywhere else.
         /// 
         /// Any exception thrown from this method will propagate up to the <code>Command</code> caller.
         /// </summary>
