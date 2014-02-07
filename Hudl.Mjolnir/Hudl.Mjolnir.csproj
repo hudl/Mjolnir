@@ -36,6 +36,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Castle.Core">
+      <HintPath>..\packages\Castle.Core.2.5.1\lib\NET35\Castle.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Hudl.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Common.1.2.0.0\lib\net35\Hudl.Common.dll</HintPath>
@@ -79,6 +82,7 @@
     <Compile Include="Breaker\FailurePercentageCircuitBreaker.cs" />
     <Compile Include="Breaker\ICircuitBreaker.cs" />
     <Compile Include="Command\Command.cs" />
+    <Compile Include="Command\CommandAttribute.cs" />
     <Compile Include="Command\CommandContext.cs" />
     <Compile Include="Command\CommandFailedException.cs" />
     <Compile Include="Command\VoidResult.cs" />
