@@ -129,8 +129,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
         private ITestInterfaceWithImplementation CreateForImplementation(TestImplementation instance)
         {
-            var generator = new ProxyGenerator();
-            return (ITestInterfaceWithImplementation)generator.CreateInterfaceProxyWithTarget(typeof(ITestInterfaceWithImplementation), instance, new CommandInterceptor());
+            return CommandInterceptor.CreateProxy<ITestInterfaceWithImplementation>(instance);
         }
 
         private ITestInterfaceWithoutImplementation CreateForNoImplementation()

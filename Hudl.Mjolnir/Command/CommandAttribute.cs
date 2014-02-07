@@ -183,5 +183,16 @@ namespace Hudl.Mjolnir.Command
                 timeoutAttribute != null ? timeoutAttribute.Timeout : attribute.Timeout,
                 invocation);
         }
+
+        public static T CreateProxy<T>(T instance) where T : class
+        {
+            if (!typeof(T).IsInterface)
+            {
+                throw new InvalidOperationException("Proxies may only be created for interfaces");
+            }
+
+            var generator = new ProxyGenerator();
+            return (T) generator.CreateInterfaceProxyWithTarget(typeof (T), instance, new CommandInterceptor());
+        }
     }
 }
