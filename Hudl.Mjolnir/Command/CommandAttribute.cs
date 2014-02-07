@@ -186,13 +186,18 @@ namespace Hudl.Mjolnir.Command
 
         public static T CreateProxy<T>(T instance) where T : class
         {
-            if (!typeof(T).IsInterface)
+            return (T)CreateProxy(typeof (T), instance);
+        }
+
+        public static object CreateProxy(Type interfaceType, object instance)
+        {
+            if (!interfaceType.IsInterface)
             {
                 throw new InvalidOperationException("Proxies may only be created for interfaces");
             }
 
             var generator = new ProxyGenerator();
-            return (T) generator.CreateInterfaceProxyWithTarget(typeof (T), instance, new CommandInterceptor());
+            return generator.CreateInterfaceProxyWithTarget(interfaceType, instance, new CommandInterceptor());
         }
     }
 }
