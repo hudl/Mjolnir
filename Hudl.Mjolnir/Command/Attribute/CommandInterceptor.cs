@@ -1,118 +1,13 @@
 ﻿using System;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
 
-namespace Hudl.Mjolnir.Command
+namespace Hudl.Mjolnir.Command.Attribute
 {
-    [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Method)]
-    public sealed class CommandAttribute : Attribute
-    {
-        private const int DefaultTimeout = 15000;
-
-        private readonly string _group;
-        private readonly string _breakerKey;
-        private readonly string _poolKey;
-        private readonly int _timeout;
-
-        public CommandAttribute(string group, string isolationKey, int timeout = DefaultTimeout) : this(group, isolationKey, isolationKey, timeout) {}
-
-        public CommandAttribute(string group, string breakerKey, string poolKey, int timeout = DefaultTimeout)
-        {
-            if (string.IsNullOrWhiteSpace(group))
-            {
-                throw new ArgumentException("group");
-            }
-
-            if (string.IsNullOrWhiteSpace(breakerKey))
-            {
-                throw new ArgumentException("breakerKey");
-            }
-
-            if (string.IsNullOrWhiteSpace(poolKey))
-            {
-                throw new ArgumentNullException("poolKey");
-            }
-
-            if (timeout < 0)
-            {
-                throw new ArgumentException("timeout");
-            }
-
-            _group = group;
-            _breakerKey = breakerKey;
-            _poolKey = poolKey;
-            _timeout = timeout;
-        }
-
-        public string Group
-        {
-            get { return _group; }
-        }
-
-        public string BreakerKey
-        {
-            get { return _breakerKey; }
-        }
-
-        public string PoolKey
-        {
-            get { return _poolKey; }
-        }
-
-        public int Timeout
-        {
-            get { return _timeout; }
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class CommandTimeout : Attribute
-    {
-        private readonly int _timeout;
-
-        public CommandTimeout(int timeout)
-        {
-            if (timeout < 0)
-            {
-                throw new ArgumentException("timeout");
-            }
-
-            _timeout = timeout;
-        }
-
-        public int Timeout
-        {
-            get { return _timeout; }
-        }
-    }
-
-    internal class InvocationCommand<TResult> : Command<TResult>
-    {
-        private readonly IInvocation _invocation;
-
-        public InvocationCommand(string group, string breakerKey, string poolKey, int timeout, IInvocation invocation)
-            : base(group, breakerKey, poolKey, TimeSpan.FromMilliseconds(timeout))
-        {
-            _invocation = invocation;
-        }
-
-        protected override Task<TResult> ExecuteAsync(CancellationToken cancellationToken)
-        {
-            _invocation.Proceed();
-
-            var returnType = _invocation.Method.ReturnType;
-
-            if (typeof (Task).IsAssignableFrom(returnType) && returnType.IsGenericType)
-            {
-                return (Task<TResult>)_invocation.ReturnValue;
-            }
-
-            return Task.FromResult((TResult)_invocation.ReturnValue);
-        }
-    }
-
+    /// <summary>
+    /// <see cref="CreateProxy"/>
+    /// </summary>
     public class CommandInterceptor : IInterceptor
     {
         private readonly MethodInfo _invokeCommandAsyncMethod = typeof(CommandInterceptor).GetMethod("InvokeCommandAsync", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -154,14 +49,18 @@ namespace Hudl.Mjolnir.Command
             invocation.ReturnValue = _invokeCommandSyncMethod.MakeGenericMethod(returnType).Invoke(this, new object[] { invocation });
         }
 
+        // ReSharper disable UnusedMember.Local - Used via reflection.
         private Task<T> InvokeCommandAsync<T>(IInvocation invocation)
         {
+            // ReSharper restore UnusedMember.Local
             var command = CreateCommand<T>(invocation);
             return command.InvokeAsync();
         }
 
+        // ReSharper disable UnusedMember.Local - Used via reflection.
         private T InvokeCommandSync<T>(IInvocation invocation)
         {
+            // ReSharper restore UnusedMember.Local
             var command = CreateCommand<T>(invocation);
             return command.Invoke();
         }
@@ -174,7 +73,7 @@ namespace Hudl.Mjolnir.Command
                 throw new InvalidOperationException("Interface does not have [CommandAttribute]");
             }
 
-            var timeoutAttribute = invocation.Method.GetCustomAttribute<CommandTimeout>();
+            var timeoutAttribute = invocation.Method.GetCustomAttribute<CommandTimeoutAttribute>();
 
             return new InvocationCommand<T>(
                 attribute.Group,
@@ -184,11 +83,25 @@ namespace Hudl.Mjolnir.Command
                 invocation);
         }
 
+        /// <summary>
+        /// Creates a CommandInterceptor proxy for an interface of type <code>T</code>
+        /// and its corresponding implementation instance.
+        /// </summary>
+        /// <typeparam name="T">Interface type to create proxy for</typeparam>
+        /// <param name="instance">Target implementation instance to use within the proxy</param>
+        /// <returns>CommandInterceptor proxy of type <code>T</code></returns>
         public static T CreateProxy<T>(T instance) where T : class
         {
             return (T)CreateProxy(typeof (T), instance);
         }
 
+        /// <summary>
+        /// Creates a CommandInterceptor proxy for an interface of the provided type
+        /// and its corresponding implementation instance.
+        /// </summary>
+        /// <param name="interfaceType">Interface type to create proxy for</param>
+        /// <param name="instance">Target implementation instance to use within the proxy. Should implement the provided interface type.</param>
+        /// <returns>CommandInterceptor proxy of the interface type provided.</returns>
         public static object CreateProxy(Type interfaceType, object instance)
         {
             if (!interfaceType.IsInterface)

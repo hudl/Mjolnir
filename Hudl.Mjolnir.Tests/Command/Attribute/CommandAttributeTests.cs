@@ -3,11 +3,11 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
-using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.Command.Attribute;
 using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 
-namespace Hudl.Mjolnir.Tests.Command
+namespace Hudl.Mjolnir.Tests.Command.Attribute
 {
     public class CommandAttributeTests : TestFixture
     {
