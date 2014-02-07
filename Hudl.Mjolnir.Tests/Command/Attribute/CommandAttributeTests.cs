@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,20 +62,20 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         }
 
         [Fact]
-        public async Task UntypedTask_WithImplementation()
+        public async Task UntypedTask_WithImplementation_Throws()
         {
             var instance = new TestImplementation();
             var proxy = CreateForImplementation(instance);
 
-            var task = proxy.InvokeUntypedTask();
+            Assert.Throws<NotSupportedException>(() => { proxy.InvokeUntypedTask(); });
 
-            Assert.True(task != null);
-            Assert.True(task is Task);
-            Assert.False(task.GetType().IsGenericType);
+            //Assert.True(task != null);
+            //Assert.True(task is Task);
+            //Assert.False(task.GetType().IsGenericType);
 
-            await task;
+            //await task;
 
-            Assert.True(instance.IsCompleted);
+            //Assert.True(instance.IsCompleted);
         }
 
         [Fact]
@@ -126,6 +127,42 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         {
             // TODO
         }
+
+        [Fact]
+        public void SlowSleepMethod_FireAndForget_ReturnsImmediatelyButStillCompletes()
+        {
+            var instance = new Sleepy();
+            var proxy = CommandInterceptor.CreateProxy<ISleepy>(instance);
+
+            var stopwatch = Stopwatch.StartNew();
+            proxy.SleepWithFireAndForget(500);
+            stopwatch.Stop();
+
+            // Should have returned immediately; for sure before the sleep time.
+            Assert.True(stopwatch.Elapsed.TotalMilliseconds < 400);
+            Assert.False(instance.IsCompleted);
+
+            Thread.Sleep(510);
+            Assert.True(instance.IsCompleted);
+        }
+
+        [Fact]
+        public void SlowSleepMethod_WithoutFireAndForget_BlocksUntilCompletion()
+        {
+            var instance = new Sleepy();
+            var proxy = CommandInterceptor.CreateProxy<ISleepy>(instance);
+
+            var stopwatch = Stopwatch.StartNew();
+            proxy.SleepWithoutFireAndForget(500);
+            stopwatch.Stop();
+            
+            Assert.True(stopwatch.Elapsed.TotalMilliseconds > 500);
+            Assert.True(instance.IsCompleted);
+        }
+
+        // TODO TEsts for exceptions
+        // Make sure they propagate on awaits correctly
+        // See what happens when exceptions are thrown on [FireAndForget], for both sleep and async void delay
 
         private ITestInterfaceWithImplementation CreateForImplementation(TestImplementation instance)
         {
@@ -218,5 +255,36 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
     public interface ITestInterfaceWithoutAttribute
     {
         Task<string> InvokeGenericTask();
+    }
+
+    [Command("foo", "bar", 5000)]
+    public interface ISleepy
+    {
+        [FireAndForget]
+        void SleepWithFireAndForget(int sleepMillis);
+
+        void SleepWithoutFireAndForget(int sleepMillis);
+    }
+
+    public class Sleepy : ISleepy
+    {
+        public bool IsCompleted { get; private set; }
+
+        public Sleepy()
+        {
+            IsCompleted = false;
+        }
+
+        public void SleepWithFireAndForget(int sleepMillis)
+        {
+            Thread.Sleep(sleepMillis);
+            IsCompleted = true;
+        }
+
+        public void SleepWithoutFireAndForget(int sleepMillis)
+        {
+            Thread.Sleep(sleepMillis);
+            IsCompleted = true;
+        }
     }
 }

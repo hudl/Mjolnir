@@ -23,9 +23,16 @@ namespace Hudl.Mjolnir.Command.Attribute
             var returnType = invocation.Method.ReturnType;
             if (returnType == typeof (void))
             {
-                // TODO Consider whether this should be a sync or async call. Do callers expect the call to block until the operation is done? Likely.
-                // Maybe we could introduce a [FireAndForget] attribute that would force async and return immediately.
-                _invokeCommandSyncMethod.MakeGenericMethod(typeof (VoidResult)).Invoke(this, new object[] { invocation });
+                var isFireAndForget = (invocation.Method.GetCustomAttribute<FireAndForgetAttribute>(false) != null);
+                if (isFireAndForget)
+                {
+                    // Run async and don't await the result.
+                    _invokeCommandAsyncMethod.MakeGenericMethod(typeof (VoidResult)).Invoke(this, new object[] { invocation });
+                }
+                else
+                {
+                    _invokeCommandSyncMethod.MakeGenericMethod(typeof (VoidResult)).Invoke(this, new object[] { invocation });
+                }
                 return;
             }
             
@@ -38,12 +45,17 @@ namespace Hudl.Mjolnir.Command.Attribute
 
             if (typeof(Task).IsAssignableFrom(returnType)) // Non-generic task.
             {
-                var method = _invokeCommandAsyncMethod.MakeGenericMethod(typeof (VoidResult));
+                // This case gets weird, and it's rare that we'd need to support it.
+                // Leaving it alone for now.
 
-                // This is kind of jank.
-                var task = Task.Factory.StartNew((Action)(() => method.Invoke(this, new object[] { invocation })));
-                invocation.ReturnValue = task;
-                return;
+                throw new NotSupportedException("Non-generic Tasks are not supported, consider using void with [FireAndForget]");
+
+                //var method = _invokeCommandAsyncMethod.MakeGenericMethod(typeof (VoidResult));
+
+                //// This is kind of jank.
+                //var task = Task.Factory.StartNew((Action)(() => method.Invoke(this, new object[] { invocation })));
+                //invocation.ReturnValue = task;
+                //return;
             }
 
             invocation.ReturnValue = _invokeCommandSyncMethod.MakeGenericMethod(returnType).Invoke(this, new object[] { invocation });

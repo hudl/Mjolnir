@@ -22,16 +22,27 @@ namespace Hudl.Mjolnir.Command.Attribute
 
         protected override Task<TResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            _invocation.Proceed();
-
             var returnType = _invocation.Method.ReturnType;
+            var isTask = (typeof (Task).IsAssignableFrom(returnType));
 
-            if (typeof (Task).IsAssignableFrom(returnType) && returnType.IsGenericType)
+            if (isTask && returnType.IsGenericType)
             {
+                // TODO If the invocation supports a cancellation token, can we set it with _invocation.SetArgumentValue()?
+
+                _invocation.Proceed();
                 return (Task<TResult>)_invocation.ReturnValue;
             }
 
-            return Task.FromResult((TResult)_invocation.ReturnValue);
+            if (isTask)
+            {
+                throw new NotSupportedException("Cannot invoke interceptor command for non-generic Task");
+            }
+
+            return Task.Run(() =>
+            {
+                _invocation.Proceed();
+                return (TResult) _invocation.ReturnValue;
+            }, cancellationToken);
         }
     }
 }
