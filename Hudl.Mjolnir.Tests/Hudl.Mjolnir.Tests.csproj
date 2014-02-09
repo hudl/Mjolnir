@@ -107,7 +107,7 @@
   <ItemGroup>
     <Compile Include="Breaker\FailurePercentageCircuitBreakerTests.cs" />
     <Compile Include="Breaker\CommandCircuitBreakerTests.cs" />
-    <Compile Include="Command\Attribute\CommandAttributeTests.cs" />
+    <Compile Include="Command\Attribute\CommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\CommandFallbackTests.cs" />
     <Compile Include="Command\CommandGroupKeyTests.cs" />
     <Compile Include="Command\CommandTests.cs" />

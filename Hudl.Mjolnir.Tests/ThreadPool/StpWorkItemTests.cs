@@ -12,8 +12,12 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
     public class StpWorkItemTests : TestFixture
     {
         [Fact]
-        public void Get_UnderlyingGetResultThrowsException_RethrowsWrapped()
+        public void Get_UnderlyingGetResultThrowsException_RethrowsInnerException()
         {
+            // To avoid leaking STP's WorkItemResultException out beyond our thread pooling layer,
+            // our wrappers around STP should unwrap the exception thrown by the pool and just
+            // rethrow its inner exception, which should be what got thrown from ExecuteAsync().
+
             var inner = new ExpectedTestException("Root cause inner");
             var cause = new ExpectedTestException("Test root cause", inner);
             var itemException = new WorkItemResultException("Work item result exception", cause);
@@ -29,12 +33,10 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
             {
                 stpWorkItem.Get(new CancellationToken(), timeout);
             }
-            catch (IsolationThreadPoolException e)
+            catch (ExpectedTestException e)
             {
-                Debug.WriteLine("Trace: " + e);
-                Assert.Equal(itemException, e.InnerException);
-                Assert.Equal(cause, e.InnerException.InnerException);
-                Assert.Equal(inner, e.InnerException.InnerException.InnerException);
+                Assert.Equal(cause, e);
+                Assert.Equal(inner, e.InnerException);
                 return; // Expected.
             }
             

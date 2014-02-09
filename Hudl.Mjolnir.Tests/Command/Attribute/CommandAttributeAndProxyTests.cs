@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
+using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Command.Attribute;
 using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command.Attribute
 {
-    public class CommandAttributeTests : TestFixture
+    public class CommandAttributeAndProxyTests : TestFixture
     {
         [Fact]
         public void String_WithImplementation()
@@ -25,6 +27,21 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         }
 
         [Fact]
+        public void String_WithThrowingImplementation_ThrowsCommandFailedException()
+        {
+            var exception = new ExpectedTestException("Expected");
+            var instance = new TestThrowingImplementation(exception);
+            var proxy = CreateForImplementation(instance);
+
+            var ex = Assert.Throws<CommandFailedException>(() =>
+            {
+                proxy.InvokeString();
+            });
+
+            Assert.Equal(exception, ex.InnerException);
+        }
+
+        [Fact]
         public async Task GenericTask_WithImplementation()
         {
             var instance = new TestImplementation();
@@ -35,6 +52,30 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
 
             Assert.True(instance.IsCompleted);
             Assert.Equal("Generic task string", result);
+        }
+
+        [Fact]
+        public async Task GenericTask_WithThrowingImplementation_ThrowsCommandFailedExceptionOnAwait()
+        {
+            var exception = new ExpectedTestException("Expected");
+            var instance = new TestThrowingImplementation(exception);
+            var proxy = CreateForImplementation(instance);
+
+            var task = proxy.InvokeGenericTask();
+
+            try
+            {
+                // Using Assert.Throws(async () => {}) doesn't work right here,
+                // so falling back to the ol' try/catch.
+                await task;
+            }
+            catch (CommandFailedException e)
+            {
+                Assert.Equal(exception, e.InnerException);
+                return;
+            }
+
+            AssertX.FailExpectedException();
         }
 
         [Fact]
@@ -160,13 +201,36 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             Assert.True(instance.IsCompleted);
         }
 
-        // TODO TEsts for exceptions
-        // Make sure they propagate on awaits correctly
-        // See what happens when exceptions are thrown on [FireAndForget], for both sleep and async void delay
-
-        private ITestInterfaceWithImplementation CreateForImplementation(TestImplementation instance)
+        [Fact]
+        public void FireAndForget_WhenThrows_DoesntThrowExceptionToCaller()
         {
-            return CommandInterceptor.CreateProxy<ITestInterfaceWithImplementation>(instance);
+            // The default TaskScheduler doesn't guarantee execution on another thread,
+            // so we might get the exception back here. We catch and log in the interceptor
+            // to avoid that.
+
+            var instance = new ThrowingFireAndForget();
+            var proxy = CommandInterceptor.CreateProxy<IThrowingFireAndForget>(instance);
+
+            proxy.ImmediatelyThrowWithFireAndForget();
+
+            Assert.True(true); // Expecting no exception to be thrown.
+        }
+
+        [Fact]
+        public void CreateProxy_NonInterface_ThrowsInvalidOperationException()
+        {
+            var ex = Assert.Throws<InvalidOperationException>(() => {
+                CommandInterceptor.CreateProxy(typeof (TestImplementation));
+            });
+
+            Assert.Equal("Proxies may only be created for interfaces", ex.Message);
+        }
+
+        // TODO How do we test for an unhandled exception thrown by a FireAndForget on a different thread?
+
+        private ITestInterfaceWithImplementation CreateForImplementation(ITestInterfaceWithImplementation instance)
+        {
+            return CommandInterceptor.CreateProxy(instance);
         }
 
         private ITestInterfaceWithoutImplementation CreateForNoImplementation()
@@ -246,6 +310,52 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         }
     }
 
+    internal class TestThrowingImplementation : ITestInterfaceWithImplementation
+    {
+        private readonly ExpectedTestException _exceptionToThrow;
+
+        public TestThrowingImplementation(ExpectedTestException exceptionToThrow)
+        {
+            _exceptionToThrow = exceptionToThrow;
+        }
+
+        public Task<string> InvokeGenericTask()
+        {
+            throw _exceptionToThrow;
+        }
+
+        public Task<object> InvokeGenericTaskWithRunAndSleep()
+        {
+            return Task.Run((Func<object>)(() =>
+            {
+                Thread.Sleep(100);
+                throw _exceptionToThrow;
+            }));
+        }
+
+        public async Task<object> InvokeGenericTaskWithAwaitDelay()
+        {
+            await Task.Delay(100);
+            throw _exceptionToThrow;
+        }
+
+        // Not supported.
+        public Task InvokeUntypedTask()
+        {
+            throw new NotImplementedException();
+        }
+
+        public string InvokeString()
+        {
+            throw _exceptionToThrow;
+        }
+
+        public void InvokeVoid()
+        {
+            throw _exceptionToThrow;
+        }
+    }
+
     [Command("foo", "bar", "baz", 10000)]
     public interface ITestInterfaceWithoutImplementation
     {
@@ -285,6 +395,21 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         {
             Thread.Sleep(sleepMillis);
             IsCompleted = true;
+        }
+    }
+
+    [Command("foo", "bar", 10000)]
+    public interface IThrowingFireAndForget
+    {
+        [FireAndForget]
+        void ImmediatelyThrowWithFireAndForget();
+    }
+
+    public class ThrowingFireAndForget : IThrowingFireAndForget
+    {
+        public void ImmediatelyThrowWithFireAndForget()
+        {
+            throw new ExpectedTestException("Thrown from FireAndForget method");
         }
     }
 }

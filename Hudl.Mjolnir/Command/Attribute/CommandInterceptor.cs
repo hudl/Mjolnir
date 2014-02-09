@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
+using log4net;
 
 namespace Hudl.Mjolnir.Command.Attribute
 {
@@ -10,6 +12,7 @@ namespace Hudl.Mjolnir.Command.Attribute
     /// </summary>
     public class CommandInterceptor : IInterceptor
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof (CommandInterceptor));
         private readonly MethodInfo _invokeCommandAsyncMethod = typeof(CommandInterceptor).GetMethod("InvokeCommandAsync", BindingFlags.NonPublic | BindingFlags.Instance);
         private readonly MethodInfo _invokeCommandSyncMethod = typeof(CommandInterceptor).GetMethod("InvokeCommandSync", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -20,45 +23,71 @@ namespace Hudl.Mjolnir.Command.Attribute
                 throw new InvalidOperationException("Invocation target required");
             }
 
-            var returnType = invocation.Method.ReturnType;
-            if (returnType == typeof (void))
+            try
             {
-                var isFireAndForget = (invocation.Method.GetCustomAttribute<FireAndForgetAttribute>(false) != null);
-                if (isFireAndForget)
+                var returnType = invocation.Method.ReturnType;
+                if (returnType == typeof (void))
                 {
-                    // Run async and don't await the result.
-                    _invokeCommandAsyncMethod.MakeGenericMethod(typeof (VoidResult)).Invoke(this, new object[] { invocation });
+                    var isFireAndForget = (invocation.Method.GetCustomAttribute<FireAndForgetAttribute>(false) != null);
+                    if (isFireAndForget)
+                    {
+                        try
+                        {
+                            // Run async and don't await the result.
+                            _invokeCommandAsyncMethod.MakeGenericMethod(typeof(VoidResult)).Invoke(this, new object[] { invocation });    
+                        }
+                        catch (Exception e)
+                        {
+                            // Even though we're going to async this off in the command, the default TaskScheduler
+                            // doesn't guarantee that it's going to run on a separate thread; it *may* execute inline on
+                            // this thread. That means that if the execution throws an exception, it'll propagate back
+                            // up to the caller, which the caller's probably not expecting.
+
+                            // Instead of rethrowing, we'll just handle and log it here. A future improvement would be
+                            // to write a custom scheduler that would always launch the task on a background thread.
+                            Log.Error("Caught exception invoking FireAndForget method", e);
+                        }
+                    }
+                    else
+                    {
+                        _invokeCommandSyncMethod.MakeGenericMethod(typeof (VoidResult)).Invoke(this, new object[] { invocation });
+                    }
+                    return;
                 }
-                else
+
+                if (typeof (Task).IsAssignableFrom(returnType) && returnType.IsGenericType)
                 {
-                    _invokeCommandSyncMethod.MakeGenericMethod(typeof (VoidResult)).Invoke(this, new object[] { invocation });
+                    var innerType = returnType.GetGenericArguments()[0];
+                    invocation.ReturnValue = _invokeCommandAsyncMethod.MakeGenericMethod(innerType).Invoke(this, new object[] { invocation });
+                    return;
                 }
-                return;
+
+                if (typeof (Task).IsAssignableFrom(returnType)) // Non-generic task.
+                {
+                    // This case gets weird, and it's rare that we'd need to support it.
+                    // Leaving it alone for now.
+
+                    throw new NotSupportedException("Non-generic Tasks are not supported, consider using void with [FireAndForget]");
+
+                    //var method = _invokeCommandAsyncMethod.MakeGenericMethod(typeof (VoidResult));
+
+                    //// This is kind of jank.
+                    //var task = Task.Factory.StartNew((Action)(() => method.Invoke(this, new object[] { invocation })));
+                    //invocation.ReturnValue = task;
+                    //return;
+                }
+
+                invocation.ReturnValue = _invokeCommandSyncMethod.MakeGenericMethod(returnType).Invoke(this, new object[] { invocation });
             }
-            
-            if (typeof(Task).IsAssignableFrom(returnType) && returnType.IsGenericType)
+            catch (TargetInvocationException e)
             {
-                var innerType = returnType.GetGenericArguments()[0];
-                invocation.ReturnValue = _invokeCommandAsyncMethod.MakeGenericMethod(innerType).Invoke(this, new object[] { invocation });
-                return;
+                if (e.InnerException is CommandFailedException)
+                {
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                }
+
+                throw;
             }
-
-            if (typeof(Task).IsAssignableFrom(returnType)) // Non-generic task.
-            {
-                // This case gets weird, and it's rare that we'd need to support it.
-                // Leaving it alone for now.
-
-                throw new NotSupportedException("Non-generic Tasks are not supported, consider using void with [FireAndForget]");
-
-                //var method = _invokeCommandAsyncMethod.MakeGenericMethod(typeof (VoidResult));
-
-                //// This is kind of jank.
-                //var task = Task.Factory.StartNew((Action)(() => method.Invoke(this, new object[] { invocation })));
-                //invocation.ReturnValue = task;
-                //return;
-            }
-
-            invocation.ReturnValue = _invokeCommandSyncMethod.MakeGenericMethod(returnType).Invoke(this, new object[] { invocation });
         }
 
         // ReSharper disable UnusedMember.Local - Used via reflection.
