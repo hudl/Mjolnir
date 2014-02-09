@@ -127,30 +127,38 @@ namespace Hudl.Mjolnir.Command.Attribute
         /// <summary>
         /// Creates a CommandInterceptor proxy for an interface of type <code>T</code>
         /// and its corresponding implementation instance.
+        /// 
+        /// Passing a ProxyGenerator is recommended since the generator internally caches
+        /// things to speed up runtime proxy creation.
         /// </summary>
         /// <typeparam name="T">Interface type to create proxy for</typeparam>
         /// <param name="instance">Target implementation instance to use within the proxy</param>
+        /// /// <param name="proxyGenerator">ProxyGenerator to use. If not provided, a new one will be created.</param>
         /// <returns>CommandInterceptor proxy of type <code>T</code></returns>
-        public static T CreateProxy<T>(T instance) where T : class
+        public static T CreateProxy<T>(T instance, ProxyGenerator proxyGenerator = null) where T : class
         {
-            return (T)CreateProxy(typeof (T), instance);
+            return (T)CreateProxy(typeof (T), instance, proxyGenerator);
         }
 
         /// <summary>
         /// Creates a CommandInterceptor proxy for an interface of the provided type
         /// and its corresponding implementation instance.
+        /// 
+        /// Passing a ProxyGenerator is recommended since the generator internally caches
+        /// things to speed up runtime proxy creation.
         /// </summary>
         /// <param name="interfaceType">Interface type to create proxy for</param>
         /// <param name="instance">Target implementation instance to use within the proxy. Should implement the provided interface type.</param>
+        /// <param name="proxyGenerator">ProxyGenerator to use. If not provided, a new one will be created.</param>
         /// <returns>CommandInterceptor proxy of the interface type provided.</returns>
-        public static object CreateProxy(Type interfaceType, object instance)
+        public static object CreateProxy(Type interfaceType, object instance, ProxyGenerator proxyGenerator = null)
         {
             if (!interfaceType.IsInterface)
             {
                 throw new InvalidOperationException("Proxies may only be created for interfaces");
             }
 
-            var generator = new ProxyGenerator();
+            var generator = proxyGenerator ?? new ProxyGenerator();
             return generator.CreateInterfaceProxyWithTarget(interfaceType, instance, new CommandInterceptor());
         }
     }
