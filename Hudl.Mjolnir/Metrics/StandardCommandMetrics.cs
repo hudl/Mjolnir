@@ -25,7 +25,7 @@ namespace Hudl.Mjolnir.Metrics
         public StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis)
             : this(key, windowMillis, snapshotTtlMillis, new SystemClock()) {}
 
-        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock, IRiemann riemann = null)
+        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock, IRiemann riemann = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             if (key == null)
             {
@@ -50,7 +50,7 @@ namespace Hudl.Mjolnir.Metrics
 
                 _riemann.ConfigGauge(RiemannPrefix + " conf.windowMillis", windowMillis.Value);
                 _riemann.ConfigGauge(RiemannPrefix + " conf.snapshotTtlMillis", _snapshotTtlMillis.Value);
-            });
+            }, gaugeIntervalMillisOverride);
         }
 
         private string RiemannPrefix

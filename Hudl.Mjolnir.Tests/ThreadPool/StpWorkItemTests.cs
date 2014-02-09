@@ -12,8 +12,12 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
     public class StpWorkItemTests : TestFixture
     {
         [Fact]
-        public void Get_UnderlyingGetResultThrowsException_RethrowsWrapped()
+        public void Get_UnderlyingGetResultThrowsException_RethrowsInnerException()
         {
+            // To avoid leaking STP's WorkItemResultException out beyond our thread pooling layer,
+            // our wrappers around STP should unwrap the exception thrown by the pool and just
+            // rethrow its inner exception, which should be what got thrown from ExecuteAsync().
+
             var inner = new ExpectedTestException("Root cause inner");
             var cause = new ExpectedTestException("Test root cause", inner);
             var itemException = new WorkItemResultException("Work item result exception", cause);
@@ -29,12 +33,10 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
             {
                 stpWorkItem.Get(new CancellationToken(), timeout);
             }
-            catch (IsolationThreadPoolException e)
+            catch (ExpectedTestException e)
             {
-                Debug.WriteLine("Trace: " + e);
-                Assert.Equal(itemException, e.InnerException);
-                Assert.Equal(cause, e.InnerException.InnerException);
-                Assert.Equal(inner, e.InnerException.InnerException.InnerException);
+                Assert.Equal(cause, e);
+                Assert.Equal(inner, e.InnerException);
                 return; // Expected.
             }
             
@@ -44,15 +46,16 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         [Fact]
         public void Get_WhenCancellationTokenExpires_ThrowsCanceledExceptionAfterGetResultReturns()
         {
-            var source = new CancellationTokenSource(500);
+            const int timeoutMillis = 100;
+
+            var source = new CancellationTokenSource(timeoutMillis);
             var token = source.Token;
-            var timeout = TimeSpan.FromSeconds(1);
+            var workItemTimeout = TimeSpan.FromSeconds(timeoutMillis * 10); // Doesn't really matter, we shouldn't hit it. Needs to be greater than the token timeout.
 
             var mockWorkItemResult = new Mock<IWorkItemResult<object>>();
-            mockWorkItemResult.Setup(m => m.GetResult(timeout, false)).Returns(new { });
-            mockWorkItemResult.Setup(m => m.GetResult(timeout, false)).Returns(() =>
+            mockWorkItemResult.Setup(m => m.GetResult(workItemTimeout, false)).Returns(() =>
             {
-                Thread.Sleep(1000); // 2x the token timeout.
+                Thread.Sleep(timeoutMillis * 2);
                 return new { };
             });
 
@@ -60,7 +63,7 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
 
             try
             {
-                stpWorkItem.Get(token, timeout);
+                stpWorkItem.Get(token, workItemTimeout);
             }
             catch (OperationCanceledException e)
             {

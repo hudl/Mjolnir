@@ -24,7 +24,7 @@ namespace Hudl.Mjolnir.ThreadPool
         private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
-        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IRiemann riemann = null)
+        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IRiemann riemann = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _threadCount = threadCount;
@@ -54,7 +54,7 @@ namespace Hudl.Mjolnir.ThreadPool
 
                 _riemann.ConfigGauge(RiemannPrefix + " conf.threadCount", _threadCount.Value);
                 _riemann.ConfigGauge(RiemannPrefix + " conf.queueLength", _queueLength.Value);
-            });
+            }, gaugeIntervalMillisOverride);
 
             _pool.OnThreadInitialization += () => _riemann.Event(RiemannPrefix + " thread", "Initialized", null);
             _pool.OnThreadTermination += () => _riemann.Event(RiemannPrefix + " thread", "Terminated", null);

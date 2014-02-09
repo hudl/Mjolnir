@@ -15,14 +15,17 @@ namespace Hudl.Mjolnir.Tests.Stats
         [Fact]
         public async Task Construct_CreatesGauges()
         {
+            const long gaugeIntervalMillis = 50;
+
             var mockRiemann = new Mock<IRiemann>();
             var pool = new StpIsolationThreadPool(
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<int>(10),
                 new TransientConfigurableValue<int>(20),
-                mockRiemann.Object);
+                mockRiemann.Object,
+                new TransientConfigurableValue<long>(gaugeIntervalMillis));
 
-            await Task.Delay(TimeSpan.FromMilliseconds(5010)); // TODO This is jank, but the interval's not injectable at the moment.
+            await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
 
             mockRiemann.Verify(m => m.Gauge("mjolnir pool Test activeThreads", null, It.IsAny<long>(), null, null, null), Times.Once);
             mockRiemann.Verify(m => m.Gauge("mjolnir pool Test inUseThreads", null, It.IsAny<long>(), null, null, null), Times.Once);

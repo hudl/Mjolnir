@@ -500,11 +500,12 @@ namespace Hudl.Mjolnir.Tests.Breaker
         private readonly long _minimumOperations;
         private readonly int _failurePercent;
         private readonly string _key;
-
+        
         private long _waitMillis = 30000;
         private IClock _clock = new SystemClock();
         private IMock<ICommandMetrics> _mockMetrics = FailurePercentageCircuitBreakerTests.CreateMockMetricsWithSnapshot(0, 0);
         private IRiemann _riemann = new Mock<IRiemann>().Object;
+        private TransientConfigurableValue<long> _gaugeIntervalOverrideMillis;
 
         public BreakerBuilder(long minimumOperations, int failurePercent, string key = null)
         {
@@ -537,10 +538,16 @@ namespace Hudl.Mjolnir.Tests.Breaker
             return this;
         }
 
+        public BreakerBuilder WithGaugeIntervalOverride(long intervalMillis)
+        {
+            _gaugeIntervalOverrideMillis = new TransientConfigurableValue<long>(intervalMillis);
+            return this;
+        }
+
         public FailurePercentageCircuitBreaker Create()
         {
             var properties = FailurePercentageCircuitBreakerTests.CreateBreakerProperties(_minimumOperations, _failurePercent, _waitMillis);
-            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _riemann, properties);
+            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _riemann, properties, _gaugeIntervalOverrideMillis);
         }
     }
 

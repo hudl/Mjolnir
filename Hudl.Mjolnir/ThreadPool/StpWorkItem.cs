@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using Amib.Threading;
 
@@ -35,9 +37,9 @@ namespace Hudl.Mjolnir.ThreadPool
                 // If the item itself threw an exception, re-throw it (instead of the wrapper).
                 if (e is WorkItemResultException)
                 {
-                    // I'd like to not wrap here, but without it we'll lose the trace.
-                    // TODO Might be worth re-thinking the exception chain here. Can CommandFailedException have an ExecuteException property or something that we can just assign the root cause to?
-                    throw new IsolationThreadPoolException(e);
+                    // Re-throw the inner exception to avoid leaking the STP implementation.
+                    ExceptionDispatchInfo.Capture(e.InnerException).Throw();
+                    throw new InvalidOperationException("Exception should have been unwrapped and rethrown", e);
                 }
 
                 // If the caller cancelled via the token before calling

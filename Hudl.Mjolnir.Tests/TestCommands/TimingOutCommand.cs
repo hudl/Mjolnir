@@ -9,13 +9,12 @@ namespace Hudl.Mjolnir.Tests.TestCommands
     /// </summary>
     internal class TimingOutWithoutFallbackCommand : BaseTestCommand<object>
     {
-        internal TimingOutWithoutFallbackCommand() : base(TimeSpan.FromMilliseconds(100)) {}
         internal TimingOutWithoutFallbackCommand(TimeSpan timeout) : base(timeout) {}
 
         protected override async Task<object> ExecuteAsync(CancellationToken cancellationToken)
         {
-            // Sleep for a second more than the timeout allows.
-            var delay = Timeout.Add(TimeSpan.FromSeconds(1));
+            // Sleep for 100ms more than the timeout allows.
+            var delay = Timeout.Add(TimeSpan.FromMilliseconds(100));
 
             return await Task.Run(() =>
                 {

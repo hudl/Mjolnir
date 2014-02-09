@@ -41,6 +41,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\AWSSDK.1.5.10.0\lib\AWSSDK.dll</HintPath>
     </Reference>
+    <Reference Include="Castle.Core">
+      <HintPath>..\packages\Castle.Core.2.5.1\lib\NET35\Castle.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Hudl.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Common.1.2.0.0\lib\net35\Hudl.Common.dll</HintPath>
@@ -104,6 +107,7 @@
   <ItemGroup>
     <Compile Include="Breaker\FailurePercentageCircuitBreakerTests.cs" />
     <Compile Include="Breaker\CommandCircuitBreakerTests.cs" />
+    <Compile Include="Command\Attribute\CommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\CommandFallbackTests.cs" />
     <Compile Include="Command\CommandGroupKeyTests.cs" />
     <Compile Include="Command\CommandTests.cs" />
@@ -179,10 +183,8 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-
-  <UsingTask AssemblyFile="../packages/xunit.1.9.1/lib/net20/xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit"/>
-
+  <UsingTask AssemblyFile="../packages/xunit.1.9.1/lib/net20/xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
   <Target Name="UnitTest">
-	<xunit Assembly="bin\Release\Hudl.Mjolnir.Tests.dll"/>
+    <xunit Assembly="bin\Release\Hudl.Mjolnir.Tests.dll" />
   </Target>
 </Project>

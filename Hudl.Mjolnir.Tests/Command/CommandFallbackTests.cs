@@ -12,12 +12,10 @@ namespace Hudl.Mjolnir.Tests.Command
 {
     public class CommandFallbackTests : TestFixture
     {
-        private readonly Random _random = new Random();
-
         [Fact]
         public async Task InvokeAsync_TimesOutAndNoFallback_ThrowsCommandException()
         {
-            var command = new TimingOutWithoutFallbackCommand();
+            var command = new TimingOutWithoutFallbackCommand(TimeSpan.FromMilliseconds(100));
             try
             {
                 await command.InvokeAsync();
@@ -214,6 +212,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
         private class TimingOutWithSuccessfulFallbackCommand : TimingOutWithoutFallbackCommand
         {
+            public TimingOutWithSuccessfulFallbackCommand() : base(TimeSpan.FromMilliseconds(100)) {}
+
             protected override object Fallback(CommandFailedException instigator)
             {
                 return new { };
@@ -224,7 +224,7 @@ namespace Hudl.Mjolnir.Tests.Command
         {
             private readonly ExpectedTestException _exception;
 
-            internal TimingOutWithEchoThrowingFallbackCommand(ExpectedTestException toRethrow)
+            internal TimingOutWithEchoThrowingFallbackCommand(ExpectedTestException toRethrow) : base(TimeSpan.FromMilliseconds(100))
             {
                 _exception = toRethrow;
             }
