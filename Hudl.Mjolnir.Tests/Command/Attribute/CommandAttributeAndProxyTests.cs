@@ -157,13 +157,13 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             Assert.Equal("Interface does not have [CommandAttribute]", ex.InnerException.Message);
         }
 
-        [Fact]
+        
         public void TimeoutPresentOnInterfaceMethod_OverridesDefaultTimeout()
         {
             // TODO
         }
 
-        [Fact]
+        
         public void TimeoutPresentOnImplementationMethod_IsIgnored()
         {
             // TODO
