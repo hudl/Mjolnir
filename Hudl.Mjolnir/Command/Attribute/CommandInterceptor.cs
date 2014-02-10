@@ -13,6 +13,7 @@ namespace Hudl.Mjolnir.Command.Attribute
     public class CommandInterceptor : IInterceptor
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof (CommandInterceptor));
+        private static readonly ProxyGenerator ProxyGenerator = new ProxyGenerator();
         private readonly MethodInfo _invokeCommandAsyncMethod = typeof(CommandInterceptor).GetMethod("InvokeCommandAsync", BindingFlags.NonPublic | BindingFlags.Instance);
         private readonly MethodInfo _invokeCommandSyncMethod = typeof(CommandInterceptor).GetMethod("InvokeCommandSync", BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -158,7 +159,7 @@ namespace Hudl.Mjolnir.Command.Attribute
                 throw new InvalidOperationException("Proxies may only be created for interfaces");
             }
 
-            var generator = proxyGenerator ?? new ProxyGenerator();
+            var generator = proxyGenerator ?? ProxyGenerator;
             return generator.CreateInterfaceProxyWithTarget(interfaceType, instance, new CommandInterceptor());
         }
     }
