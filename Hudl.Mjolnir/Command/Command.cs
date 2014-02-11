@@ -158,23 +158,32 @@ namespace Hudl.Mjolnir.Command
         {
             get
             {
-                if (_name != null)
+                var stopwatch = Stopwatch.StartNew();
+                try
                 {
-                    return _name;
-                }
-
-                var type = GetType();
-                var cacheKey = new Tuple<Type, GroupKey>(type, Group);
-                return _name = NameCache.GetOrAdd(cacheKey, t =>
-                {
-                    var className = cacheKey.Item1.Name;
-                    if (className.EndsWith("Command", StringComparison.InvariantCulture))
+                    if (_name != null)
                     {
-                        className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
+                        return _name;
                     }
 
-                    return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
-                });
+                    var type = GetType();
+                    var cacheKey = new Tuple<Type, GroupKey>(type, Group);
+                    return _name = NameCache.GetOrAdd(cacheKey, t =>
+                    {
+                        var className = cacheKey.Item1.Name;
+                        if (className.EndsWith("Command", StringComparison.InvariantCulture))
+                        {
+                            className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
+                        }
+
+                        return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
+                    });
+                }
+                finally
+                {
+                    // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
+                    RiemannStats.Instance.Elapsed("mjolnir command mjolnir-meta.GetName", null, stopwatch.Elapsed);
+                }
             }
         }
 
@@ -244,6 +253,7 @@ namespace Hudl.Mjolnir.Command
                 Log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
                 var cancellationTokenSource = new CancellationTokenSource(Timeout);
+                // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
                 var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
                 return result;
