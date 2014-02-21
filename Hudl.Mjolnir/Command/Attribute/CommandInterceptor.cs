@@ -107,9 +107,11 @@ namespace Hudl.Mjolnir.Command.Attribute
             return command.Invoke();
         }
 
-        private Command<T> CreateCommand<T>(IInvocation invocation)
+        internal Command<T> CreateCommand<T>(IInvocation invocation)
         {
-            var attribute = invocation.Method.DeclaringType.GetCustomAttribute<CommandAttribute>();
+            var classType = invocation.Method.DeclaringType;
+
+            var attribute = classType.GetCustomAttribute<CommandAttribute>();
             if (attribute == null)
             {
                 throw new InvalidOperationException("Interface does not have [CommandAttribute]");
@@ -119,6 +121,7 @@ namespace Hudl.Mjolnir.Command.Attribute
 
             return new InvocationCommand<T>(
                 attribute.Group,
+                classType.Name + "-" + invocation.Method.Name,
                 attribute.BreakerKey,
                 attribute.PoolKey,
                 timeoutAttribute != null ? timeoutAttribute.Timeout : attribute.Timeout,

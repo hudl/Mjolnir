@@ -8,6 +8,7 @@ using Castle.DynamicProxy;
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Command.Attribute;
 using Hudl.Mjolnir.Tests.Helper;
+using Moq;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command.Attribute
@@ -224,6 +225,18 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             });
 
             Assert.Equal("Proxies may only be created for interfaces", ex.Message);
+        }
+
+        [Fact]
+        public void InterceptorCreateCommand_CommandName_IsInterfaceNameAndMethodName()
+        {
+            var method = typeof (ITestInterfaceWithImplementation).GetMethod("InvokeString");
+            var mockInvocation = new Mock<IInvocation>();
+            mockInvocation.SetupGet(m => m.Method).Returns(method);
+
+            var command = new CommandInterceptor().CreateCommand<string>(mockInvocation.Object);
+
+            Assert.Equal("foo.ITestInterfaceWithImplementation-InvokeString", command.Name);
         }
 
         // TODO How do we test for an unhandled exception thrown by a FireAndForget on a different thread?

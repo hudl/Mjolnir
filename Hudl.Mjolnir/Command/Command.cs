@@ -31,7 +31,13 @@ namespace Hudl.Mjolnir.Command
         /// avoid repeatedly generating the same Name for every distinct command
         /// instance.
         /// </summary>
-        protected static readonly ConcurrentDictionary<Tuple<Type, GroupKey>, string> NameCache = new ConcurrentDictionary<Tuple<Type, GroupKey>, string>(); 
+        protected static readonly ConcurrentDictionary<Tuple<Type, GroupKey>, string> GeneratedNameCache = new ConcurrentDictionary<Tuple<Type, GroupKey>, string>();
+
+        /// <summary>
+        /// Cache of known command names, keyed by provided name and group key. Helps
+        /// avoid repeatedly generating the same Name for every distinct command.
+        /// </summary>
+        protected static readonly ConcurrentDictionary<Tuple<string, GroupKey>, string> ProvidedNameCache = new ConcurrentDictionary<Tuple<string, GroupKey>, string>();
     }
 
     /// <summary>
@@ -44,7 +50,9 @@ namespace Hudl.Mjolnir.Command
     public abstract class Command<TResult> : Command, ICommand<TResult>
     {
         internal readonly TimeSpan Timeout;
+
         private readonly GroupKey _group;
+        private readonly string _name;
         private readonly GroupKey _breakerKey;
         private readonly GroupKey _poolKey;
 
@@ -100,7 +108,8 @@ namespace Hudl.Mjolnir.Command
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="isolationKey">Breaker and pool key to use.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected Command(string group, string isolationKey, TimeSpan defaultTimeout) : this(group, isolationKey, isolationKey, defaultTimeout) {}
+        protected Command(string group, string isolationKey, TimeSpan defaultTimeout)
+            : this(group, null, isolationKey, isolationKey, defaultTimeout) {}
 
         /// <summary>
         /// Constructs the Command.
@@ -119,6 +128,9 @@ namespace Hudl.Mjolnir.Command
         /// <param name="poolKey">Pool to use for this command.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
         protected Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)
+            : this(group, null, breakerKey, poolKey, defaultTimeout) {}
+
+        internal Command(string group, string name, string breakerKey, string poolKey, TimeSpan defaultTimeout)
         {
             if (string.IsNullOrWhiteSpace(group))
             {
@@ -141,6 +153,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             _group = GroupKey.Named(group);
+            _name = string.IsNullOrWhiteSpace(name) ? GenerateAndCacheName(Group) : CacheProvidedName(Group, name);
             _breakerKey = GroupKey.Named(breakerKey);
             _poolKey = GroupKey.Named(poolKey);
 
@@ -153,38 +166,49 @@ namespace Hudl.Mjolnir.Command
             Timeout = TimeSpan.FromMilliseconds(timeout);
         }
 
-        private string _name;
-        internal string Name
+        private string CacheProvidedName(GroupKey group, string name)
         {
-            get
+            var stopwatch = Stopwatch.StartNew();
+            try
             {
-                var stopwatch = Stopwatch.StartNew();
-                try
+                var cacheKey = new Tuple<string, GroupKey>(name, group);
+                return ProvidedNameCache.GetOrAdd(cacheKey, t => cacheKey.Item2.Name.Replace(".", "-") + "." + name.Replace(".", "-"));
+            }
+            finally
+            {
+                // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
+                RiemannStats.Instance.Elapsed("mjolnir command mjolnir-meta.CacheProvidedName", null, stopwatch.Elapsed);
+            }
+        }
+
+        private string GenerateAndCacheName(GroupKey group)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            try
+            {
+                var type = GetType();
+                var cacheKey = new Tuple<Type, GroupKey>(type, group);
+                return GeneratedNameCache.GetOrAdd(cacheKey, t =>
                 {
-                    if (_name != null)
+                    var className = cacheKey.Item1.Name;
+                    if (className.EndsWith("Command", StringComparison.InvariantCulture))
                     {
-                        return _name;
+                        className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
                     }
 
-                    var type = GetType();
-                    var cacheKey = new Tuple<Type, GroupKey>(type, Group);
-                    return _name = NameCache.GetOrAdd(cacheKey, t =>
-                    {
-                        var className = cacheKey.Item1.Name;
-                        if (className.EndsWith("Command", StringComparison.InvariantCulture))
-                        {
-                            className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
-                        }
-
-                        return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
-                    });
-                }
-                finally
-                {
-                    // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
-                    RiemannStats.Instance.Elapsed("mjolnir command mjolnir-meta.GetName", null, stopwatch.Elapsed);
-                }
+                    return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
+                });
             }
+            finally
+            {
+                // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
+                RiemannStats.Instance.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
+            }
+        }
+
+        internal string Name
+        {
+            get { return _name; }
         }
 
         internal GroupKey Group

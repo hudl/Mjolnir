@@ -72,17 +72,17 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public void Name_UsesGroupAndClassName()
+        public void Name_Generated_UsesGroupAndClassName()
         {
-            var command = new NameTestCommand("test");
+            var command = new GeneratedNameTestCommand("test");
 
-            Assert.Equal("test.NameTest", command.Name);
+            Assert.Equal("test.GeneratedNameTest", command.Name);
         }
 
         [Fact]
-        public void Name_StripsCommandFromClassName()
+        public void Name_Generated_StripsCommandFromClassName()
         {
-            var command = new NameTestCommand("test");
+            var command = new GeneratedNameTestCommand("test");
 
             Assert.False(command.Name.EndsWith("Command"));
         }
@@ -95,36 +95,78 @@ namespace Hudl.Mjolnir.Tests.Command
         /// dots as delimiters.
         /// </summary>
         [Fact]
-        public void Name_ReplacesDotsWithDashes()
+        public void Name_Generated_ReplacesDotsWithDashesInGroup()
         {
-            var command = new NameTestCommand("test.test");
+            var command = new GeneratedNameTestCommand("test.test");
 
-            Assert.Equal("test-test.NameTest", command.Name);
+            Assert.Equal("test-test.GeneratedNameTest", command.Name);
         }
 
         [Fact]
-        public void Name_IsCached()
+        public void Name_Generated_IsCached()
         {
-            var type = typeof (NameCacheTestCommand);
-            var command1 = new NameCacheTestCommand("test");
+            var type = typeof (GeneratedNameCacheTestCommand);
+            var command1 = new GeneratedNameCacheTestCommand("test");
 
             var cachedName = command1.GetCachedName(type);
             Assert.Equal(command1.Name, cachedName);
 
-            var command2 = new NameCacheTestCommand("test");
+            var command2 = new GeneratedNameCacheTestCommand("test");
 
             Assert.True(ReferenceEquals(command1.Name, command2.Name));
         }
 
         [Fact]
-        public void Name_TwoCommandsWithDifferentGroups_ReturnsCorrectNameForEach()
+        public void Name_Generated_TwoCommandsWithDifferentGroups_ReturnsCorrectNameForEach()
         {
-            var type = typeof (NameTestCommand);
-            var command1 = new NameCacheTestCommand("test-one");
-            var command2 = new NameCacheTestCommand("test-two");
+            var type = typeof (GeneratedNameTestCommand);
+            var command1 = new GeneratedNameCacheTestCommand("test-one");
+            var command2 = new GeneratedNameCacheTestCommand("test-two");
 
-            Assert.Equal("test-one.NameCacheTest", command1.Name);
-            Assert.Equal("test-two.NameCacheTest", command2.Name);
+            Assert.Equal("test-one.GeneratedNameCacheTest", command1.Name);
+            Assert.Equal("test-two.GeneratedNameCacheTest", command2.Name);
+        }
+
+        [Fact]
+        public void Name_Provided_IsUsedInsteadOfGeneratedName()
+        {
+            var command = new ProvidedNameTestCommand("my-group", "FooBarBaz");
+            Assert.Equal("my-group.FooBarBaz", command.Name);
+        }
+
+        [Fact]
+        public void Name_Provided_DoesntHaveCommandStripped()
+        {
+            var command = new ProvidedNameTestCommand("my-group", "FooBarBazCommand");
+            Assert.Equal("my-group.FooBarBazCommand", command.Name);
+        }
+
+        [Fact]
+        public void Name_Provided_ReplacesDotsWithDashesInGroup()
+        {
+            var command = new ProvidedNameTestCommand("my.group", "FooBarBaz");
+            Assert.Equal("my-group.FooBarBaz", command.Name);
+        }
+
+        [Fact]
+        public void Name_Provided_ReplacesDotsWithDashesInName()
+        {
+            var command = new ProvidedNameTestCommand("my-group", "FooBar.Baz");
+            Assert.Equal("my-group.FooBar-Baz", command.Name);
+        }
+
+        [Fact]
+        public void Name_Provided_IsCached()
+        {
+            const string name = "QuxQuuxCorge";
+            var command1 = new ProvidedNameTestCommand("test-group", name);
+
+            var cachedName = command1.GetCachedName(name);
+            Assert.Equal(command1.Name, cachedName);
+
+            var command2 = new ProvidedNameTestCommand("test-group", name);
+
+            Assert.True(ReferenceEquals(command1.Name, command2.Name));
         }
 
         [Fact]
@@ -175,9 +217,9 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(expected, result.InnerException);
         }
 
-        private sealed class NameTestCommand : BaseTestCommand<object>
+        private sealed class GeneratedNameTestCommand : BaseTestCommand<object>
         {
-            public NameTestCommand(string group) : base(group, "asdf", 1.Seconds()) {}
+            public GeneratedNameTestCommand(string group) : base(group, "asdf", 1.Seconds()) {}
 
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {
@@ -185,13 +227,28 @@ namespace Hudl.Mjolnir.Tests.Command
             }
         }
 
-        private sealed class NameCacheTestCommand : BaseTestCommand<object>
+        private sealed class GeneratedNameCacheTestCommand : BaseTestCommand<object>
         {
-            public NameCacheTestCommand(string group) : base(group, "test", 1.Seconds()) {}
+            public GeneratedNameCacheTestCommand(string group) : base(group, "test", 1.Seconds()) {}
 
             public string GetCachedName(Type type)
             {
-                return NameCache[new Tuple<Type, GroupKey>(type, Group)];
+                return GeneratedNameCache[new Tuple<Type, GroupKey>(type, Group)];
+            }
+
+            protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private sealed class ProvidedNameTestCommand : BaseTestCommand<object>
+        {
+            public ProvidedNameTestCommand(string group, string name) : base(group, name, "test", 1.Seconds()) {}
+
+            public string GetCachedName(string name)
+            {
+                return ProvidedNameCache[new Tuple<string, GroupKey>(name, Group)];
             }
 
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
