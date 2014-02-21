@@ -22,8 +22,8 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
 
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir fallback-semaphore Test conf.maxConcurrent", 10), Times.Once);
-            mockRiemann.Verify(m => m.Gauge("mjolnir fallback-semaphore Test available", "Available", 10, null, null, null), Times.Once);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir fallback-semaphore Test conf.maxConcurrent", 10), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.Gauge("mjolnir fallback-semaphore Test available", "Available", 10, null, null, null), Times.AtLeastOnce);
         }
     }
 }

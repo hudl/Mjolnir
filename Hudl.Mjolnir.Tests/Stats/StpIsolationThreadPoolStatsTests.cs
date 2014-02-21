@@ -27,11 +27,11 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
 
-            mockRiemann.Verify(m => m.Gauge("mjolnir pool Test activeThreads", null, It.IsAny<long>(), null, null, null), Times.Once);
-            mockRiemann.Verify(m => m.Gauge("mjolnir pool Test inUseThreads", null, It.IsAny<long>(), null, null, null), Times.Once);
-            mockRiemann.Verify(m => m.Gauge("mjolnir pool Test pendingCompletion", null, It.IsAny<long>(), null, null, null), Times.Once);
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir pool Test conf.threadCount", 10), Times.Once);
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir pool Test conf.queueLength", 20), Times.Once);
+            mockRiemann.Verify(m => m.Gauge("mjolnir pool Test activeThreads", null, It.IsAny<long>(), null, null, null), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.Gauge("mjolnir pool Test inUseThreads", null, It.IsAny<long>(), null, null, null), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.Gauge("mjolnir pool Test pendingCompletion", null, It.IsAny<long>(), null, null, null), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir pool Test conf.threadCount", 10), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir pool Test conf.queueLength", 20), Times.AtLeastOnce);
         }
 
         // TODO This isn't deterministic, it can fail depending on how/when it gets scheduled. Would be nice to test, though.

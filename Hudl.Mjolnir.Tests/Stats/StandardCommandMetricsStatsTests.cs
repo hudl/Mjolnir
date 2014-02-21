@@ -23,8 +23,8 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
 
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.windowMillis", It.IsAny<long>()));
-            mockRiemann.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.snapshotTtlMillis", It.IsAny<long>()));
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.windowMillis", It.IsAny<long>()), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.snapshotTtlMillis", It.IsAny<long>()), Times.AtLeastOnce);
         }
 
         [Fact]

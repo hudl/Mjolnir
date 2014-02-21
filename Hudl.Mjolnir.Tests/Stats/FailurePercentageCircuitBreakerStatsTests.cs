@@ -30,8 +30,8 @@ namespace Hudl.Mjolnir.Tests.Stats
             mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceTripped", It.IsAny<long>()), Times.AtLeastOnce);
             mockRiemann.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceFixed", It.IsAny<long>()), Times.AtLeastOnce);
 
-            mockRiemann.Verify(m => m.Gauge("mjolnir breaker Test total", It.IsIn("Above", "Below"), It.IsAny<long>(), null, null, null), Times.Once);
-            mockRiemann.Verify(m => m.Gauge("mjolnir breaker Test error", It.IsIn("Above", "Below"), It.IsAny<int>(), null, null, null), Times.Once);
+            mockRiemann.Verify(m => m.Gauge("mjolnir breaker Test total", It.IsIn("Above", "Below"), It.IsAny<long>(), null, null, null), Times.AtLeastOnce);
+            mockRiemann.Verify(m => m.Gauge("mjolnir breaker Test error", It.IsIn("Above", "Below"), It.IsAny<int>(), null, null, null), Times.AtLeastOnce);
         }
 
         [Fact]
