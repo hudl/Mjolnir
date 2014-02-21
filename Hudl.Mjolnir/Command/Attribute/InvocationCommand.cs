@@ -14,8 +14,8 @@ namespace Hudl.Mjolnir.Command.Attribute
     {
         private readonly IInvocation _invocation;
 
-        public InvocationCommand(string group, string breakerKey, string poolKey, int timeout, IInvocation invocation)
-            : base(group, breakerKey, poolKey, TimeSpan.FromMilliseconds(timeout))
+        public InvocationCommand(string group, string name, string breakerKey, string poolKey, int timeout, IInvocation invocation)
+            : base(group, name, breakerKey, poolKey, TimeSpan.FromMilliseconds(timeout))
         {
             _invocation = invocation;
         }
