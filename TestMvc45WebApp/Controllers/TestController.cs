@@ -18,12 +18,13 @@ namespace TestMvc45WebApp.Controllers
             // This should not throw a NullReferenceException if the following is in Web.config:
             //   <add key="aspnet:UseTaskFriendlySynchronizationContext" value="true"/>
 
-            var path = System.Web.HttpContext.Current.Request.PathInfo;
+            var path = System.Web.HttpContext.Current.Request.Path;
             var result = await new TestCommand().InvokeAsync();
 
             // Without the above property, HttpContext.Current will be null.
-            path = System.Web.HttpContext.Current.Request.PathInfo;
-            return Content("Success: " + path);
+            var newPath = System.Web.HttpContext.Current.Request.Path;
+            var equalPaths = path == newPath;
+            return Content((equalPaths ? "Success" : "Failure") + ": " + newPath);
         }
 
         private class TestCommand : Command<string>
