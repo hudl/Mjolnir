@@ -39,7 +39,8 @@ namespace Hudl.Mjolnir.ThreadPool
                 MaxWorkerThreads = count,
                 MaxQueueLength = queueLength.Value,
                 AreThreadsBackground = true,
-                UseCallerExecutionContext = true
+                UseCallerExecutionContext = true,
+                UseCallerHttpContext = true
             };
 
             _pool = new SmartThreadPool(info);
