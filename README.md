@@ -96,18 +96,61 @@ To prevent this, Commands are grouped into thread pools. Each thread pool receiv
 
 When the thread pool is at capacity, operations will begin getting rejected from the pool, resulting in an immediately-thrown Exception.
 
+*Configuration + Defaults*
+
+```
+# Number of threads to allocate.
+mjolnir.pools.<pool-key>.threadCount=10
+
+# Length of the queue that fronts the pool.
+mjolnir.pools.<pool-key>.queueLength=10
+```
+
+Changing these values requires an application restart (i.e. pools don't dynamically resize after creation).
+
 Circuit Breakers
 -----
 
-TODO
+Breakers track the success/failure rates of operations, and trip if the failure rate exceeds a configured threshold. A tripped breaker immediately rejects operations that attempt to go through it.
+
+After a configured period, the breaker sends a test operation through. If the operation succeeds, the breaker fixes itself and allows operations again.
+
+*Configuration + Defaults*
+
+```
+# The minimum operation count the breaker must see before considering tripping.
+mjolnir.breaker.<breaker-key>.minimumOperations=10
+
+# The error percentage at which the breaker should trip.
+mjolnir.breaker.<breaker-key>.thresholdPercentage=50
+
+# When the breaker trips, the duration to wait before allowing a test operation.
+mjolnir.breaker.<breaker-key>.trippedDurationMillis=10000
+
+# Forces the breaker tripped. Takes precedence over forceFixed.
+mjolnir.breaker.<breaker-key>.forceTripped=false
+
+# Forces the breaker fixed.
+mjolnir.breaker.<breaker-key>.forceFixed=false
+
+# Period to accumulate metrics in. Resets at the end of every window.
+mjolnir.metrics.<breaker-key>.windowMillis=30000
+
+# How long to cache the metrics snapshot that breakers read. Probably doesn't need adjusting.
+mjolnir.metrics.<breaker-key>.snapshotTtlMillis=1000
+```
+
+These values can be changed at runtime.
 
 Fallbacks
 -----
 
 TODO (+ semaphores)
 
-Timeouts
+Timeouts / Cancellation
 -----
+
+Every command supports cooperative cancellation using a [CancellationToken](http://msdn.microsoft.com/en-us/library/system.threading.cancellationtoken(v=vs.110).aspx).
 
 TODO
 - What happens when the timeout is reached?
