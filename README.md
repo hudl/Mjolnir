@@ -19,7 +19,7 @@ Commands are the heart of Mjolnir, and are how you use its protections. You can 
 
 *Example*
 
-```
+```csharp
 public class GetTeamCommand : Command<TeamDto>
 {
     private readonly string _teamId;
@@ -41,7 +41,7 @@ public class GetTeamCommand : Command<TeamDto>
 
 `Command` needs to be constructed with a few required values. Here are the `base` constructor signatures:
 
-```
+```csharp
 // group: A logical grouping for the command. Commands within the same client package or collection of commands typically get grouped together.
 // breakerKey: The named circuit breaker to use for the Command.
 // poolKey: The named thread pool to use for the Command.
@@ -58,7 +58,7 @@ For more information on the keys, see [Circuit Breakers](#circuit-breakers) and 
 
 *Example*
 
-```
+```csharp
 [Command("core-client", "core-team", 15000)]
 public interface ITeamService
 {
@@ -66,9 +66,11 @@ public interface ITeamService
     void UpdateTeam(TeamDto teamDto, CancellationToken? token = null);
 }
 
-public class TeamService : ITeamService { /* ... */ }
+public class TeamService : ITeamService { /* implementation */ }
 
-public void Main() {
+// ...
+
+void Main() {
     // This is typically done in a service locator of some sort and cached.
     var proxy = CommandInterceptor.CreateProxy<ITeamService>(new TeamService());
     var teamDto = proxy.GetTeam("1234");
@@ -82,7 +84,17 @@ Note the presence of `CancellationToken`s on the interface methods. If your inte
 Thread Pools
 -----
 
-TODO
+Thread pools help guard against one type of operation consuming more than its share of resources and starving out other operations.
+
+*Example:*
+
+Imagine an operation that makes a network call to a different cluster. If that downstream cluster becomes very slow, our calls will start blocking and waiting for responses.
+
+Under high enough traffic volume, our cluster will start building up pending operations that are waiting for the downstream cluster to respond, which means they're taking up increasingly more threads - potentially as many as they can - leaving fewer threads for normal, succeeding operatiosn to work with.
+
+To prevent this, Commands are grouped into thread pools. Each thread pool receives a fixed number of threads to work with, along with a small queue in front of it.
+
+When the thread pool is at capacity, operations will begin getting rejected from the pool, resulting in an immediately-thrown Exception.
 
 Circuit Breakers
 -----
