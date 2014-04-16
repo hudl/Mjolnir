@@ -1,12 +1,20 @@
 Mjolnir
 =======
 
-When bad things happen, Mjolnir helps
-- isolate them from the rest of the application/system
-- shed load from failing downstream dependencies
-- fail fast back to the caller
+When bad things happen, Mjolnir
+- isolates them from the rest of the application/system
+- sheds load from failing downstream dependencies
+- fails fast back to the caller
 
 Modeled after Netflix's [Hystrix](https://github.com/Netflix/Hystrix) library.
+
+When To Use
+-----
+
+What dangerous code might you want to wrap in a Mjolnir [Command](#commands)?
+- Network operations (inter-cluster, database, cache, search, etc.)
+- Operations that use files or read/write from/to disk.
+- Long-running or high-resource (CPU, Memory) operations
 
 Commands
 -----
@@ -42,13 +50,16 @@ public class GetTeamCommand : Command<TeamDto>
 `Command` needs to be constructed with a few required values. Here are the `base` constructor signatures:
 
 ```csharp
-// group: A logical grouping for the command. Commands within the same client package or collection of commands typically get grouped together.
-// breakerKey: The named circuit breaker to use for the Command.
-// poolKey: The named thread pool to use for the Command.
-// defaultTimeout: If not overridden via config, the timeout after which the Command will be cancelled.
+// group:          A logical grouping for the command. Commands within the same
+//                 client package or collection of commands typically get grouped
+//                 together.
+// breakerKey:     The named circuit breaker to use for the Command.
+// poolKey:        The named thread pool to use for the Command.
+// defaultTimeout: If not overridden via config, the timeout after which the
+//                 Command will be cancelled.
 Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)
 
-// isolationKey: Sets both the breakerKey and poolKey.
+// isolationKey:   Sets both the breakerKey and poolKey.
 Command(string group, string isolationKey, TimeSpan defaultTimeout)
 ```
 
@@ -145,13 +156,56 @@ These values can be changed at runtime.
 Fallbacks
 -----
 
-TODO (+ semaphores)
+A `Command` can optionally define a `Fallback()` implementation. The fallback will execute if the command's `ExecuteAsync()` throws an Exception.
+
+`[Command]` attributes do not support fallbacks - you must extend `Command<TResult>` to implement one.
+
+Examples of what a fallback might do:
+
+- Return an empty collection or `null`
+- Return a default value
+- Query from a snapshot/nightly database or cache
 
 Timeouts / Cancellation
 -----
 
-Every command supports cooperative cancellation using a [CancellationToken](http://msdn.microsoft.com/en-us/library/system.threading.cancellationtoken(v=vs.110).aspx).
+Every command supports cancellation using a [CancellationToken](http://msdn.microsoft.com/en-us/library/system.threading.cancellationtoken(v=vs.110).aspx).
 
-TODO
-- What happens when the timeout is reached?
-- Timeouts can be configured, and should be tuned after observing metrics.
+Cancellation is cooperative. Mjolnir **will not** terminate/abort threads when the timeout is reached. Instead, it relies on implementations to use the `CancellationToken` or pass it through to things that support it (e.g. network operations). `ExecuteAsync(CancellationToken token)` receives the token as an argument for this reason.
+
+If using `[Command]`, Mjolnir will attempt to pass its `CancellationToken` through. The token will be passed if the method
+1. has a `CancellationToken` or `CancellationToken?` parameter, and
+2. the value for that parameter is null or `CancellationToken.None`
+
+If the method does not have a `CancellationToken` parameter, you lose the timeout protections Mjolnir provides.
+
+*Configuration + Defaults*
+
+```
+# Timeouts do not have a global default value. The default is provided via the
+# implementation's constructor.
+command.<name>.Timeout=<millis>
+```
+
+See [Command Names](#command-names) for details on how command names are generated.
+
+Command Names
+-----
+
+Commands automatically receive a `Name` property that's used for configuring the command and tracking the command's metrics.
+
+The `Name` is built from the Command's group and a generated component. If the Command's group is "my-group", names will look like:
+
+- If you extend `Command<TResult>`, the name will be your Command class name, minus any command suffix. Examples:
+    - `class MyFooCommand : Command<int>` => "my-group.MyFoo"
+    - `class MyCommandThatFoos : Command<int>` => "my-group.MyCommandThatFoos"
+- If you use `[Command]`, the name will be built from the interface name and method name, separated by a dash. Examples:
+    - `IMyFooInterface.MyBarMethod()` => "my-group.IMyFooInterface-MyBarMethod"
+
+Command names will always have exactly one dot (`.`) separator. Configuring a Command's timeout, therefore, might look like:
+
+    command.my-group.MyFoo.Timeout=15000
+
+The default timeouts are fairly permissive; timeouts should be tuned after observing the Command's typical behavior in production.
+
+*TODO: More information about how to tune timeouts, and what ideal timeout values are.*
