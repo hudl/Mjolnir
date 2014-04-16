@@ -8,14 +8,40 @@ using log4net;
 namespace Hudl.Mjolnir.Command.Attribute
 {
     /// <summary>
-    /// <see cref="CreateProxy"/>
+    /// Proxies the provided invocation through a <see cref="Command"/>.
+    /// Typically created using <see cref="CreateProxy"/>
+    /// 
+    /// Properties of the command (e.g. group, timeout) are provided from values
+    /// on the <see cref="CommandAttribute">[Command]</see> attribute. If the
+    /// interface being proxied does not have a [Command] attribute, an
+    /// InvalidOperationException will be thrown.
+    /// 
+    /// The interceptor uses the intercepted method's return type to determine
+    /// whether to invoke the command synchronously or asynchronously (i.e. use
+    /// Invoke() or InvokeAsync()).
+    /// 
+    /// Return Type     Behavior
+    /// -----------     --------
+    ///  void           Sync; Async if [FireAndForget] is present
+    ///  Task<T>        Async
+    ///  Task           Unsupported (throws NotSupportedException)
+    ///  (other)        Sync;
+    /// 
+    /// Intercepted methods support supplementary attributes that alter the
+    /// behavior.
+    /// 
+    /// - [FireAndForget] causes the command to return immediately, with the
+    ///                   operation executing on a background thread. Only
+    ///                   currently applies to methods with void return types.
+    /// 
+    /// - [CommandTimeout(12000)] overrides the timeout set by [Command]
     /// </summary>
     public class CommandInterceptor : IInterceptor
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof (CommandInterceptor));
         private static readonly ProxyGenerator ProxyGenerator = new ProxyGenerator();
-        private readonly MethodInfo _invokeCommandAsyncMethod = typeof(CommandInterceptor).GetMethod("InvokeCommandAsync", BindingFlags.NonPublic | BindingFlags.Instance);
-        private readonly MethodInfo _invokeCommandSyncMethod = typeof(CommandInterceptor).GetMethod("InvokeCommandSync", BindingFlags.NonPublic | BindingFlags.Instance);
+        private readonly MethodInfo _invokeCommandAsyncMethod = typeof(CommandInterceptor).GetMethod("CreateAndInvokeCommandAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+        private readonly MethodInfo _invokeCommandSyncMethod = typeof(CommandInterceptor).GetMethod("CreateAndInvokeCommandSync", BindingFlags.NonPublic | BindingFlags.Instance);
 
         public void Intercept(IInvocation invocation)
         {
@@ -29,6 +55,8 @@ namespace Hudl.Mjolnir.Command.Attribute
                 var returnType = invocation.Method.ReturnType;
                 if (returnType == typeof (void))
                 {
+                    // TODO We only apply [FireAndForget] to void methods, but we could probably do it for any return type.
+
                     var isFireAndForget = (invocation.Method.GetCustomAttribute<FireAndForgetAttribute>(false) != null);
                     if (isFireAndForget)
                     {
@@ -92,22 +120,26 @@ namespace Hudl.Mjolnir.Command.Attribute
         }
 
         // ReSharper disable UnusedMember.Local - Used via reflection.
-        private Task<T> InvokeCommandAsync<T>(IInvocation invocation)
+        private Task<TResult> CreateAndInvokeCommandAsync<TResult>(IInvocation invocation)
         {
             // ReSharper restore UnusedMember.Local
-            var command = CreateCommand<T>(invocation);
+            var command = CreateCommand<TResult>(invocation);
             return command.InvokeAsync();
         }
 
         // ReSharper disable UnusedMember.Local - Used via reflection.
-        private T InvokeCommandSync<T>(IInvocation invocation)
+        private TResult CreateAndInvokeCommandSync<TResult>(IInvocation invocation)
         {
             // ReSharper restore UnusedMember.Local
-            var command = CreateCommand<T>(invocation);
+            var command = CreateCommand<TResult>(invocation);
             return command.Invoke();
         }
 
-        internal Command<T> CreateCommand<T>(IInvocation invocation)
+        /// <summary>
+        /// Creates a Command, building its properties from the [Command]
+        /// attribute present on the interface class being proxied.
+        /// </summary>
+        internal Command<TResult> CreateCommand<TResult>(IInvocation invocation)
         {
             var classType = invocation.Method.DeclaringType;
 
@@ -119,7 +151,7 @@ namespace Hudl.Mjolnir.Command.Attribute
 
             var timeoutAttribute = invocation.Method.GetCustomAttribute<CommandTimeoutAttribute>();
 
-            return new InvocationCommand<T>(
+            return new InvocationCommand<TResult>(
                 attribute.Group,
                 classType.Name + "-" + invocation.Method.Name,
                 attribute.BreakerKey,
