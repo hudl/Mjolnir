@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
@@ -168,6 +167,81 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         public void TimeoutPresentOnImplementationMethod_IsIgnored()
         {
             // TODO
+        }
+
+        [Fact]
+        public void WithNullableCancellationTokenParameter_NonNullCancellationToken_DoesntReplace()
+        {
+            const string expected = "quux";
+            var instance = new Cancellable(expected);
+            var proxy = CommandInterceptor.CreateProxy<ICancellable>(instance);
+
+            var source = new CancellationTokenSource(TimeSpan.FromMilliseconds(10000)); // Not 500, which is the value in the [Command] attribute.
+            var token = source.Token;
+
+            proxy.NullableCancellationTokenOnly(token);
+
+            Assert.Equal(token, instance.ReceivedToken);
+        }
+
+        [Fact]
+        public void WithNullableCancellationTokenParameter_CancellationTokenIsNull_UsesTokenFromExecuteAsync()
+        {
+            const string expected = "quux";
+            var instance = new Cancellable(expected);
+            var proxy = CommandInterceptor.CreateProxy<ICancellable>(instance);
+
+            proxy.NullableCancellationTokenOnly(null);
+
+            Assert.NotNull(instance.ReceivedToken);
+            Assert.False(instance.ReceivedToken.Value.IsCancellationRequested);
+            Thread.Sleep(Cancellable.CancellationTestTimeoutMillis + 10);
+            Assert.True(instance.ReceivedToken.Value.IsCancellationRequested);
+        }
+
+        [Fact]
+        public void WithNullableCancellationTokenParameter_CancellationTokenIsEmpty_UsesTokenFromExecuteAsync()
+        {
+            const string expected = "quux";
+            var instance = new Cancellable(expected);
+            var proxy = CommandInterceptor.CreateProxy<ICancellable>(instance);
+
+            proxy.NullableCancellationTokenOnly(CancellationToken.None);
+
+            Assert.NotNull(instance.ReceivedToken);
+            Assert.False(instance.ReceivedToken.Value.IsCancellationRequested);
+            Thread.Sleep(Cancellable.CancellationTestTimeoutMillis + 10);
+            Assert.True(instance.ReceivedToken.Value.IsCancellationRequested);
+        }
+
+        [Fact]
+        public void WithNonNullableCancellationTokenParameter_NonEmptyCancellationToken_DoesntReplace()
+        {
+            const string expected = "quux";
+            var instance = new Cancellable(expected);
+            var proxy = CommandInterceptor.CreateProxy<ICancellable>(instance);
+
+            var source = new CancellationTokenSource(TimeSpan.FromMilliseconds(10000)); // Not 500, which is the value in the [Command] attribute.
+            var token = source.Token;
+
+            proxy.CancellationTokenOnly(token);
+
+            Assert.Equal(token, instance.ReceivedToken);
+        }
+
+        [Fact]
+        public void WithNonNullableCancellationTokenParameter_CancellationTokenIsEmpty_UsesTokenFromExecuteAsync()
+        {
+            const string expected = "quux";
+            var instance = new Cancellable(expected);
+            var proxy = CommandInterceptor.CreateProxy<ICancellable>(instance);
+
+            proxy.CancellationTokenOnly(CancellationToken.None);
+
+            Assert.NotNull(instance.ReceivedToken);
+            Assert.False(instance.ReceivedToken.Value.IsCancellationRequested);
+            Thread.Sleep(Cancellable.CancellationTestTimeoutMillis + 10);
+            Assert.True(instance.ReceivedToken.Value.IsCancellationRequested);
         }
 
         [Fact]
@@ -423,6 +497,42 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         public void ImmediatelyThrowWithFireAndForget()
         {
             throw new ExpectedTestException("Thrown from FireAndForget method");
+        }
+    }
+
+    // These use a short timeout so that we can verify we're using the right CancellationToken.
+    // The assumption here is that the default timeout is 10 or 15 seconds, and wouldn't be hit
+    // by the time the test finishes and we assert. Not ideal, but there's not really a good
+    // way to compare the token we get to the one that's created within the Command.
+    [Command("foo", "bar", Cancellable.CancellationTestTimeoutMillis)]
+    public interface ICancellable
+    {
+        string NullableCancellationTokenOnly(CancellationToken? token);
+        string CancellationTokenOnly(CancellationToken token);
+    }
+
+    public class Cancellable : ICancellable
+    {
+        public const int CancellationTestTimeoutMillis = 500;
+
+        private readonly string _returnValue;
+        public CancellationToken? ReceivedToken { get; private set; }
+
+        public Cancellable(string returnValue)
+        {
+            _returnValue = returnValue;
+        }
+
+        public string NullableCancellationTokenOnly(CancellationToken? token = null)
+        {
+            ReceivedToken = token;
+            return _returnValue;
+        }
+
+        public string CancellationTokenOnly(CancellationToken token)
+        {
+            ReceivedToken = token;
+            return _returnValue;
         }
     }
 }
