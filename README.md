@@ -41,15 +41,18 @@ public class GetTeamCommand : Command<TeamDto>
 
 `Command` needs to be constructed with a few required values. Here are the `base` constructor signatures:
 
-- `Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)`
-- `Command(string group, string isolationKey, TimeSpan defaultTimeout)`
+```
+// group: A logical grouping for the command. Commands within the same client package or collection of commands typically get grouped together.
+// breakerKey: The named circuit breaker to use for the Command.
+// poolKey: The named thread pool to use for the Command.
+// defaultTimeout: If not overridden via config, the timeout after which the Command will be cancelled.
+Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)
 
-*Properties:*
+// isolationKey: Sets both the breakerKey and poolKey.
+Command(string group, string isolationKey, TimeSpan defaultTimeout)
+```
 
-- `group`: A logical grouping for the command. Commands within the same client package or collection of commands typically get grouped together.
-- `breakerKey`: The named circuit breaker to use for the Command.
-- `poolKey`: The named thread pool to use for the Command.
-- `defaultTimeout`: If not overridden via config, the timeout after which the Command will be cancelled.
+For more information on the keys, see [Circuit Breakers](#circuit-breakers) and [Thread Pools](#thread-pools).
 
 **`[Command]` attribute**
 
@@ -90,3 +93,10 @@ Fallbacks
 -----
 
 TODO (+ semaphores)
+
+Timeouts
+-----
+
+TODO
+- What happens when the timeout is reached?
+- Timeouts can be configured, and should be tuned after observing metrics.
