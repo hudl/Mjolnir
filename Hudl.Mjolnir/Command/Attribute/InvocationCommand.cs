@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
@@ -23,17 +26,32 @@ namespace Hudl.Mjolnir.Command.Attribute
         protected override Task<TResult> ExecuteAsync(CancellationToken cancellationToken)
         {
             var returnType = _invocation.Method.ReturnType;
-            var isTask = (typeof (Task).IsAssignableFrom(returnType));
+            var isTaskReturnType = (typeof (Task).IsAssignableFrom(returnType));
 
-            if (isTask && returnType.IsGenericType)
+            // Cancellation support is kind of wonky. It works, but it relies on
+            // there being a CancellationToken parameter in the signature of the
+            // method being proxied. Not terrible, but it's a bit noisy, and
+            // isn't entirely obvious that you can do it.
+
+            // We could potentially solve this by using a common token that
+            // flows with the ExecutionContext or something.
+
+            // Do we have a CancellationToken property? If so, where is it? Will be -1 if not found.
+            var cancellationTokenIndex = new List<ParameterInfo>(_invocation.Method.GetParameters()).FindLastIndex(IsCancellationToken);
+
+            // If we have one that doesn't already have a value, lets give it ours.
+            if (cancellationTokenIndex >= 0 && IsReplaceableToken(_invocation.Arguments[cancellationTokenIndex]))
             {
-                // TODO If the invocation supports a cancellation token, can we set it with _invocation.SetArgumentValue()?
+                _invocation.SetArgumentValue(cancellationTokenIndex, cancellationToken);
+            }
 
+            if (isTaskReturnType && returnType.IsGenericType)
+            {
                 _invocation.Proceed();
                 return (Task<TResult>)_invocation.ReturnValue;
             }
 
-            if (isTask)
+            if (isTaskReturnType)
             {
                 throw new NotSupportedException("Cannot invoke interceptor command for non-generic Task");
             }
@@ -43,6 +61,17 @@ namespace Hudl.Mjolnir.Command.Attribute
                 _invocation.Proceed();
                 return (TResult) _invocation.ReturnValue;
             }, cancellationToken);
+        }
+
+        private static bool IsCancellationToken(ParameterInfo parameter)
+        {
+            return typeof (CancellationToken).IsAssignableFrom(parameter.ParameterType) ||
+                   typeof (CancellationToken?).IsAssignableFrom(parameter.ParameterType);
+        }
+
+        private static bool IsReplaceableToken(object cancellationToken)
+        {
+            return cancellationToken == null || (CancellationToken?)cancellationToken == CancellationToken.None;
         }
     }
 }
