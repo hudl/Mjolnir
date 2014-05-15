@@ -33,14 +33,14 @@ public class GetTeamCommand : Command<TeamDto>
     private readonly string _teamId;
 
     public UpdateTeamCommand(string teamId)
-        : base("core-client", "core-team", TimeSpan.FromMilliseconds(15000)
+        : base("core-client", "core-team", TimeSpan.FromMilliseconds(15000))
     {
         _teamId = teamId;
     }
     
     protected override Task<TeamDto> ExecuteAsync(CancellationToken token)
     {
-        // Go over the network to query the TeamDto using the id.
+        // Go over the network to query the TeamDto using _teamId.
     }
 }
 ```
