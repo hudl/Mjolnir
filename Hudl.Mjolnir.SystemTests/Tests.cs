@@ -1,10 +1,18 @@
-﻿using System;
+﻿using System.Linq;
+using Hudl.Config;
+using Hudl.Mjolnir.Command;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using log4net;
+using log4net.Appender;
+using log4net.Config;
+using log4net.Core;
+using log4net.Layout;
 using Xunit;
 
 namespace Hudl.Mjolnir.SystemTests
@@ -12,27 +20,61 @@ namespace Hudl.Mjolnir.SystemTests
     public class Tests
     {
         private const ushort ServerPort = 22222;
+        private static readonly ILog Log = LogManager.GetLogger(typeof (Tests));
 
         [Fact]
         public async Task TestMethod1()
         {
+            ConfigProvider.UseProvider(new SystemTestConfigProvider());
+            var appender = new FileAppender
+            {
+                Threshold = Level.Debug,
+                AppendToFile = true,
+                File = @"c:\hudl\logs\mjolnir-system-test-log.txt",
+                Layout = new PatternLayout("%utcdate %property{log4net:HostName} [%-5level] [%logger] %message%newline")
+            };
+            appender.ActivateOptions();
+            BasicConfigurator.Configure(appender);
+
+            Log.Debug("Heyo");
+
             using (var server = new HttpServer(1))
             {
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Immediate200();
 
-                var client = new HttpClient();
-
-                for(var i = 0; i < 30; i++)
+                for(var i = 0; i < 10; i++)
                 {
-                    var response = await client.GetAsync(string.Format("http://localhost:{0}/", ServerPort));
-                    var status = response.StatusCode;
+                    var url = string.Format("http://localhost:{0}/", ServerPort);
+                    var command = new HttpClientCommand(url, TimeSpan.FromSeconds(10));
 
-                    Debug.WriteLine("Status {0}", status);
+                    var status = await command.InvokeAsync();
 
                     Thread.Sleep(1000);
                 }
+
+                server.Stop();
             }
+        }
+    }
+
+    internal class HttpClientCommand : Command<HttpStatusCode>
+    {
+        private readonly string _url;
+
+        public HttpClientCommand(string url, TimeSpan timeout) : base("system-test", "system-test", timeout)
+        {
+            _url = url;
+        }
+
+        protected override async Task<HttpStatusCode> ExecuteAsync(CancellationToken cancellationToken)
+        {
+            var client = new HttpClient();
+            var response = await client.GetAsync(_url, cancellationToken);
+            var status = response.StatusCode;
+
+            Debug.WriteLine("Status {0}", status);
+            return status;
         }
     }
 
@@ -170,5 +212,45 @@ namespace Hudl.Mjolnir.SystemTests
         }
 
         public event Action<HttpListenerContext> ProcessRequest;
+    }
+
+    internal class SystemTestConfigProvider : IConfigurationProvider
+    {
+        private static readonly Dictionary<string, object> Values = new Dictionary<string, object>
+        {
+            { "foo.bar.Baz", 1234 },
+        }; 
+
+        public T Get<T>(string configKey)
+        {
+            return (T) Values[configKey];
+        }
+
+        public object Get(string configKey)
+        {
+            return Values[configKey];
+        }
+
+        public void Set(string configKey, object value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Delete(string configKey)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string[] GetKeys(string prefix)
+        {
+            return Values.Keys.ToArray();
+        }
+
+        public T ConvertValue<T>(object value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public event ConfigurationChangedHandler ConfigurationChanged;
     }
 }
