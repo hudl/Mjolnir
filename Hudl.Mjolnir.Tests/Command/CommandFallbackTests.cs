@@ -55,7 +55,7 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public async Task InvokeAsync_FaultsAndNoFallback_ThrowsCommandException()
+        public async Task InvokeAsync_TaskFaultsAndNoFallback_ThrowsCommandException()
         {
             var command = new FaultingTaskWithoutFallbackCommand();
             try
@@ -71,7 +71,23 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public async Task InvokeAsync_FaultsAndFallbackThrows_RethrowsFallbackException()
+        public async Task InvokeAsync_ExecuteFaultsAndNoFallback_ThrowsCommandException()
+        {
+            var command = new FaultingExecuteWithoutFallbackCommand();
+            try
+            {
+                await command.InvokeAsync();
+            }
+            catch (CommandFailedException)
+            {
+                return; // Expected.
+            }
+
+            AssertX.FailExpectedException();
+        }
+
+        [Fact]
+        public async Task InvokeAsync_TaskFaultsAndFallbackThrows_RethrowsFallbackException()
         {
             var expected = new ExpectedTestException("Expected rethrown exception");
             var command = new FaultingTaskWithEchoThrowingFallbackCommand(expected);
