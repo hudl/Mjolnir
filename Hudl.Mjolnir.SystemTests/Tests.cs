@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using System.Net.Mime;
+using System.Runtime.InteropServices;
 using Hudl.Common.Extensions;
 using Hudl.Config;
 using Hudl.Mjolnir.Command;
@@ -42,8 +43,27 @@ namespace Hudl.Mjolnir.SystemTests
 
             File.Delete(ReportFile);
 
-            var charts = await RunScenario();
-
+            var sets = new List<ChartSet>
+            {
+                new ChartSet
+                {
+                    Name = "Ideal",
+                    Description = "10 operations, 1/second. Endpoint immediately returns 200",
+                    Charts = await RunScenario(),
+                },
+                new ChartSet
+                {
+                    Name = "Slow Success",
+                    Description = "10 operations, 1/second. Endpoint delays 15 seconds and then returns 200. Command timeouts are 10 seconds.",
+                    Charts = await RunScenario2(),
+                },
+                new ChartSet
+                {
+                    Name = "Fast Failures",
+                    Description = "150 operations, 5/second. Endpoint immediately returns 500.",
+                    Charts = await RunScenario3(),
+                },
+            };
 
             var output = @"<!doctype html>
 <html>
@@ -55,20 +75,29 @@ html, body { margin: 0; padding: 0; }
     </style>
   </head>
   <body>
+    <div style='white-space: nowrap;'>
 ";
             var count = 0;
-            foreach (var chart in charts)
+
+            foreach (var set in sets)
             {
-                var id = "chart" + count;
-                output += string.Format(@"<div>
-<div id='{0}' style='width: 600px; height: 300px;'></div>
+                output += "<div style='width: 500px; display: inline-block;'><h2>" + set.Name + "</h2><div style='white-space: normal;'>" + set.Description + "</div>";
+
+                foreach (var chart in set.Charts)
+                {
+                    var id = "chart" + count;
+                    output += string.Format(@"<div>
+<div id='{0}' style='height: 150px;'></div>
 <script type='text/javascript'>$('#{1}').highcharts({2});</script>
 </div>", id, id, JObject.FromObject(chart.HighchartsOptions));
 
-                count++;
+                    count++;
+                }
+
+                output += "</div>";
             }
 
-            output += @" </body>
+            output += @"</div></body>
 </html>
 ";
 
@@ -79,21 +108,95 @@ html, body { margin: 0; padding: 0; }
         {
             const string key = "system-test-1";
 
-            _testRiemann.ClearAndStart();
-
             using (var server = new HttpServer(1))
             {
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Immediate200();
 
+                _testRiemann.ClearAndStart();
+
+                var tasks = new List<Task>();
+
                 for(var i = 0; i < 10; i++)
                 {
+
                     var url = string.Format("http://localhost:{0}/", ServerPort);
                     var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(10));
 
-                    var status = await command.InvokeAsync();
+                    tasks.Add(command.InvokeAsync());
 
                     Thread.Sleep(1000);
+                }
+
+                await Task.WhenAll(tasks);
+
+                server.Stop();
+            }
+
+            _testRiemann.Stop();
+
+            return GatherChartData(_testRiemann.Metrics, key);
+        }
+
+        private async Task<List<Chart>> RunScenario2()
+        {
+            const string key = "system-test-2";
+
+            using (var server = new HttpServer(15))
+            {
+                server.Start(ServerPort);
+                server.ProcessRequest += ServerBehavior.Delayed200(TimeSpan.FromMilliseconds(15000));
+
+                _testRiemann.ClearAndStart();
+
+                var tasks = new List<Task>();
+
+                for (var i = 0; i < 10; i++)
+                {
+                    var url = string.Format("http://localhost:{0}/", ServerPort);
+                    var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(30));
+
+                    tasks.Add(command.InvokeAsync());
+
+                    Thread.Sleep(1000);
+                }
+
+                await Task.WhenAll(tasks);
+
+                server.Stop();
+            }
+
+            _testRiemann.Stop();
+
+            return GatherChartData(_testRiemann.Metrics, key);
+        }
+
+        private async Task<List<Chart>> RunScenario3()
+        {
+            const string key = "system-test-3";
+
+            using (var server = new HttpServer(1))
+            {
+                server.Start(ServerPort);
+                server.ProcessRequest += ServerBehavior.Immediate500();
+
+                _testRiemann.ClearAndStart();
+
+                for (var i = 0; i < 150; i++)
+                {
+                    var url = string.Format("http://localhost:{0}/", ServerPort);
+                    var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(30));
+
+                    try
+                    {
+                        await command.InvokeAsync();
+                    }
+                    catch (Exception)
+                    {
+                        // Expected.
+                    }
+
+                    Thread.Sleep(200);
                 }
 
                 server.Stop();
@@ -102,7 +205,6 @@ html, body { margin: 0; padding: 0; }
             _testRiemann.Stop();
 
             return GatherChartData(_testRiemann.Metrics, key);
-
         }
 
         private static void InitializeLogging()
@@ -141,7 +243,21 @@ html, body { margin: 0; padding: 0; }
                         color = "#CCCCCC",
                     }
                 }),
-                Chart.Create(metrics, "InvokeAsync() elapsed ms", "elapsed", "mjolnir command " + key + ".HttpClient InvokeAsync"),
+                Chart.Create("InvokeAsync() elapsed ms + result", new List<object>
+                {
+                    new
+                    {
+                        name = "elapsed (ms)",
+                        data = metrics
+                            .Where(m => m.Service == "mjolnir command " + key + ".HttpClient InvokeAsync")
+                            .Select(m => new
+                            {
+                                x = m.OffsetSeconds,
+                                y = m.Value,
+                                color = GetColorForCommandStatus(m.Status),
+                            }),
+                    }
+                }),
                 Chart.Create("Thread pool use", new List<object>
                 {
                     new
@@ -165,6 +281,30 @@ html, body { margin: 0; padding: 0; }
                 Chart.Create(metrics, "Breaker observed error percent", "error %", "mjolnir breaker " + key + " error"),
             };
         }
+
+        private static string GetColorForCommandStatus(string status)
+        {
+            switch (status)
+            {
+                case "RanToCompletion":
+                    return "#00FF00";
+                case "Faulted":
+                    return "#FF0000";
+                case "Canceled":
+                    return "#FFFF00";
+                case "Rejected":
+                    return "#CCCC00";
+                default:
+                    return "#000000";
+            }
+        }
+    }
+
+    internal class ChartSet
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public List<Chart> Charts { get; set; } 
     }
 
     internal class Chart
@@ -201,6 +341,7 @@ html, body { margin: 0; padding: 0; }
                     chart = new
                     {
                         marginLeft = 50,
+                        type = "scatter",
                     },
                     title = new
                     {
@@ -219,6 +360,7 @@ html, body { margin: 0; padding: 0; }
                     {
                         title = (string)null,
                         //categories = new [] {"open", "closed"},
+                        min = 0,
                     },
                     series = series,
                 }
@@ -241,8 +383,12 @@ html, body { margin: 0; padding: 0; }
             var response = await client.GetAsync(_url, cancellationToken);
             var status = response.StatusCode;
 
-            Debug.WriteLine("Status {0}", status);
-            return status;
+            if (response.IsSuccessStatusCode)
+            {
+                return status;
+            }
+            
+            throw new Exception("Status " + status);
         }
     }
 
@@ -253,6 +399,15 @@ html, body { margin: 0; padding: 0; }
             return context =>
             {
                 context.Response.StatusCode = (int) HttpStatusCode.OK;
+                context.Response.Close();
+            };
+        }
+
+        public static Action<HttpListenerContext> Immediate500()
+        {
+            return context =>
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.Close();
             };
         }
@@ -389,7 +544,7 @@ html, body { margin: 0; padding: 0; }
             { "mjolnir.useCircuitBreakers", true },
             //{ "stats.riemann.isEnabled", false },
             //{ "command.system-test.HttpClient.Timeout", 15000 },
-            { "mjolnir.gaugeIntervalMillis", 1000 },
+            { "mjolnir.gaugeIntervalMillis", 500 },
             
             //{ "mjolnir.pools.system-test.threadCount", 10 },
             //{ "mjolnir.pools.system-test.queueLength", 10 },
@@ -472,7 +627,7 @@ html, body { margin: 0; padding: 0; }
 
         private double OffsetMillis()
         {
-            return (DateTime.UtcNow - _startTime).TotalMilliseconds / 1000;
+            return (DateTime.UtcNow - _startTime).TotalMilliseconds;
         }
 
         private void Store(string service, string state, object metric)
