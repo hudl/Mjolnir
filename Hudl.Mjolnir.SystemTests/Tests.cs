@@ -53,7 +53,7 @@ namespace Hudl.Mjolnir.SystemTests
                 new ChartSet
                 {
                     Name = "Slow Success",
-                    Description = "10 operations, 1/second. Endpoint delays 15 seconds and then returns 200. Command timeouts are 10 seconds.",
+                    Description = "10 operations, 1/second. Endpoint delays 15 seconds and then returns 200. Command timeouts are 30 seconds.",
                     Charts = await RunScenario2(),
                 },
                 new ChartSet
