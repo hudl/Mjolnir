@@ -57,7 +57,7 @@ namespace Hudl.Mjolnir.Tests.Command
         [Fact]
         public async Task InvokeAsync_FaultsAndNoFallback_ThrowsCommandException()
         {
-            var command = new FaultingWithoutFallbackCommand();
+            var command = new FaultingTaskWithoutFallbackCommand();
             try
             {
                 await command.InvokeAsync();
@@ -74,7 +74,7 @@ namespace Hudl.Mjolnir.Tests.Command
         public async Task InvokeAsync_FaultsAndFallbackThrows_RethrowsFallbackException()
         {
             var expected = new ExpectedTestException("Expected rethrown exception");
-            var command = new FaultingWithEchoThrowingFallbackCommand(expected);
+            var command = new FaultingTaskWithEchoThrowingFallbackCommand(expected);
             try
             {
                 await command.InvokeAsync();
@@ -89,9 +89,17 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public async Task InvokeAsync_FaultsAndFallbackSucceeds_ReturnsFallbackResult()
+        public async Task InvokeAsync_TaskFaultsAndFallbackSucceeds_ReturnsFallbackResult()
         {
-            var command = new FaultingWithSuccessfulFallbackCommand();
+            var command = new FaultingTaskWithSuccessfulFallbackCommand();
+            var result = await command.InvokeAsync();
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ExecuteFaultsAndFallbackSucceeds_ReturnsFallbackResult()
+        {
+            var command = new FaultingExecuteWithSuccessfulFallbackCommand();
             var result = await command.InvokeAsync();
             Assert.NotNull(result);
         }
@@ -107,10 +115,29 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public async Task InvokeAsync_CommandException_RetainsOriginalExceptionCause()
+        public async Task InvokeAsync_CommandExceptionFromExecute_RetainsOriginalExceptionCause()
         {
             var cause = new ExpectedTestException("Root cause exception");
-            var command = new EchoThrowingCommandWithoutFallback(cause);
+            var command = new FaultingExecuteEchoCommandWithoutFallback(cause);
+
+            try
+            {
+                await command.InvokeAsync();
+            }
+            catch (CommandFailedException e)
+            {
+                Assert.Equal(cause, e.GetBaseException());
+                return;
+            }
+
+            AssertX.FailExpectedException();
+        }
+
+        [Fact]
+        public async Task InvokeAsync_CommandExceptionFromTask_RetainsOriginalExceptionCause()
+        {
+            var cause = new ExpectedTestException("Root cause exception");
+            var command = new FaultingTaskEchoCommandWithoutFallback(cause);
 
             try
             {
@@ -149,7 +176,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockSemaphore = new Mock<IIsolationSemaphore>();
             mockSemaphore.Setup(m => m.TryEnter()).Returns(true);
 
-            var command = new FaultingWithSuccessfulFallbackCommand
+            var command = new FaultingTaskWithSuccessfulFallbackCommand
             {
                 FallbackSemaphore = mockSemaphore.Object,
             };
@@ -165,7 +192,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockSemaphore = new Mock<IIsolationSemaphore>();
             mockSemaphore.Setup(m => m.TryEnter()).Returns(false);
 
-            var command = new FaultingWithSuccessfulFallbackCommand
+            var command = new FaultingTaskWithSuccessfulFallbackCommand
             {
                 FallbackSemaphore = mockSemaphore.Object,
             };
@@ -191,7 +218,7 @@ namespace Hudl.Mjolnir.Tests.Command
             mockSemaphore.Setup(m => m.TryEnter()).Returns(true);
 
             var exception = new ExpectedTestException("Expected");
-            var command = new FaultingWithEchoThrowingFallbackCommand(exception)
+            var command = new FaultingTaskWithEchoThrowingFallbackCommand(exception)
             {
                 FallbackSemaphore = mockSemaphore.Object,
             };

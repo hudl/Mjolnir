@@ -18,7 +18,6 @@ using log4net.Appender;
 using log4net.Config;
 using log4net.Core;
 using log4net.Layout;
-using log4net.Repository.Hierarchy;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
@@ -204,6 +203,7 @@ html, body { margin: 0; padding: 0; }
 
             _testRiemann.Stop();
 
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
             return GatherChartData(_testRiemann.Metrics, key);
         }
 
@@ -684,6 +684,11 @@ html, body { margin: 0; padding: 0; }
             Service = service;
             Status = status;
             Value = value;
+        }
+
+        public string ToCsvLine()
+        {
+            return string.Format("{0},{1},{2},{3}", OffsetSeconds, Service, Status, Value);
         }
     }
 }

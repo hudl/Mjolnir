@@ -8,7 +8,7 @@ using Hudl.Mjolnir.Tests.TestCommands;
 using Moq;
 using Xunit;
 
-namespace Hudl.Mjolnir.Tests.Breaker
+namespace Hudl.Mjolnir.Tests.Command
 {
     public class CommandCircuitBreakerTests : TestFixture
     {
@@ -64,12 +64,12 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public async Task InvokeAsync_WhenCommandThrowsException_RethrowsException()
+        public async Task InvokeAsync_WhenExecuteThrowsException_RethrowsException()
         {
             var exception = new ExpectedTestException("Expected");
 
             var mockBreaker = CreateMockBreaker(true);
-            var command = new FaultingEchoCommandWithoutFallback(exception)
+            var command = new FaultingExecuteEchoCommandWithoutFallback(exception)
             {
                 CircuitBreaker = mockBreaker.Object,
             };
@@ -88,12 +88,36 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
+        public async Task InvokeAsync_WhenReturnedTaskThrowsException_RethrowsException()
+        {
+            var exception = new ExpectedTestException("Expected");
+
+            var mockBreaker = CreateMockBreaker(true);
+            var command = new FaultingTaskEchoCommandWithoutFallback(exception)
+            {
+                CircuitBreaker = mockBreaker.Object,
+            };
+
+            try
+            {
+                await command.InvokeAsync();
+            }
+            catch (CommandFailedException e)
+            {
+                Assert.True(e.InnerException == exception);
+                return; // Expected.
+            }
+
+            AssertX.FailExpectedException();
+        }
+
+        [Fact]
         public async Task InvokeAsync_WhenCommandThrowsException_MarksMetricsCommandFailure()
         {
             var mockMetrics = new Mock<ICommandMetrics>();
             var mockBreaker = CreateMockBreaker(true, mockMetrics);
             
-            var command = new FaultingWithoutFallbackCommand
+            var command = new FaultingTaskWithoutFallbackCommand
             {
                 CircuitBreaker = mockBreaker.Object,
             };

@@ -106,7 +106,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Breaker\FailurePercentageCircuitBreakerTests.cs" />
-    <Compile Include="Breaker\CommandCircuitBreakerTests.cs" />
+    <Compile Include="Command\CommandCircuitBreakerTests.cs" />
     <Compile Include="Command\Attribute\CommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\CommandFallbackTests.cs" />
     <Compile Include="Command\CommandGroupKeyTests.cs" />
@@ -129,15 +129,17 @@
     <Compile Include="Stats\StandardCommandMetricsStatsTests.cs" />
     <Compile Include="Stats\StpIsolationThreadPoolStatsTests.cs" />
     <Compile Include="TestCommands\BaseTestCommand.cs" />
-    <Compile Include="TestCommands\EchoThrowingCommandWithoutFallback.cs" />
-    <Compile Include="TestCommands\FaultingEchoCommandWithoutFallback.cs" />
-    <Compile Include="TestCommands\FaultingWithEchoThrowingFallbackCommand.cs" />
-    <Compile Include="TestCommands\FaultingWithInstigatorRethrowingFallbackCommand.cs" />
-    <Compile Include="TestCommands\FaultingWithSleepingFallbackCommand.cs" />
-    <Compile Include="TestCommands\FaultingWithSuccessfulFallbackCommand.cs" />
+    <Compile Include="TestCommands\FaultingExecuteEchoCommandWithoutFallback.cs" />
+    <Compile Include="TestCommands\FaultingExecuteWithoutFallbackCommand.cs" />
+    <Compile Include="TestCommands\FaultingExecuteWithSuccessfulFallbackCommand.cs" />
+    <Compile Include="TestCommands\FaultingTaskEchoCommandWithoutFallback.cs" />
+    <Compile Include="TestCommands\FaultingTaskWithEchoThrowingFallbackCommand.cs" />
+    <Compile Include="TestCommands\FaultingTaskWithInstigatorRethrowingFallbackCommand.cs" />
+    <Compile Include="TestCommands\FaultingTaskWithSleepingFallbackCommand.cs" />
+    <Compile Include="TestCommands\FaultingTaskWithSuccessfulFallbackCommand.cs" />
     <Compile Include="TestCommands\SuccessfulEchoCommandWithFallback.cs" />
     <Compile Include="TestCommands\ImmediatelyReturningCommand.cs" />
-    <Compile Include="TestCommands\FaultingWithoutFallbackCommand.cs" />
+    <Compile Include="TestCommands\FaultingTaskWithoutFallbackCommand.cs" />
     <Compile Include="TestCommands\SuccessfulEchoCommandWithoutFallback.cs" />
     <Compile Include="TestCommands\TimingOutCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

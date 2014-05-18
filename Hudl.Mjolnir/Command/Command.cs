@@ -351,19 +351,19 @@ namespace Hudl.Mjolnir.Command
             return workItem.Get(cancellationToken, Timeout);
         }
 
-        private Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)
+        private async Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)
         {
             if (!CircuitBreaker.IsAllowing())
             {
                 throw new CircuitBreakerRejectedException();
             }
 
-            Task<TResult> result;
+            TResult result;
 
             try
             {
                 var stopwatch = Stopwatch.StartNew();
-                result = ExecuteAsync(cancellationToken);
+                result = await ExecuteAsync(cancellationToken);
                 CircuitBreaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
                 CircuitBreaker.Metrics.MarkCommandSuccess();
             }

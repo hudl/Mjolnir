@@ -190,10 +190,10 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public void InvokeAsync_WhenExceptionThrown_HasExpectedExceptionInsideAggregateException()
+        public void InvokeAsync_WhenExceptionThrownFromExecute_HasExpectedExceptionInsideAggregateException()
         {
             var expected = new ExpectedTestException("Exception");
-            var command = new FaultingEchoCommandWithoutFallback(expected);
+            var command = new FaultingExecuteEchoCommandWithoutFallback(expected);
 
             var result = Assert.Throws<AggregateException>(() => {
                 var foo = command.InvokeAsync().Result;
@@ -204,10 +204,39 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public void Invoke_PropagatesExceptions()
+        public void InvokeAsync_WhenExceptionThrownFromTask_HasExpectedExceptionInsideAggregateException()
         {
             var expected = new ExpectedTestException("Exception");
-            var command = new FaultingEchoCommandWithoutFallback(expected);
+            var command = new FaultingTaskEchoCommandWithoutFallback(expected);
+
+            var result = Assert.Throws<AggregateException>(() =>
+            {
+                var foo = command.InvokeAsync().Result;
+            });
+
+            // AggregateException -> CommandFailedException -> ExpectedTestException
+            Assert.Equal(expected, result.InnerException.InnerException);
+        }
+
+        [Fact]
+        public void Invoke_FaultingExecute_PropagatesException()
+        {
+            var expected = new ExpectedTestException("Exception");
+            var command = new FaultingExecuteEchoCommandWithoutFallback(expected);
+
+            var result = Assert.Throws<CommandFailedException>(() =>
+            {
+                command.Invoke();
+            });
+
+            Assert.Equal(expected, result.InnerException);
+        }
+
+        [Fact]
+        public void Invoke_FaultingTask_PropagatesException()
+        {
+            var expected = new ExpectedTestException("Exception");
+            var command = new FaultingTaskEchoCommandWithoutFallback(expected);
 
             var result = Assert.Throws<CommandFailedException>(() =>
             {
