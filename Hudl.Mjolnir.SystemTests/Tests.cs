@@ -74,43 +74,72 @@ namespace Hudl.Mjolnir.SystemTests
                 }
             }).ToList();
 
-            var chart = new Chart
+            var charts = new List<Chart>
             {
-                Name = "Breaker State",
-                FlotSeries = new List<object>
+                //Chart.Create(metrics, "Circuit breaker state", "open/closed", "mjolnir breaker system-test IsAllowing", m => (m.Status == "Allowed" ? 1 : 0)),
+                Chart.Create("Circuit breaker state", new List<object>
                 {
                     new
                     {
+                        name = "state (open/closed)",
                         data = metrics
                             .Where(m => m.Service == "mjolnir breaker system-test IsAllowing")
-                            .Select(m => new object[] { m.OffsetSeconds, (m.Status == "Allowed" ? 1 : 0) })
+                            .Select(m => new
+                            {
+                                x = m.OffsetSeconds,
+                                y = (m.Status == "Allowed" ? 1 : 0),
+                                color = (m.Status == "Allowed" ? "#00FF00" : "#FF0000"),
+                            })
+                            .ToArray(),
+                        color = "#CCCCCC",
+                    }
+                }),
+                Chart.Create(metrics, "InvokeAsync() elapsed ms", "elapsed", "mjolnir command system-test.HttpClient InvokeAsync"),
+                Chart.Create("Thread pool use", new List<object>
+                {
+                    new
+                    {
+                        name = "active",
+                        data = metrics
+                            .Where(m => m.Service == "mjolnir pool system-test activeThreads")
+                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
+                            .ToArray(),
+                    },
+                    new
+                    {
+                        name = "in use",
+                        data = metrics
+                            .Where(m => m.Service == "mjolnir pool system-test inUseThreads")
+                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
                             .ToArray(),
                     }
-                },
-                FlotOptions = new
-                {
-                    xaxis = new
-                    {
-                        tickSize = 0.5,
-                        tickDecimals = 1,
-                    }
-                }
+                }),
+                Chart.Create(metrics, "Breaker total observed operations", "total", "mjolnir breaker system-test total"),
+                Chart.Create(metrics, "Breaker observed error percent", "error %", "mjolnir breaker system-test error"),
             };
 
             var output = @"<!doctype html>
 <html>
   <head>
     <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>
-    <script src='http://cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js'></script>
+    <script src='http://cdnjs.cloudflare.com/ajax/libs/highcharts/4.0.1/highcharts.js'></script>
+    <style type='text/css'>
+html, body { margin: 0; padding: 0; }
+    </style>
   </head>
   <body>
 ";
+            var count = 0;
+            foreach (var chart in charts)
+            {
+                var id = "chart" + count;
+                output += string.Format(@"<div>
+<div id='{0}' style='width: 600px; height: 300px;'></div>
+<script type='text/javascript'>$('#{1}').highcharts({2});</script>
+</div>", id, id, JObject.FromObject(chart.HighchartsOptions));
 
-            output += string.Format(@"<div>
-<h3>{0}</h3>
-<div id='random' style='height: 150px; width: 600px;'></div>
-<script type='text/javascript'>$.plot('#random', {1}, {2});</script>
-</div>", chart.Name, JArray.FromObject(chart.FlotSeries), JObject.FromObject(chart.FlotOptions));
+                count++;
+            }
 
             output += @" </body>
 </html>
@@ -149,9 +178,61 @@ namespace Hudl.Mjolnir.SystemTests
 
     internal class Chart
     {
-        public string Name { get; set; }
-        public List<object> FlotSeries { get; set; }
-        public object FlotOptions { get; set; }
+        public object HighchartsOptions { get; set; }
+
+        public static Chart Create(List<Metric> metrics, string title, string seriesLabel, string service)
+        {
+            return Create(metrics, title, seriesLabel, service, m => m.Value);
+        }
+
+        public static Chart Create(List<Metric> metrics, string title, string seriesLabel, string service, Func<Metric, float?> valueSelector)
+        {
+            var series = new List<object>
+            {
+                new
+                {
+                    data = metrics
+                        .Where(m => m.Service == service)
+                        .Select(m => new object[] { m.OffsetSeconds, valueSelector(m) })
+                        .ToArray(),
+                    name = seriesLabel,
+                },
+            };
+            return Create(title, series);
+        }
+
+        public static Chart Create(string title, List<object> series)
+        {
+            return new Chart
+            {
+                HighchartsOptions = new
+                {
+                    chart = new
+                    {
+                        marginLeft = 50,
+                    },
+                    title = new
+                    {
+                        text = title,
+                        align = "left",
+                        style = "color: #333333; fontSize: 12px;"
+                    },
+                    legend = new
+                    {
+                        enabled = true,
+                        verticalAlign = "top",
+                        align = "right",
+                        floating = true,
+                    },
+                    yAxis = new
+                    {
+                        title = (string)null,
+                        //categories = new [] {"open", "closed"},
+                    },
+                    series = series,
+                }
+            };
+        }
     }
 
     internal class HttpClientCommand : Command<HttpStatusCode>
@@ -367,15 +448,15 @@ namespace Hudl.Mjolnir.SystemTests
     {
         private static readonly ILog Log = LogManager.GetLogger("metrics");
         //private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        private readonly DateTime StartTime = DateTime.UtcNow;
+        private readonly DateTime _startTime = DateTime.UtcNow;
 
         //private static long UnixTimestamp()
         //{
         //    return (long) (DateTime.UtcNow - UnixEpoch).TotalMilliseconds;
         //}
-        private long OffsetMillis()
+        private double OffsetMillis()
         {
-            return ((long) (DateTime.UtcNow - StartTime).TotalMilliseconds) / 1000;
+            return (DateTime.UtcNow - _startTime).TotalMilliseconds / 1000;
         }
 
         private void WriteLog(string service, string state, object metric)
