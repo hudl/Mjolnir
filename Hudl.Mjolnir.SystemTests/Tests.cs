@@ -59,7 +59,7 @@ namespace Hudl.Mjolnir.SystemTests
                 new ChartSet
                 {
                     Name = "Fast Failures",
-                    Description = "150 operations, 5/second. Endpoint immediately returns 500.",
+                    Description = "150 operations, 5/second. Endpoint immediately returns 500. Breaker/pool/metrics are using default config values.",
                     Charts = await RunScenario3(),
                 },
             };
@@ -70,7 +70,8 @@ namespace Hudl.Mjolnir.SystemTests
     <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>
     <script src='http://cdnjs.cloudflare.com/ajax/libs/highcharts/4.0.1/highcharts.js'></script>
     <style type='text/css'>
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; font-family: Tahoma, Arial, sans-serif; background-color: #676B85; }
+h2 { margin: 0px; padding: 0; }
     </style>
   </head>
   <body>
@@ -80,12 +81,12 @@ html, body { margin: 0; padding: 0; }
 
             foreach (var set in sets)
             {
-                output += "<div style='width: 500px; display: inline-block;'><h2>" + set.Name + "</h2><div style='white-space: normal;'>" + set.Description + "</div>";
+                output += "<div style='width: 500px; border-right: 2px solid #5B5D73; background-color: #676B85; color: #fff; display: inline-block; vertical-align: top; padding: 5px;'><h2 style='white-space: nowrap; overflow: hidden;'>" + set.Name + "</h2><div style='white-space: normal; height: 100px; overflow: hidden;'>" + set.Description + "</div>";
 
                 foreach (var chart in set.Charts)
                 {
                     var id = "chart" + count;
-                    output += string.Format(@"<div>
+                    output += string.Format(@"<div style='background-color: #ffffff; margin-bottom: 5px;'>
 <div id='{0}' style='height: 150px;'></div>
 <script type='text/javascript'>$('#{1}').highcharts({2});</script>
 </div>", id, id, JObject.FromObject(chart.HighchartsOptions));
@@ -342,6 +343,7 @@ html, body { margin: 0; padding: 0; }
                     {
                         marginLeft = 50,
                         type = "scatter",
+                        backgroundColor = (string) null,
                     },
                     title = new
                     {
@@ -355,6 +357,10 @@ html, body { margin: 0; padding: 0; }
                         verticalAlign = "top",
                         align = "right",
                         floating = true,
+                    },
+                    xAxis = new
+                    {
+                        min = 0,
                     },
                     yAxis = new
                     {
