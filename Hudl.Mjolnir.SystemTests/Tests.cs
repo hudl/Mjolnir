@@ -26,97 +26,24 @@ namespace Hudl.Mjolnir.SystemTests
     public class Tests
     {
         private const ushort ServerPort = 22222;
-        private const string MetricsFile = @"c:\hudl\logs\mjolnir-system-test-metrics.txt";
         private const string ReportFile = @"c:\hudl\logs\mjolnir-system-test-report.html";
+        
         private static readonly ILog Log = LogManager.GetLogger(typeof (Tests));
 
+        private readonly IConfigurationProvider _testConfigProvider = new SystemTestConfigProvider();
+        private readonly MemoryStoreRiemann _testRiemann = new MemoryStoreRiemann();
+
         [Fact]
-        public async Task TestMethod1()
+        public async Task RunAllScenarios()
         {
-            File.Delete(MetricsFile);
+            ConfigProvider.UseProvider(_testConfigProvider);
+            InitializeLogging();
+            CommandContext.Riemann = _testRiemann;
+
             File.Delete(ReportFile);
 
-            ConfigProvider.UseProvider(new SystemTestConfigProvider());
-            InitializeLogging();
-            CommandContext.Riemann = new Log4NetRiemann();
+            var charts = await RunScenario();
 
-            using (var server = new HttpServer(1))
-            {
-                server.Start(ServerPort);
-                server.ProcessRequest += ServerBehavior.Immediate200();
-
-                for(var i = 0; i < 10; i++)
-                {
-                    var url = string.Format("http://localhost:{0}/", ServerPort);
-                    var command = new HttpClientCommand(url, TimeSpan.FromSeconds(10));
-
-                    var status = await command.InvokeAsync();
-
-                    Thread.Sleep(1000);
-                }
-
-                server.Stop();
-            }
-
-            // Create report
-
-            var metrics = File.ReadAllLines(MetricsFile).ToList().Select(line =>
-            {
-                var parts = line.Split(',');
-                try
-                {
-                    return new Metric(float.Parse(parts[0]), parts[1], parts[2], parts[3].Length > 0 ? float.Parse(parts[3]) : (float?)null);
-                }
-                catch (Exception)
-                {
-                    Log.ErrorFormat("Couldn't parse line [{0}]", line);
-                    throw;
-                }
-            }).ToList();
-
-            var charts = new List<Chart>
-            {
-                //Chart.Create(metrics, "Circuit breaker state", "open/closed", "mjolnir breaker system-test IsAllowing", m => (m.Status == "Allowed" ? 1 : 0)),
-                Chart.Create("Circuit breaker state", new List<object>
-                {
-                    new
-                    {
-                        name = "state (open/closed)",
-                        data = metrics
-                            .Where(m => m.Service == "mjolnir breaker system-test IsAllowing")
-                            .Select(m => new
-                            {
-                                x = m.OffsetSeconds,
-                                y = (m.Status == "Allowed" ? 1 : 0),
-                                color = (m.Status == "Allowed" ? "#00FF00" : "#FF0000"),
-                            })
-                            .ToArray(),
-                        color = "#CCCCCC",
-                    }
-                }),
-                Chart.Create(metrics, "InvokeAsync() elapsed ms", "elapsed", "mjolnir command system-test.HttpClient InvokeAsync"),
-                Chart.Create("Thread pool use", new List<object>
-                {
-                    new
-                    {
-                        name = "active",
-                        data = metrics
-                            .Where(m => m.Service == "mjolnir pool system-test activeThreads")
-                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
-                            .ToArray(),
-                    },
-                    new
-                    {
-                        name = "in use",
-                        data = metrics
-                            .Where(m => m.Service == "mjolnir pool system-test inUseThreads")
-                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
-                            .ToArray(),
-                    }
-                }),
-                Chart.Create(metrics, "Breaker total observed operations", "total", "mjolnir breaker system-test total"),
-                Chart.Create(metrics, "Breaker observed error percent", "error %", "mjolnir breaker system-test error"),
-            };
 
             var output = @"<!doctype html>
 <html>
@@ -148,6 +75,36 @@ html, body { margin: 0; padding: 0; }
             File.WriteAllText(ReportFile, output);
         }
 
+        private async Task<List<Chart>> RunScenario()
+        {
+            const string key = "system-test-1";
+
+            _testRiemann.ClearAndStart();
+
+            using (var server = new HttpServer(1))
+            {
+                server.Start(ServerPort);
+                server.ProcessRequest += ServerBehavior.Immediate200();
+
+                for(var i = 0; i < 10; i++)
+                {
+                    var url = string.Format("http://localhost:{0}/", ServerPort);
+                    var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(10));
+
+                    var status = await command.InvokeAsync();
+
+                    Thread.Sleep(1000);
+                }
+
+                server.Stop();
+            }
+
+            _testRiemann.Stop();
+
+            return GatherChartData(_testRiemann.Metrics, key);
+
+        }
+
         private static void InitializeLogging()
         {
             var appender = new FileAppender
@@ -160,19 +117,53 @@ html, body { margin: 0; padding: 0; }
             };
             appender.ActivateOptions();
 
-            var metrics = new FileAppender
-            {
-                Name = "metrics",
-                Threshold = Level.Debug,
-                AppendToFile = true,
-                File = MetricsFile,
-                Layout = new PatternLayout("%message%newline"), // Date should be in the message as a UTC unix timestamp in millis.
-                LockingModel = new FileAppender.MinimalLock(),
-            };
-            metrics.ActivateOptions();
-
             BasicConfigurator.Configure(appender);
-            ((Logger)LogManager.GetLogger("metrics").Logger).AddAppender(metrics);
+        }
+
+        private List<Chart> GatherChartData(List<Metric> metrics, string key)
+        {
+            return new List<Chart>
+            {
+                Chart.Create("Circuit breaker state", new List<object>
+                {
+                    new
+                    {
+                        name = "state (open/closed)",
+                        data = metrics
+                            .Where(m => m.Service == "mjolnir breaker " + key + " IsAllowing")
+                            .Select(m => new
+                            {
+                                x = m.OffsetSeconds,
+                                y = (m.Status == "Allowed" ? 1 : 0),
+                                color = (m.Status == "Allowed" ? "#00FF00" : "#FF0000"),
+                            })
+                            .ToArray(),
+                        color = "#CCCCCC",
+                    }
+                }),
+                Chart.Create(metrics, "InvokeAsync() elapsed ms", "elapsed", "mjolnir command " + key + ".HttpClient InvokeAsync"),
+                Chart.Create("Thread pool use", new List<object>
+                {
+                    new
+                    {
+                        name = "active",
+                        data = metrics
+                            .Where(m => m.Service == "mjolnir pool " + key + " activeThreads")
+                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
+                            .ToArray(),
+                    },
+                    new
+                    {
+                        name = "in use",
+                        data = metrics
+                            .Where(m => m.Service == "mjolnir pool " + key + " inUseThreads")
+                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
+                            .ToArray(),
+                    }
+                }),
+                Chart.Create(metrics, "Breaker total observed operations", "total", "mjolnir breaker " + key + " total"),
+                Chart.Create(metrics, "Breaker observed error percent", "error %", "mjolnir breaker " + key + " error"),
+            };
         }
     }
 
@@ -239,7 +230,7 @@ html, body { margin: 0; padding: 0; }
     {
         private readonly string _url;
 
-        public HttpClientCommand(string url, TimeSpan timeout) : base("system-test", "system-test", timeout)
+        public HttpClientCommand(string key, string url, TimeSpan timeout) : base(key, key, timeout)
         {
             _url = url;
         }
@@ -444,65 +435,95 @@ html, body { margin: 0; padding: 0; }
         public event ConfigurationChangedHandler ConfigurationChanged;
     }
 
-    internal class Log4NetRiemann : IRiemann
+    internal class MemoryStoreRiemann : IRiemann
     {
-        private static readonly ILog Log = LogManager.GetLogger("metrics");
+        //private static readonly ILog Log = LogManager.GetLogger("metrics");
         //private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        private readonly DateTime _startTime = DateTime.UtcNow;
 
-        //private static long UnixTimestamp()
-        //{
-        //    return (long) (DateTime.UtcNow - UnixEpoch).TotalMilliseconds;
-        //}
+        // Normally you'll want to .Stop() before accessing this.
+        public List<Metric> Metrics
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return new List<Metric>(_metrics);    
+                }
+            }
+        }
+
+        private readonly object _lock = new object();
+        private readonly List<Metric> _metrics = new List<Metric>();
+
+        private DateTime _startTime = DateTime.UtcNow;
+        private bool _isEnabled = true;
+
+        public void Stop()
+        {
+            _isEnabled = false;
+        }
+
+        public void ClearAndStart()
+        {
+            _metrics.Clear();
+            _startTime = DateTime.UtcNow;
+            _isEnabled = true;
+        }
+
         private double OffsetMillis()
         {
             return (DateTime.UtcNow - _startTime).TotalMilliseconds / 1000;
         }
 
-        private void WriteLog(string service, string state, object metric)
+        private void Store(string service, string state, object metric)
         {
-            Log.InfoFormat("{0},{1},{2},{3}", OffsetMillis(), service, state, metric);
+            if (!_isEnabled) return;
+            lock (_lock)
+            {
+                var m = (metric == null ? (float?) null : float.Parse(metric.ToString()));
+                _metrics.Add(new Metric(OffsetMillis() / 1000, service, state, m));
+            }
         }
 
         public void Event(string service, string state, long? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
         {
-            WriteLog(service, state, metric);
+            Store(service, state, metric);
         }
 
         public void Event(string service, string state, float? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
         {
-            WriteLog(service, state, metric);
+            Store(service, state, metric);
         }
 
         public void Event(string service, string state, double? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
         {
-            WriteLog(service, state, metric);
+            Store(service, state, metric);
         }
 
         public void Elapsed(string service, string state, TimeSpan elapsed, ISet<string> tags = null, string description = null, int? ttl = null)
         {
-            WriteLog(service, state, elapsed.TotalMilliseconds);
+            Store(service, state, elapsed.TotalMilliseconds);
         }
 
         public void Gauge(string service, string state, long? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
         {
-            WriteLog(service, state, metric);
+            Store(service, state, metric);
         }
 
         public void ConfigGauge(string service, long metric)
         {
-            WriteLog(service, null, metric);
+            Store(service, null, metric);
         }
     }
 
     internal class Metric
     {
-        public float OffsetSeconds { get; private set; }
+        public double OffsetSeconds { get; private set; }
         public string Service { get; private set; }
         public string Status { get; private set; }
         public float? Value { get; private set; }
 
-        public Metric(float offsetSeconds, string service, string status, float? value)
+        public Metric(double offsetSeconds, string service, string status, float? value)
         {
             OffsetSeconds = offsetSeconds;
             Service = service;
