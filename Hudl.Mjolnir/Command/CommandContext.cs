@@ -19,7 +19,33 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
-        private readonly IRiemann _riemann = RiemannStats.Instance;
+        private IRiemann _riemann = RiemannStats.Instance;
+
+        /// <summary>
+        /// Get/set the default Riemann client that all Mjolnir code should use.
+        /// Defaults to RiemannStats.Instance, which is fine for most
+        /// situations. Useful for controlling Riemann for system testing.
+        /// 
+        /// This should be set as soon as possible if you're going to change it.
+        /// Other parts of Mjolnir will cache their Riemann clients, so changing
+        /// this after Breakers and Pools have been created won't update the
+        /// client for them.
+        /// 
+        /// <remarks>If we ever build a DI framework into Mjolnir, we should
+        /// switch this over to it.</remarks>
+        /// </summary>
+        internal IRiemann DefaultRiemannClient
+        {
+            get { return _riemann; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException();
+                }
+                _riemann = value;
+            }
+        }
 
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
@@ -35,6 +61,12 @@ namespace Hudl.Mjolnir.Command
                 _riemann.Gauge("mjolnir context pools", null, _pools.Count);
                 _riemann.Gauge("mjolnir context semaphores", null, _fallbackSemaphores.Count);
             });
+        }
+
+        internal static IRiemann Riemann
+        {
+            get { return Instance.DefaultRiemannClient; }
+            set { Instance.DefaultRiemannClient = value; }
         }
 
         public static ICircuitBreaker GetCircuitBreaker(GroupKey key)

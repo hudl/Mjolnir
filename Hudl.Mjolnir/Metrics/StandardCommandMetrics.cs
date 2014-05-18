@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using Hudl.Common.Clock;
 using Hudl.Config;
+using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
@@ -36,7 +37,7 @@ namespace Hudl.Mjolnir.Metrics
             _clock = clock;
             _snapshotTtlMillis = snapshotTtlMillis;
             _resettingNumbersBucket = new ResettingNumbersBucket(_clock, windowMillis);
-            _riemann = (riemann ?? RiemannStats.Instance);
+            _riemann = (riemann ?? CommandContext.Riemann);
 
             _timer = new GaugeTimer((source, args) =>
             {

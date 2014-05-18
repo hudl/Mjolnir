@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Amib.Threading;
 using Hudl.Config;
+using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
@@ -29,7 +30,7 @@ namespace Hudl.Mjolnir.ThreadPool
             _key = key;
             _threadCount = threadCount;
             _queueLength = queueLength;
-            _riemann = (riemann ?? RiemannStats.Instance);
+            _riemann = (riemann ?? CommandContext.Riemann);
 
             var count = _threadCount.Value;
             var info = new STPStartInfo
