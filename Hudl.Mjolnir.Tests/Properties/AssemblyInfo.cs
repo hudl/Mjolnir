@@ -19,6 +19,8 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("070914b7-5f05-4d47-a275-98bb15754727")]
 

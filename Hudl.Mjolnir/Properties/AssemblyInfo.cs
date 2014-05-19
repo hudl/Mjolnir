@@ -38,4 +38,6 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyInformationalVersion("1.8.0.0")]
 [assembly: AssemblyFileVersion("1.8.0.0")]
+
+// ONLY change this when the major version changes; never with minor/patch/build versions.
 [assembly: AssemblyVersion("1.0.0.0")]
