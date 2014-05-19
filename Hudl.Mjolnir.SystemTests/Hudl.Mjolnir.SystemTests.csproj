@@ -84,6 +84,14 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="Chart.cs" />
+    <Compile Include="ChartSet.cs" />
+    <Compile Include="HttpClientCommand.cs" />
+    <Compile Include="HttpServer.cs" />
+    <Compile Include="MemoryStoreRiemann.cs" />
+    <Compile Include="Metric.cs" />
+    <Compile Include="ServerBehavior.cs" />
+    <Compile Include="SystemTestConfigProvider.cs" />
     <Compile Include="Tests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
