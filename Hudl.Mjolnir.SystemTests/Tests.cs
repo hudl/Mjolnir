@@ -45,6 +45,8 @@ namespace Hudl.Mjolnir.SystemTests
                 await IdealCommandAttribute(),
                 await DelayedSuccess(),
                 await FastFailures(),
+                await FastTimeouts(),
+                await ErrorsInTheMiddle(),
             };
 
             var output = @"<!doctype html>
@@ -116,7 +118,7 @@ h2 { margin: 0px; padding: 0; }
 
             _testConfigProvider.Set("mjolnir.breaker.system-test-1.minimumOperations", 5);
             _testConfigProvider.Set("mjolnir.breaker.system-test-1.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-1.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-1.trippedDurationMillis", 5000);
             _testConfigProvider.Set("mjolnir.metrics.system-test-1.windowMillis", 10000);
 
             using (var server = new HttpServer(1))
@@ -144,7 +146,7 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Ideal (Inherited Command)",
-                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
             };
         }
@@ -155,7 +157,7 @@ h2 { margin: 0px; padding: 0; }
 
             _testConfigProvider.Set("mjolnir.breaker.system-test-4.minimumOperations", 5);
             _testConfigProvider.Set("mjolnir.breaker.system-test-4.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-4.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-4.trippedDurationMillis", 5000);
             _testConfigProvider.Set("mjolnir.metrics.system-test-4.windowMillis", 10000);
 
             // Command timeout is defined on the interface.
@@ -183,7 +185,7 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Ideal (Command Attribute)",
-                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".IHttpClientService-MakeRequest"),
             };
         }
@@ -194,7 +196,7 @@ h2 { margin: 0px; padding: 0; }
 
             _testConfigProvider.Set("mjolnir.breaker.system-test-2.minimumOperations", 5);
             _testConfigProvider.Set("mjolnir.breaker.system-test-2.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-2.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-2.trippedDurationMillis", 5000);
             _testConfigProvider.Set("mjolnir.metrics.system-test-2.windowMillis", 10000);
 
             using (var server = new HttpServer(15))
@@ -222,7 +224,7 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Slow Success",
-                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Delayed (15s) 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Delayed (15s) 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
             };
         }
@@ -233,7 +235,7 @@ h2 { margin: 0px; padding: 0; }
 
             _testConfigProvider.Set("mjolnir.breaker.system-test-3.minimumOperations", 5);
             _testConfigProvider.Set("mjolnir.breaker.system-test-3.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-3.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-3.trippedDurationMillis", 5000);
             _testConfigProvider.Set("mjolnir.metrics.system-test-3.windowMillis", 10000);
 
             using (var server = new HttpServer(1))
@@ -269,7 +271,130 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Fast Failures",
-                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Immediate 500<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Immediate 500<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
+                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+            };
+        }
+
+        private async Task<ChartSet> FastTimeouts()
+        {
+            const string key = "system-test-5";
+
+            _testConfigProvider.Set("mjolnir.breaker.system-test-5.minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-5.thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-5.trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics.system-test-5.windowMillis", 10000);
+
+            // Cranked up the threads here. We're going to sleeping on the server just a bit longer than
+            // the timeout, so there's potential for server threads to grow while we throw more requests
+            // at them.
+            using (var server = new HttpServer(100))
+            {
+                var url = string.Format("http://localhost:{0}/", ServerPort);
+
+                server.Start(ServerPort);
+                server.ProcessRequest += ServerBehavior.Delayed200(TimeSpan.FromMilliseconds(200));
+
+                _testRiemann.ClearAndStart();
+
+                await Task.WhenAll(Repeat(5, 30, async () =>
+                {
+                    var command = new HttpClientCommand(key, url, TimeSpan.FromMilliseconds(100));
+                    try
+                    {
+                        return await command.InvokeAsync();
+                    }
+                    catch (CommandFailedException) // Expecting cancellation.
+                    {
+                        return HttpStatusCode.GatewayTimeout;
+                    }
+                }));
+
+                server.Stop();
+            }
+
+            _testRiemann.Stop();
+
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+
+            return new ChartSet
+            {
+                Name = "Fast Timeouts",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 100<br/>Server: Delayed (200ms) 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
+                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+            };
+        }
+
+        private async Task<ChartSet> ErrorsInTheMiddle()
+        {
+            const string key = "system-test-6";
+
+            _testConfigProvider.Set("mjolnir.breaker.system-test-6.minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-6.thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-6.trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics.system-test-6.windowMillis", 10000);
+
+            // Cranked up the threads here. We're going to sleeping on the server just a bit longer than
+            // the timeout, so there's potential for server threads to grow while we throw more requests
+            // at them.
+            using (var server = new HttpServer(1))
+            {
+                var url = string.Format("http://localhost:{0}/", ServerPort);
+
+                server.Start(ServerPort);
+
+                var okayBehavior = ServerBehavior.Immediate200();
+                var errorBehavior = ServerBehavior.Immediate500();
+
+                server.ProcessRequest += okayBehavior;
+
+                _testRiemann.ClearAndStart();
+
+                await Task.WhenAll(Repeat(5, 5, () => new HttpClientCommand(key, url, TimeSpan.FromMilliseconds(10000)).InvokeAsync()));
+
+                server.ProcessRequest -= okayBehavior;
+                server.ProcessRequest += errorBehavior;
+
+                await Task.WhenAll(Repeat(5, 5, async () =>
+                {
+                    var command = new HttpClientCommand(key, url, TimeSpan.FromMilliseconds(10000));
+                    try
+                    {
+                        return await command.InvokeAsync();
+                    }
+                    catch (CommandFailedException) // Expecting cancellation.
+                    {
+                        return HttpStatusCode.InternalServerError;
+                    }
+                }));
+
+                server.ProcessRequest -= errorBehavior;
+                server.ProcessRequest += okayBehavior;
+
+                await Task.WhenAll(Repeat(5, 20, async () =>
+                {
+                    var command = new HttpClientCommand(key, url, TimeSpan.FromMilliseconds(10000));
+                    try
+                    {
+                        return await command.InvokeAsync();
+                    }
+                    catch (CommandFailedException) // Expecting the first few to get rejected by the breaker.
+                    {
+                        return HttpStatusCode.InternalServerError;
+                    }
+                }));
+
+                server.Stop();
+            }
+
+            _testRiemann.Stop();
+
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+
+            return new ChartSet
+            {
+                Name = "Error for 5s",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: 500 for 5 seconds in the middle<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
             };
         }
