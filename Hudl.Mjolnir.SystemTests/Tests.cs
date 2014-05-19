@@ -1,11 +1,13 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Net;
 using Hudl.Config;
 using Hudl.Mjolnir.Command;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Hudl.Mjolnir.Command.Attribute;
 using log4net;
 using log4net.Appender;
 using log4net.Config;
@@ -20,7 +22,7 @@ namespace Hudl.Mjolnir.SystemTests
     {
         private const ushort ServerPort = 22222;
         private const string ReportFile = @"c:\hudl\logs\mjolnir-system-test-report.html";
-        
+
         private static readonly ILog Log = LogManager.GetLogger(typeof (Tests));
 
         private readonly IConfigurationProvider _testConfigProvider = new SystemTestConfigProvider();
@@ -35,26 +37,14 @@ namespace Hudl.Mjolnir.SystemTests
 
             File.Delete(ReportFile);
 
+            // Don't do these in a Task.WhenAll() - it'll run them in parallel, and (for now) we'd like them to be serial
+            // to avoid overloading a single scenario, and also because we can only run one HTTP server on 22222 at once.
             var sets = new List<ChartSet>
             {
-                new ChartSet
-                {
-                    Name = "Ideal",
-                    Description = "10 operations, 1/second. Endpoint immediately returns 200",
-                    Charts = await RunScenario(),
-                },
-                new ChartSet
-                {
-                    Name = "Slow Success",
-                    Description = "10 operations, 1/second. Endpoint delays 15 seconds and then returns 200. Command timeouts are 30 seconds.",
-                    Charts = await RunScenario2(),
-                },
-                new ChartSet
-                {
-                    Name = "Fast Failures",
-                    Description = "150 operations, 5/second. Endpoint immediately returns 500. Breaker/pool/metrics are using default config values.",
-                    Charts = await RunScenario3(),
-                },
+                await IdealInheritedCommand(),
+                await IdealCommandAttribute(),
+                await DelayedSuccess(),
+                await FastFailures(),
             };
 
             var output = @"<!doctype html>
@@ -97,43 +87,116 @@ h2 { margin: 0px; padding: 0; }
             File.WriteAllText(ReportFile, output);
         }
 
-        private async Task<List<Chart>> RunScenario()
+        private IEnumerable<Task> Do300At5PerSecond(Func<Task<HttpStatusCode>> execute)
+        {
+            for (var i = 0; i < 300; i++)
+            {
+                yield return execute();
+
+                Thread.Sleep(100);
+            }
+        }
+
+        // I've made a couple passes at trying to refactor out the scenarios, but haven't
+        // come across one that feels right. My leaning right now is to separate server behavior
+        // and client behavior, and provide a couple config objects to each. That way we could
+        // define somewhat generic server and client behavior and mix/match them.
+        //
+        // I think we need to write about 8-10 different scenarios with different configurations
+        // and server behavior to understand how to refactor these in a way that makes sense.
+        //
+        // Versaw suggested using observables, which sound fitting.
+        // http://msdn.microsoft.com/en-us/library/hh242977(v=vs.103).aspx
+        //
+        // But for now ... copypasta.
+
+        private async Task<ChartSet> IdealInheritedCommand()
         {
             const string key = "system-test-1";
+            
+
+            _testConfigProvider.Set("mjolnir.breaker.system-test-1.minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-1.thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-1.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.metrics.system-test-1.windowMillis", 10000);
 
             using (var server = new HttpServer(1))
             {
+                var url = string.Format("http://localhost:{0}/", ServerPort);
+
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Immediate200();
 
                 _testRiemann.ClearAndStart();
 
-                var tasks = new List<Task>();
-
-                for(var i = 0; i < 10; i++)
+                await Task.WhenAll(Do300At5PerSecond(() =>
                 {
-
-                    var url = string.Format("http://localhost:{0}/", ServerPort);
                     var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(10));
-
-                    tasks.Add(command.InvokeAsync());
-
-                    Thread.Sleep(1000);
-                }
-
-                await Task.WhenAll(tasks);
+                    return command.InvokeAsync();
+                }));
 
                 server.Stop();
             }
 
             _testRiemann.Stop();
 
-            return GatherChartData(_testRiemann.Metrics, key);
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+
+            return new ChartSet
+            {
+                Name = "Ideal (Inherited Command)",
+                Description = "300 ops @ 5/sec.<br/>Command: Inherited<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+            };
         }
 
-        private async Task<List<Chart>> RunScenario2()
+        private async Task<ChartSet> IdealCommandAttribute()
+        {
+            const string key = "system-test-4"; // Keep this matched up with the attribute on IHttpClientService
+
+            _testConfigProvider.Set("mjolnir.breaker.system-test-4.minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-4.thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-4.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.metrics.system-test-4.windowMillis", 10000);
+
+            // Command timeout is defined on the interface.
+            var instance = new HttpClientService();
+            var proxy = CommandInterceptor.CreateProxy<IHttpClientService>(instance);
+
+            using (var server = new HttpServer(1))
+            {
+                var url = string.Format("http://localhost:{0}/", ServerPort);
+
+                server.Start(ServerPort);
+                server.ProcessRequest += ServerBehavior.Immediate200();
+
+                _testRiemann.ClearAndStart();
+
+                await Task.WhenAll(Do300At5PerSecond(() => proxy.MakeRequest(url, CancellationToken.None)));
+
+                server.Stop();
+            }
+
+            _testRiemann.Stop();
+
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+
+            return new ChartSet
+            {
+                Name = "Ideal (Command Attribute)",
+                Description = "300 ops @ 5/sec.<br/>Command: Inherited<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".IHttpClientService-MakeRequest"),
+            };
+        }
+
+        private async Task<ChartSet> DelayedSuccess()
         {
             const string key = "system-test-2";
+
+            _testConfigProvider.Set("mjolnir.breaker.system-test-2.minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-2.thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-2.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.metrics.system-test-2.windowMillis", 10000);
 
             using (var server = new HttpServer(15))
             {
@@ -161,12 +224,24 @@ h2 { margin: 0px; padding: 0; }
 
             _testRiemann.Stop();
 
-            return GatherChartData(_testRiemann.Metrics, key);
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+
+            return new ChartSet
+            {
+                Name = "Slow Success",
+                Description = "300 ops @ 5/sec.<br/>Command: Inherited<br/>Server: Delayed (15s) 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+            };
         }
 
-        private async Task<List<Chart>> RunScenario3()
+        private async Task<ChartSet> FastFailures()
         {
             const string key = "system-test-3";
+
+            _testConfigProvider.Set("mjolnir.breaker.system-test-3.minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-3.thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker.system-test-3.trippedDurationMillis", 10000);
+            _testConfigProvider.Set("mjolnir.metrics.system-test-3.windowMillis", 10000);
 
             using (var server = new HttpServer(1))
             {
@@ -198,7 +273,13 @@ h2 { margin: 0px; padding: 0; }
             _testRiemann.Stop();
 
             File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
-            return GatherChartData(_testRiemann.Metrics, key);
+
+            return new ChartSet
+            {
+                Name = "Fast Failures",
+                Description = "150 operations, 5/second. Endpoint immediately returns 500. Breaker/pool/metrics are using default config values.",
+                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+            };
         }
 
         private static void InitializeLogging()
@@ -216,7 +297,7 @@ h2 { margin: 0px; padding: 0; }
             BasicConfigurator.Configure(appender);
         }
 
-        private List<Chart> GatherChartData(List<Metric> metrics, string key)
+        private List<Chart> GatherChartData(List<Metric> metrics, string key, string commandName)
         {
             return new List<Chart>
             {
@@ -243,7 +324,7 @@ h2 { margin: 0px; padding: 0; }
                     {
                         name = "elapsed (ms)",
                         data = metrics
-                            .Where(m => m.Service == "mjolnir command " + key + ".HttpClient InvokeAsync")
+                            .Where(m => m.Service == "mjolnir command " + commandName + " InvokeAsync")
                             .Select(m => new
                             {
                                 x = m.OffsetSeconds,

@@ -37,7 +37,7 @@ namespace Hudl.Mjolnir.SystemTests
 
         public void Set(string configKey, object value)
         {
-            throw new NotImplementedException();
+            Values[configKey] = value;
         }
 
         public void Delete(string configKey)
