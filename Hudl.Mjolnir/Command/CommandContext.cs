@@ -76,17 +76,18 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("key");
             }
 
-            var metrics = GetCommandMetrics(key);
-
-            var properties = new FailurePercentageCircuitBreakerProperties(
-                new ConfigurableValue<long>("mjolnir.breaker." + key + ".minimumOperations", 10),
-                new ConfigurableValue<int>("mjolnir.breaker." + key + ".thresholdPercentage", 50),
-                new ConfigurableValue<long>("mjolnir.breaker." + key + ".trippedDurationMillis", 10000),
-                new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", false),
-                new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", false));
-
             return Instance._circuitBreakers.GetOrAddSafe(key, k =>
-                new FailurePercentageCircuitBreaker(key, metrics, properties));
+            {
+                var metrics = GetCommandMetrics(key);
+                var properties = new FailurePercentageCircuitBreakerProperties(
+                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".minimumOperations", 10),
+                    new ConfigurableValue<int>("mjolnir.breaker." + key + ".thresholdPercentage", 50),
+                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".trippedDurationMillis", 10000),
+                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", false),
+                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", false));
+
+                return new FailurePercentageCircuitBreaker(key, metrics, properties);
+            });
         }
 
         private static ICommandMetrics GetCommandMetrics(GroupKey key)
