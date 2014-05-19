@@ -26,7 +26,7 @@ namespace Hudl.Mjolnir.SystemTests
             {
                 return status;
             }
-            
+
             throw new Exception("Status " + status);
         }
     }

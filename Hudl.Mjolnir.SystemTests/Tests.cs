@@ -64,7 +64,7 @@ h2 { margin: 0px; padding: 0; }
 
             foreach (var set in sets)
             {
-                output += "<div style='width: 500px; border-right: 2px solid #5B5D73; background-color: #676B85; color: #fff; display: inline-block; vertical-align: top; padding: 5px;'><h2 style='white-space: nowrap; overflow: hidden;'>" + set.Name + "</h2><div style='white-space: normal; height: 100px; overflow: hidden;'>" + set.Description + "</div>";
+                output += "<div style='width: 500px; border-right: 2px solid #5B5D73; background-color: #676B85; color: #fff; display: inline-block; vertical-align: top; padding: 5px;'><h2 style='white-space: nowrap; overflow: hidden;'>" + set.Name + "</h2><div style='white-space: normal; height: 130px; overflow: hidden;'>" + set.Description + "</div>";
 
                 foreach (var chart in set.Charts)
                 {
@@ -87,13 +87,12 @@ h2 { margin: 0px; padding: 0; }
             File.WriteAllText(ReportFile, output);
         }
 
-        private IEnumerable<Task> Do300At5PerSecond(Func<Task<HttpStatusCode>> execute)
+        private IEnumerable<Task> Repeat(int perSecond, int seconds, Func<Task<HttpStatusCode>> execute)
         {
-            for (var i = 0; i < 300; i++)
+            for (var i = 0; i < (perSecond * seconds); i++)
             {
                 yield return execute();
-
-                Thread.Sleep(100);
+                Thread.Sleep(1000 / perSecond);
             }
         }
 
@@ -129,7 +128,7 @@ h2 { margin: 0px; padding: 0; }
 
                 _testRiemann.ClearAndStart();
 
-                await Task.WhenAll(Do300At5PerSecond(() =>
+                await Task.WhenAll(Repeat(10, 30, () =>
                 {
                     var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(10));
                     return command.InvokeAsync();
@@ -145,7 +144,7 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Ideal (Inherited Command)",
-                Description = "300 ops @ 5/sec.<br/>Command: Inherited<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
             };
         }
@@ -172,7 +171,7 @@ h2 { margin: 0px; padding: 0; }
 
                 _testRiemann.ClearAndStart();
 
-                await Task.WhenAll(Do300At5PerSecond(() => proxy.MakeRequest(url, CancellationToken.None)));
+                await Task.WhenAll(Repeat(10, 30, () => proxy.MakeRequest(url, CancellationToken.None)));
 
                 server.Stop();
             }
@@ -184,7 +183,7 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Ideal (Command Attribute)",
-                Description = "300 ops @ 5/sec.<br/>Command: Inherited<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".IHttpClientService-MakeRequest"),
             };
         }
@@ -200,24 +199,18 @@ h2 { margin: 0px; padding: 0; }
 
             using (var server = new HttpServer(15))
             {
+                var url = string.Format("http://localhost:{0}/", ServerPort);
+
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Delayed200(TimeSpan.FromMilliseconds(15000));
 
                 _testRiemann.ClearAndStart();
 
-                var tasks = new List<Task>();
-
-                for (var i = 0; i < 10; i++)
+                await Task.WhenAll(Repeat(1, 30, () =>
                 {
-                    var url = string.Format("http://localhost:{0}/", ServerPort);
                     var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(30));
-
-                    tasks.Add(command.InvokeAsync());
-
-                    Thread.Sleep(1000);
-                }
-
-                await Task.WhenAll(tasks);
+                    return command.InvokeAsync();
+                }));
 
                 server.Stop();
             }
@@ -229,7 +222,7 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Slow Success",
-                Description = "300 ops @ 5/sec.<br/>Command: Inherited<br/>Server: Delayed (15s) 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Delayed (15s) 200<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
             };
         }
@@ -245,27 +238,26 @@ h2 { margin: 0px; padding: 0; }
 
             using (var server = new HttpServer(1))
             {
+                var url = string.Format("http://localhost:{0}/", ServerPort);
+
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Immediate500();
 
                 _testRiemann.ClearAndStart();
 
-                for (var i = 0; i < 150; i++)
+                await Task.WhenAll(Repeat(5, 30, async () =>
                 {
-                    var url = string.Format("http://localhost:{0}/", ServerPort);
                     var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(30));
 
                     try
                     {
-                        await command.InvokeAsync();
+                        return await command.InvokeAsync();
                     }
                     catch (Exception)
                     {
-                        // Expected.
+                        return HttpStatusCode.InternalServerError;
                     }
-
-                    Thread.Sleep(200);
-                }
+                }));
 
                 server.Stop();
             }
@@ -277,7 +269,7 @@ h2 { margin: 0px; padding: 0; }
             return new ChartSet
             {
                 Name = "Fast Failures",
-                Description = "150 operations, 5/second. Endpoint immediately returns 500. Breaker/pool/metrics are using default config values.",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Immediate 500<br/>Breaker: 50% / 10sec, min 5 ops, 10s window",
                 Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
             };
         }
