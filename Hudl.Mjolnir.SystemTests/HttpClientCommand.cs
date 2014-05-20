@@ -18,16 +18,18 @@ namespace Hudl.Mjolnir.SystemTests
 
         protected override async Task<HttpStatusCode> ExecuteAsync(CancellationToken cancellationToken)
         {
-            var client = new HttpClient();
-            var response = await client.GetAsync(_url, cancellationToken);
-            var status = response.StatusCode;
-
-            if (response.IsSuccessStatusCode)
+            using (var client = new HttpClient())
             {
-                return status;
-            }
+                var response = await client.GetAsync(_url, cancellationToken);
+                var status = response.StatusCode;
 
-            throw new Exception("Status " + status);
+                if (response.IsSuccessStatusCode)
+                {
+                    return status;
+                }
+
+                throw new Exception("Status " + status);
+            }
         }
     }
 }
