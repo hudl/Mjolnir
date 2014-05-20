@@ -16,16 +16,18 @@ namespace Hudl.Mjolnir.SystemTests
     {
         public async Task<HttpStatusCode> MakeRequest(string url, CancellationToken token)
         {
-            var client = new HttpClient();
-            var response = await client.GetAsync(url, token);
-            var status = response.StatusCode;
-            client.Dispose();
-            if (response.IsSuccessStatusCode)
+            using (var client = new HttpClient())
             {
-                return status;
-            }
+                var response = await client.GetAsync(url, token);
+                var status = response.StatusCode;
 
-            throw new Exception("Status " + status);
+                if (response.IsSuccessStatusCode)
+                {
+                    return status;
+                }
+
+                throw new Exception("Status " + status);
+            }
         }
     }
 }

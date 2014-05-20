@@ -11,24 +11,26 @@ namespace Hudl.Mjolnir.SystemTests
     {
         private readonly string _url;
 
-        public HttpClientCommand(string key, string url, TimeSpan timeout) : base(key, key, timeout)
+        public HttpClientCommand(string key, string url, TimeSpan timeout)
+            : base(key, key, timeout)
         {
             _url = url;
         }
 
         protected override async Task<HttpStatusCode> ExecuteAsync(CancellationToken cancellationToken)
         {
-            var client = new HttpClient();
-            var response = await client.GetAsync(_url, cancellationToken);
-            client.Dispose();
-            var status = response.StatusCode;
-
-            if (response.IsSuccessStatusCode)
+            using (var client = new HttpClient())
             {
-                return status;
-            }
+                var response = await client.GetAsync(_url, cancellationToken);
+                var status = response.StatusCode;
 
-            throw new Exception("Status " + status);
+                if (response.IsSuccessStatusCode)
+                {
+                    return status;
+                }
+
+                throw new Exception("Status " + status);
+            }
         }
     }
 }
