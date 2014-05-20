@@ -20,6 +20,7 @@ namespace Hudl.Mjolnir.SystemTests
         {
             var client = new HttpClient();
             var response = await client.GetAsync(_url, cancellationToken);
+            client.Dispose();
             var status = response.StatusCode;
 
             if (response.IsSuccessStatusCode)
