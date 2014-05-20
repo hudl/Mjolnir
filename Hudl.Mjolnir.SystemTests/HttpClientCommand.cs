@@ -11,8 +11,7 @@ namespace Hudl.Mjolnir.SystemTests
     {
         private readonly string _url;
 
-        public HttpClientCommand(string key, string url, TimeSpan timeout)
-            : base(key, key, timeout)
+        public HttpClientCommand(string key, string url, TimeSpan timeout) : base(key, key, timeout)
         {
             _url = url;
         }
