@@ -41,12 +41,12 @@ namespace Hudl.Mjolnir.SystemTests
             // to avoid overloading a single scenario, and also because we can only run one HTTP server on 22222 at once.
             var sets = new List<ChartSet>
             {
-                await IdealInheritedCommand(),
-                await IdealCommandAttribute(),
-                await DelayedSuccess(),
-                await FastFailures(),
-                await FastTimeouts(),
-                await ErrorsInTheMiddle(),
+                await IdealInheritedCommand("system-test-1"),
+                await IdealCommandAttribute(HttpClientService.TestKey), // Only use this key once. See notes on HttpClientService.
+                await DelayedSuccess("system-test-2"),
+                await FastFailures("system-test-3"),
+                await FastTimeouts("system-test-5"),
+                await ErrorsInTheMiddle("system-test-6"),
             };
 
             var output = @"<!doctype html>
@@ -58,7 +58,7 @@ namespace Hudl.Mjolnir.SystemTests
 html, body { margin: 0; padding: 0; font-family: Tahoma, Arial, sans-serif; background-color: #676B85; }
 h2 { margin: 0px; padding: 0; }
     </style>
-  </head>
+  </head>system-
   <body>
     <div style='white-space: nowrap;'>
 ";
@@ -111,15 +111,12 @@ h2 { margin: 0px; padding: 0; }
         //
         // But for now ... copypasta.
 
-        private async Task<ChartSet> IdealInheritedCommand()
+        private async Task<ChartSet> IdealInheritedCommand(string key)
         {
-            const string key = "system-test-1";
-            
-
-            _testConfigProvider.Set("mjolnir.breaker.system-test-1.minimumOperations", 5);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-1.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-1.trippedDurationMillis", 5000);
-            _testConfigProvider.Set("mjolnir.metrics.system-test-1.windowMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics." + key + ".windowMillis", 10000);
 
             using (var server = new HttpServer(1))
             {
@@ -151,14 +148,12 @@ h2 { margin: 0px; padding: 0; }
             };
         }
 
-        private async Task<ChartSet> IdealCommandAttribute()
+        private async Task<ChartSet> IdealCommandAttribute(string key)
         {
-            const string key = "system-test-4"; // Keep this matched up with the attribute on IHttpClientService
-
-            _testConfigProvider.Set("mjolnir.breaker.system-test-4.minimumOperations", 5);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-4.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-4.trippedDurationMillis", 5000);
-            _testConfigProvider.Set("mjolnir.metrics.system-test-4.windowMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics." + key + ".windowMillis", 10000);
 
             // Command timeout is defined on the interface.
             var instance = new HttpClientService();
@@ -190,14 +185,12 @@ h2 { margin: 0px; padding: 0; }
             };
         }
 
-        private async Task<ChartSet> DelayedSuccess()
+        private async Task<ChartSet> DelayedSuccess(string key)
         {
-            const string key = "system-test-2";
-
-            _testConfigProvider.Set("mjolnir.breaker.system-test-2.minimumOperations", 5);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-2.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-2.trippedDurationMillis", 5000);
-            _testConfigProvider.Set("mjolnir.metrics.system-test-2.windowMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics." + key + ".windowMillis", 10000);
 
             using (var server = new HttpServer(15))
             {
@@ -229,14 +222,12 @@ h2 { margin: 0px; padding: 0; }
             };
         }
 
-        private async Task<ChartSet> FastFailures()
+        private async Task<ChartSet> FastFailures(string key)
         {
-            const string key = "system-test-3";
-
-            _testConfigProvider.Set("mjolnir.breaker.system-test-3.minimumOperations", 5);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-3.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-3.trippedDurationMillis", 5000);
-            _testConfigProvider.Set("mjolnir.metrics.system-test-3.windowMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics." + key + ".windowMillis", 10000);
 
             using (var server = new HttpServer(1))
             {
@@ -276,14 +267,12 @@ h2 { margin: 0px; padding: 0; }
             };
         }
 
-        private async Task<ChartSet> FastTimeouts()
+        private async Task<ChartSet> FastTimeouts(string key)
         {
-            const string key = "system-test-5";
-
-            _testConfigProvider.Set("mjolnir.breaker.system-test-5.minimumOperations", 5);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-5.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-5.trippedDurationMillis", 5000);
-            _testConfigProvider.Set("mjolnir.metrics.system-test-5.windowMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics." + key + ".windowMillis", 10000);
 
             // Cranked up the threads here. We're going to sleeping on the server just a bit longer than
             // the timeout, so there's potential for server threads to grow while we throw more requests
@@ -325,14 +314,12 @@ h2 { margin: 0px; padding: 0; }
             };
         }
 
-        private async Task<ChartSet> ErrorsInTheMiddle()
+        private async Task<ChartSet> ErrorsInTheMiddle(string key)
         {
-            const string key = "system-test-6";
-
-            _testConfigProvider.Set("mjolnir.breaker.system-test-6.minimumOperations", 5);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-6.thresholdPercentage", 50);
-            _testConfigProvider.Set("mjolnir.breaker.system-test-6.trippedDurationMillis", 5000);
-            _testConfigProvider.Set("mjolnir.metrics.system-test-6.windowMillis", 10000);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".thresholdPercentage", 50);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics." + key + ".windowMillis", 10000);
 
             // Cranked up the threads here. We're going to sleeping on the server just a bit longer than
             // the timeout, so there's potential for server threads to grow while we throw more requests
