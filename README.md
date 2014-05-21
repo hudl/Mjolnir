@@ -1,10 +1,10 @@
 Mjolnir
 =======
 
-When bad things happen, Mjolnir
-- isolates them from the rest of the application/system
-- sheds load from failing downstream dependencies
-- fails fast back to the caller
+When bad things like network partition or resource exhaustion happen, Mjolnir
+- isolates them from the rest of the application/system.
+- sheds load from failing downstream dependencies.
+- fails fast back to the caller.
 
 Modeled after Netflix's [Hystrix](https://github.com/Netflix/Hystrix) library.
 
