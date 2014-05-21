@@ -10,19 +10,7 @@ namespace Hudl.Mjolnir.SystemTests
         private static readonly Dictionary<string, object> Values = new Dictionary<string, object>
         {
             { "mjolnir.useCircuitBreakers", true },
-            //{ "stats.riemann.isEnabled", false },
-            //{ "command.system-test.HttpClient.Timeout", 15000 },
             { "mjolnir.gaugeIntervalMillis", 500 },
-            
-            //{ "mjolnir.pools.system-test.threadCount", 10 },
-            //{ "mjolnir.pools.system-test.queueLength", 10 },
-            /*{ "", false },
-            { "", false },
-            { "", false },
-            { "", false },
-            { "", false },
-            { "", false },
-            { "", false },*/
         }; 
 
         public T Get<T>(string configKey)

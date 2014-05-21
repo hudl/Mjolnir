@@ -6,9 +6,6 @@ namespace Hudl.Mjolnir.SystemTests
 {
     internal class MemoryStoreRiemann : IRiemann
     {
-        //private static readonly ILog Log = LogManager.GetLogger("metrics");
-        //private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
         // Normally you'll want to .Stop() before accessing this.
         public List<Metric> Metrics
         {

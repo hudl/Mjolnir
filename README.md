@@ -156,6 +156,8 @@ These values can be changed at runtime.
 Fallbacks
 -----
 
+*Note: Fallbacks aren't very proven out yet, and need some more work. For now, we recommend wrapping your command invocations in try/catch blocks and falling back that way.*
+
 A `Command` can optionally define a `Fallback()` implementation. The fallback will execute if the command's `ExecuteAsync()` throws an Exception.
 
 `[Command]` attributes do not support fallbacks - you must extend `Command<TResult>` to implement one.
