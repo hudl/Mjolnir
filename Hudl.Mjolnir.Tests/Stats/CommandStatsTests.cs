@@ -29,10 +29,10 @@ namespace Hudl.Mjolnir.Tests.Stats
         }
 
         [Fact]
-        public async Task InvokeAsync_GeneralException()
+        public async Task InvokeAsync_GeneralExceptionFromReturnedTask()
         {
             var mockRiemann = new Mock<IRiemann>();
-            var command = new FaultingWithoutFallbackCommand
+            var command = new FaultingTaskWithoutFallbackCommand
             {
                 Riemann = mockRiemann.Object
             };
@@ -43,8 +43,31 @@ namespace Hudl.Mjolnir.Tests.Stats
             }
             catch (CommandFailedException)
             {
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithoutFallback InvokeAsync", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithoutFallback ExecuteInIsolation", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback InvokeAsync", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback ExecuteInIsolation", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                return; // Expected.
+            }
+
+            AssertX.FailExpectedException();
+        }
+
+        [Fact]
+        public async Task InvokeAsync_GeneralExceptionFromExecute()
+        {
+            var mockRiemann = new Mock<IRiemann>();
+            var command = new FaultingExecuteWithoutFallbackCommand
+            {
+                Riemann = mockRiemann.Object
+            };
+
+            try
+            {
+                await command.InvokeAsync();
+            }
+            catch (CommandFailedException)
+            {
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback InvokeAsync", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback ExecuteInIsolation", "Faulted", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -108,11 +131,11 @@ namespace Hudl.Mjolnir.Tests.Stats
         }
 
         [Fact]
-        public async Task InvokeAsync_FaultsAndFallbackThrowsNonInstigator()
+        public async Task InvokeAsync_TaskFaultsAndFallbackThrowsNonInstigator()
         {
             var expected = new ExpectedTestException("foo");
             var mockRiemann = new Mock<IRiemann>();
-            var command = new FaultingWithEchoThrowingFallbackCommand(expected)
+            var command = new FaultingTaskWithEchoThrowingFallbackCommand(expected)
             {
                 Riemann = mockRiemann.Object,
             };
@@ -124,7 +147,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (ExpectedTestException e)
             {
                 if (e != expected) throw;
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithEchoThrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithEchoThrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -132,10 +155,10 @@ namespace Hudl.Mjolnir.Tests.Stats
         }
 
         [Fact]
-        public async Task InvokeAsync_FaultsAndFallbackRethrowsInstigator()
+        public async Task InvokeAsync_TaskFaultsAndFallbackRethrowsInstigator()
         {
             var mockRiemann = new Mock<IRiemann>();
-            var command = new FaultingWithInstigatorRethrowingFallbackCommand
+            var command = new FaultingTaskWithInstigatorRethrowingFallbackCommand
             {
                 Riemann = mockRiemann.Object,
             };
@@ -147,7 +170,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (CommandFailedException e)
             {
                 Assert.True(e.IsFallbackImplemented);
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithInstigatorRethrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithInstigatorRethrowingFallback TryFallback", "Failure", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
@@ -155,25 +178,39 @@ namespace Hudl.Mjolnir.Tests.Stats
         }
 
         [Fact]
-        public async Task InvokeAsync_FaultsAndFallbackSucceeds()
+        public async Task InvokeAsync_TaskFaultsAndFallbackSucceeds()
         {
             var mockRiemann = new Mock<IRiemann>();
-            var command = new FaultingWithSuccessfulFallbackCommand
+            var command = new FaultingTaskWithSuccessfulFallbackCommand
             {
                 Riemann = mockRiemann.Object,
             };
 
             await command.InvokeAsync();
 
-            mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingWithSuccessfulFallback TryFallback", "Success", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+            mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithSuccessfulFallback TryFallback", "Success", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
         }
 
         [Fact]
-        public async Task InvokeAsync_FaultsAndFallbackNotImplemented()
+        public async Task InvokeAsync_ExecuteFaultsAndFallbackSucceeds()
+        {
+            var mockRiemann = new Mock<IRiemann>();
+            var command = new FaultingExecuteWithSuccessfulFallbackCommand
+            {
+                Riemann = mockRiemann.Object,
+            };
+
+            await command.InvokeAsync();
+
+            mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithSuccessfulFallback TryFallback", "Success", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ExecuteFaultsAndFallbackNotImplemented()
         {
             var exception = new ExpectedTestException("foo");
             var mockRiemann = new Mock<IRiemann>();
-            var command = new EchoThrowingCommandWithoutFallback(exception)
+            var command = new FaultingExecuteEchoCommandWithoutFallback(exception)
             {
                 Riemann = mockRiemann.Object,
             };
@@ -185,11 +222,35 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (CommandFailedException e)
             {
                 if (e.GetBaseException() != exception) throw;
-                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.EchoThrowingCommandWithoutFallback TryFallback", "NotImplemented", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteEchoCommandWithoutFallback TryFallback", "NotImplemented", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
                 return; // Expected.
             }
 
             AssertX.FailExpectedException();   
+        }
+
+        [Fact]
+        public async Task InvokeAsync_TaskFaultsAndFallbackNotImplemented()
+        {
+            var exception = new ExpectedTestException("foo");
+            var mockRiemann = new Mock<IRiemann>();
+            var command = new FaultingTaskEchoCommandWithoutFallback(exception)
+            {
+                Riemann = mockRiemann.Object,
+            };
+
+            try
+            {
+                await command.InvokeAsync();
+            }
+            catch (CommandFailedException e)
+            {
+                if (e.GetBaseException() != exception) throw;
+                mockRiemann.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskEchoCommandWithoutFallback TryFallback", "NotImplemented", It.IsAny<TimeSpan>(), null, null, null), Times.Once);
+                return; // Expected.
+            }
+
+            AssertX.FailExpectedException();
         }
 
         [Fact]

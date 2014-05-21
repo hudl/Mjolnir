@@ -3,11 +3,11 @@ using Hudl.Mjolnir.Tests.Helper;
 
 namespace Hudl.Mjolnir.Tests.TestCommands
 {
-    internal class FaultingWithEchoThrowingFallbackCommand : FaultingWithoutFallbackCommand
+    internal class FaultingTaskWithEchoThrowingFallbackCommand : FaultingTaskWithoutFallbackCommand
     {
         private readonly ExpectedTestException _exception;
 
-        internal FaultingWithEchoThrowingFallbackCommand(ExpectedTestException toRethrow)
+        internal FaultingTaskWithEchoThrowingFallbackCommand(ExpectedTestException toRethrow)
         {
             _exception = toRethrow;
         }

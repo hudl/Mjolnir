@@ -19,7 +19,33 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
-        private readonly IRiemann _riemann = RiemannStats.Instance;
+        private IRiemann _riemann = RiemannStats.Instance;
+
+        /// <summary>
+        /// Get/set the default Riemann client that all Mjolnir code should use.
+        /// Defaults to RiemannStats.Instance, which is fine for most
+        /// situations. Useful for controlling Riemann for system testing.
+        /// 
+        /// This should be set as soon as possible if you're going to change it.
+        /// Other parts of Mjolnir will cache their Riemann clients, so changing
+        /// this after Breakers and Pools have been created won't update the
+        /// client for them.
+        /// 
+        /// <remarks>If we ever build a DI framework into Mjolnir, we should
+        /// switch this over to it.</remarks>
+        /// </summary>
+        internal IRiemann DefaultRiemannClient
+        {
+            get { return _riemann; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException();
+                }
+                _riemann = value;
+            }
+        }
 
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
@@ -37,6 +63,12 @@ namespace Hudl.Mjolnir.Command
             });
         }
 
+        internal static IRiemann Riemann
+        {
+            get { return Instance.DefaultRiemannClient; }
+            set { Instance.DefaultRiemannClient = value; }
+        }
+
         public static ICircuitBreaker GetCircuitBreaker(GroupKey key)
         {
             if (key == null)
@@ -44,17 +76,18 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("key");
             }
 
-            var metrics = GetCommandMetrics(key);
-
-            var properties = new FailurePercentageCircuitBreakerProperties(
-                new ConfigurableValue<long>("mjolnir.breaker." + key + ".minimumOperations", 10),
-                new ConfigurableValue<int>("mjolnir.breaker." + key + ".thresholdPercentage", 50),
-                new ConfigurableValue<long>("mjolnir.breaker." + key + ".trippedDurationMillis", 10000),
-                new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", false),
-                new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", false));
-
             return Instance._circuitBreakers.GetOrAddSafe(key, k =>
-                new FailurePercentageCircuitBreaker(key, metrics, properties));
+            {
+                var metrics = GetCommandMetrics(key);
+                var properties = new FailurePercentageCircuitBreakerProperties(
+                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".minimumOperations", 10),
+                    new ConfigurableValue<int>("mjolnir.breaker." + key + ".thresholdPercentage", 50),
+                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".trippedDurationMillis", 10000),
+                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", false),
+                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", false));
+
+                return new FailurePercentageCircuitBreaker(key, metrics, properties);
+            });
         }
 
         private static ICommandMetrics GetCommandMetrics(GroupKey key)

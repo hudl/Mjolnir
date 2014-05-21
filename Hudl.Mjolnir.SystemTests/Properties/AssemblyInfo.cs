@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Hudl.Mjolnir")]
-[assembly: AssemblyDescription("Isolation library for protecting against cascading failure.")]
+[assembly: AssemblyTitle("Hudl.Mjolnir.SystemTests")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Hudl")]
-[assembly: AssemblyProduct("Hudl.Mjolnir")]
-[assembly: AssemblyCopyright("Copyright © 2013")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("Hudl.Mjolnir.SystemTests")]
+[assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -19,12 +19,10 @@ using System.Runtime.InteropServices;
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 
-[assembly: InternalsVisibleTo("Hudl.Mjolnir.Tests")]
-[assembly: InternalsVisibleTo("Hudl.Mjolnir.SystemTests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("97b23684-6c4a-4749-b307-5867cbce2dff")]
+[assembly: Guid("e88582e0-2c55-4533-9fd8-6cb6cb343410")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -36,8 +34,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyInformationalVersion("1.8.0.0")]
-[assembly: AssemblyFileVersion("1.8.0.0")]
-
-// ONLY change this when the major version changes; never with minor/patch/build versions.
 [assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]

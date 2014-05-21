@@ -4,11 +4,11 @@ using Hudl.Mjolnir.Command;
 
 namespace Hudl.Mjolnir.Tests.TestCommands
 {
-    class FaultingWithSleepingFallbackCommand : FaultingWithoutFallbackCommand
+    class FaultingTaskWithSleepingFallbackCommand : FaultingTaskWithoutFallbackCommand
     {
         private readonly TimeSpan _sleepDuration;
 
-        internal FaultingWithSleepingFallbackCommand(TimeSpan sleepDuration)
+        internal FaultingTaskWithSleepingFallbackCommand(TimeSpan sleepDuration)
         {
             _sleepDuration = sleepDuration;
         }

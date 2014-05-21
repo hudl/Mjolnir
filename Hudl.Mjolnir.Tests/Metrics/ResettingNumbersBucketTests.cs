@@ -78,7 +78,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
 
                 var command = new SuccessfulEchoCommandWithFallback(value)
                 //var command = new TimingOutWithoutFallbackCommand(TimeSpan.FromMilliseconds(500))
-                //var command = new FaultingWithSleepingFallbackCommand(TimeSpan.FromMilliseconds(500))
+                //var command = new FaultingTaskWithSleepingFallbackCommand(TimeSpan.FromMilliseconds(500))
                 //var command = new ReallySleepyCommand
                 {
                     ThreadPool = null,

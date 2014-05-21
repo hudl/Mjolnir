@@ -2,11 +2,11 @@
 
 namespace Hudl.Mjolnir.Tests.TestCommands
 {
-    internal class FaultingWithInstigatorRethrowingFallbackCommand : FaultingWithoutFallbackCommand
+    internal class FaultingExecuteWithSuccessfulFallbackCommand : FaultingExecuteWithoutFallbackCommand
     {
         protected override object Fallback(CommandFailedException instigator)
         {
-            throw instigator;
+            return new { };
         }
     }
 }

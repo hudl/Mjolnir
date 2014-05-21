@@ -61,7 +61,7 @@ namespace Hudl.Mjolnir.Command
         private IRiemann _riemann;
         internal IRiemann Riemann
         {
-            private get { return _riemann ?? RiemannStats.Instance; }
+            private get { return _riemann ?? CommandContext.Riemann; }
             set { _riemann = value; }
         }
 
@@ -177,7 +177,7 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
-                RiemannStats.Instance.Elapsed("mjolnir command mjolnir-meta.CacheProvidedName", null, stopwatch.Elapsed);
+                CommandContext.Riemann.Elapsed("mjolnir command mjolnir-meta.CacheProvidedName", null, stopwatch.Elapsed);
             }
         }
 
@@ -202,7 +202,7 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
-                RiemannStats.Instance.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
+                CommandContext.Riemann.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
             }
         }
 
@@ -351,19 +351,19 @@ namespace Hudl.Mjolnir.Command
             return workItem.Get(cancellationToken, Timeout);
         }
 
-        private Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)
+        private async Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)
         {
             if (!CircuitBreaker.IsAllowing())
             {
                 throw new CircuitBreakerRejectedException();
             }
 
-            Task<TResult> result;
+            TResult result;
 
             try
             {
                 var stopwatch = Stopwatch.StartNew();
-                result = ExecuteAsync(cancellationToken);
+                result = await ExecuteAsync(cancellationToken);
                 CircuitBreaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
                 CircuitBreaker.Metrics.MarkCommandSuccess();
             }

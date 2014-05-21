@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using Hudl.Common.Clock;
 using Hudl.Config;
+using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Util;
@@ -41,14 +42,14 @@ namespace Hudl.Mjolnir.Breaker
         private long _lastTrippedTimestamp;
 
         public FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, FailurePercentageCircuitBreakerProperties properties)
-            : this(key, new SystemClock(), metrics, RiemannStats.Instance, properties) {}
+            : this(key, new SystemClock(), metrics, CommandContext.Riemann, properties) {}
 
         internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IRiemann riemann, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _clock = clock;
             _metrics = metrics;
-            _riemann = riemann ?? RiemannStats.Instance;
+            _riemann = riemann ?? CommandContext.Riemann;
 
             Properties = properties;
             _state = State.Fixed; // Start off assuming everything's fixed.

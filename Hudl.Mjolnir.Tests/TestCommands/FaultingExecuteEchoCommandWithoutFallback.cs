@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 
 namespace Hudl.Mjolnir.Tests.TestCommands
 {
-    internal class FaultingEchoCommandWithoutFallback : BaseTestCommand<object>
+    internal class FaultingExecuteEchoCommandWithoutFallback : BaseTestCommand<object>
     {
         private readonly Exception _exception;
 
-        internal FaultingEchoCommandWithoutFallback(Exception toRethrow)
+        internal FaultingExecuteEchoCommandWithoutFallback(Exception toRethrow)
         {
             _exception = toRethrow;
         }

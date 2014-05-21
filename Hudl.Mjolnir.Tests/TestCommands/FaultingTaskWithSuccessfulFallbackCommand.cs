@@ -2,7 +2,7 @@ using Hudl.Mjolnir.Command;
 
 namespace Hudl.Mjolnir.Tests.TestCommands
 {
-    internal class FaultingWithSuccessfulFallbackCommand : FaultingWithoutFallbackCommand
+    internal class FaultingTaskWithSuccessfulFallbackCommand : FaultingTaskWithoutFallbackCommand
     {
         protected override object Fallback(CommandFailedException instigator)
         {
