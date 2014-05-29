@@ -126,8 +126,7 @@ namespace Hudl.Mjolnir.Metrics
 
         public void Reset()
         {
-            // TODO For stats purposes on sparse operations, it might be nice to have this called
-            // at regular intervals if we can.
+            // TODO For stats purposes on sparse operations, it might be nice to have this called at regular intervals.
             var stopwatch = Stopwatch.StartNew();
             try
             {

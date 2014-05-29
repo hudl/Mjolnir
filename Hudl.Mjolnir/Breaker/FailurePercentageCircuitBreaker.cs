@@ -57,15 +57,6 @@ namespace Hudl.Mjolnir.Breaker
 
             _timer = new GaugeTimer((source, args) =>
             {
-                // TODO On the riemann side:
-                // - Make all stat comparisons case-insensitive? Might save us some headaches.
-                // - Pass any stats that don't have null metrics on to statsd.
-                // - Look for :state changes on "mjolnir breaker *"; alert on Tripped.
-                // - Anything tagged type:elapsed gets auto-percentiled and pushed to statsd.
-
-                // TODO Questions
-                // - Is it even possible to compare different metrics in Riemann? (e.g. a high-water gauge vs the observed value)
-
                 var snapshot = _metrics.GetSnapshot();
                 _riemann.ConfigGauge(RiemannPrefix + " conf.minimumOperations", properties.MinimumOperations.Value);
                 _riemann.ConfigGauge(RiemannPrefix + " conf.thresholdPercentage", properties.ThresholdPercentage.Value);
@@ -204,9 +195,6 @@ namespace Hudl.Mjolnir.Breaker
                     return true;
                 }
 
-                // TODO rob.hruska 11/18/2013 - 
-                // Should we worry about anything that might accidentally hold onto this lock longer than we expect?
-                // Do we need a timeout here? Logging?
                 if (!Monitor.TryEnter(_stateChangeLock))
                 {
                     state = "MissedLock";
