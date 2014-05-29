@@ -109,7 +109,6 @@
     <Compile Include="ThreadPool\SemaphoreSlimIsolationSemaphore.cs" />
     <Compile Include="ThreadPool\StpIsolationThreadPool.cs" />
     <Compile Include="ThreadPool\StpWorkItem.cs" />
-    <Compile Include="ThreadPool\WoodringThreadPool.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Util\GaugeTimer.cs" />
   </ItemGroup>
