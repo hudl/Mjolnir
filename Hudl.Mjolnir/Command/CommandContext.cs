@@ -131,7 +131,7 @@ namespace Hudl.Mjolnir.Command
                 // several commands may using the same pool, and we should therefore try to allow for a bit
                 // more concurrent fallback execution.
                 var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", 50);
-                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent);
+                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Riemann);
             });
         }
     }

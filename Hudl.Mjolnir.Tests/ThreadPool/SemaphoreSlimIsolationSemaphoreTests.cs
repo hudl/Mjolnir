@@ -3,6 +3,7 @@ using Hudl.Config;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.ThreadPool;
+using Hudl.Riemann;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.ThreadPool
@@ -12,7 +13,7 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         [Fact]
         public void TryEnter_WhenSemaphoreIsAvailable_ReturnsTrueImmediately()
         {
-            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(1));
+            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(1), new IgnoringRiemannStats());
 
             var stopwatch = Stopwatch.StartNew();
             Assert.True(semaphore.TryEnter());
@@ -22,7 +23,7 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         [Fact]
         public void TryEnter_WhenSemaphoreNotAvailable_ReturnsFalseImmediately()
         {
-            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(1));
+            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(1), new IgnoringRiemannStats());
             semaphore.TryEnter();
 
             var stopwatch = Stopwatch.StartNew();
@@ -33,7 +34,7 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         [Fact]
         public void Release_WhenSemaphoreNotAvailable_MakesItAvailable()
         {
-            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(1));
+            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(1), new IgnoringRiemannStats());
 
             semaphore.TryEnter();
             Assert.False(semaphore.TryEnter());
@@ -45,14 +46,14 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         [Fact]
         public void Release_WhenSemaphoreNotInUse_DoesNothing()
         {
-            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(5));
+            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(5), new IgnoringRiemannStats());
             semaphore.Release(); // Shouldn't throw.
         }
 
         [Fact]
         public void TryEnterAndReleaseALot()
         {
-            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(5));
+            var semaphore = new SemaphoreSlimIsolationSemaphore(GroupKey.Named("Test"), new TransientConfigurableValue<int>(5), new IgnoringRiemannStats());
 
             Assert.True(semaphore.TryEnter());
             Assert.True(semaphore.TryEnter());

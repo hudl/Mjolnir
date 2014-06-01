@@ -1,6 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Hudl.Config;
-using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
@@ -19,13 +19,16 @@ namespace Hudl.Mjolnir.ThreadPool
         private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
-        public SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent)
-            : this(key, maxConcurrent, null) {}
-
         internal SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent, IRiemann riemann, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
-            _riemann = (riemann ?? CommandContext.Riemann);
+
+            if (riemann == null)
+            {
+                throw new ArgumentNullException("riemann");
+            }
+
+            _riemann = riemann;
 
             // Note: Changing the semaphore maximum at runtime is not currently supported.
             _maxConcurrent = maxConcurrent.Value;
