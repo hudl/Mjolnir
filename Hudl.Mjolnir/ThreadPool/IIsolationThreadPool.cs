@@ -13,7 +13,7 @@
     /// (i.e. threads) that could instead be used for operations that aren't in the group and are
     /// successfully completing.
     /// </summary>
-    public interface IIsolationThreadPool // TODO make this internal.
+    internal interface IIsolationThreadPool
     {
         void Start();
 
