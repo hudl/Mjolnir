@@ -168,42 +168,24 @@ namespace Hudl.Mjolnir.Command
 
         private string CacheProvidedName(GroupKey group, string name)
         {
-            var stopwatch = Stopwatch.StartNew();
-            try
-            {
-                var cacheKey = new Tuple<string, GroupKey>(name, group);
-                return ProvidedNameCache.GetOrAdd(cacheKey, t => cacheKey.Item2.Name.Replace(".", "-") + "." + name.Replace(".", "-"));
-            }
-            finally
-            {
-                // Not using _stats here because it may not be initialized in tests before we call Name in the constructor.
-                CommandContext.Stats.Elapsed("mjolnir command mjolnir-meta.CacheProvidedName", null, stopwatch.Elapsed);
-            }
+            var cacheKey = new Tuple<string, GroupKey>(name, group);
+            return ProvidedNameCache.GetOrAdd(cacheKey, t => cacheKey.Item2.Name.Replace(".", "-") + "." + name.Replace(".", "-"));
         }
 
         private string GenerateAndCacheName(GroupKey group)
         {
-            var stopwatch = Stopwatch.StartNew();
-            try
+            var type = GetType();
+            var cacheKey = new Tuple<Type, GroupKey>(type, group);
+            return GeneratedNameCache.GetOrAdd(cacheKey, t =>
             {
-                var type = GetType();
-                var cacheKey = new Tuple<Type, GroupKey>(type, group);
-                return GeneratedNameCache.GetOrAdd(cacheKey, t =>
+                var className = cacheKey.Item1.Name;
+                if (className.EndsWith("Command", StringComparison.InvariantCulture))
                 {
-                    var className = cacheKey.Item1.Name;
-                    if (className.EndsWith("Command", StringComparison.InvariantCulture))
-                    {
-                        className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
-                    }
+                    className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
+                }
 
-                    return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
-                });
-            }
-            finally
-            {
-                // Not using _stats here because it may not be initialized in tests before we call Name in the constructor.
-                CommandContext.Stats.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
-            }
+                return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
+            });
         }
 
         internal string Name
