@@ -4,6 +4,7 @@ using Hudl.Config;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.ThreadPool;
+using Hudl.Riemann;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.ThreadPool
@@ -71,7 +72,11 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
 
         private StpIsolationThreadPool CreateAndStartPool(int threadCount, int queueLength)
         {
-            var pool = new StpIsolationThreadPool(GroupKey.Named("Test"), new TransientConfigurableValue<int>(threadCount), new TransientConfigurableValue<int>(queueLength));
+            var pool = new StpIsolationThreadPool(
+                GroupKey.Named("Test"),
+                new TransientConfigurableValue<int>(threadCount),
+                new TransientConfigurableValue<int>(queueLength),
+                new IgnoringRiemannStats());
             pool.Start();
             return pool;
         }

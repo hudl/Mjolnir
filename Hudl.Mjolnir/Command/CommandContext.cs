@@ -116,7 +116,8 @@ namespace Hudl.Mjolnir.Command
                 new StpIsolationThreadPool(
                     key,
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10),
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10)));
+                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10),
+                    Riemann));
         }
 
         public static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)

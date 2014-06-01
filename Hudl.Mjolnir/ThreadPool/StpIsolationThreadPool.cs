@@ -1,7 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Amib.Threading;
 using Hudl.Config;
-using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
@@ -25,12 +25,17 @@ namespace Hudl.Mjolnir.ThreadPool
         private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
-        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IRiemann riemann = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IRiemann riemann, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _threadCount = threadCount;
             _queueLength = queueLength;
-            _riemann = (riemann ?? CommandContext.Riemann);
+
+            if (riemann == null)
+            {
+                throw new ArgumentNullException("riemann");
+            }
+            _riemann = riemann;
 
             var count = _threadCount.Value;
             var info = new STPStartInfo
@@ -90,7 +95,7 @@ namespace Hudl.Mjolnir.ThreadPool
             var state = "Enqueued";
             try
             {
-                var workItem = _pool.QueueWorkItem(new Func<TResult>(func));
+                var workItem = _pool.QueueWorkItem(new Amib.Threading.Func<TResult>(func));
                 return new StpWorkItem<TResult>(workItem);
             }
             catch (QueueRejectedException)
