@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Hudl.Common.Clock;
 using Hudl.Config;
 using Hudl.Mjolnir.External;
@@ -13,20 +12,6 @@ namespace Hudl.Mjolnir.Tests.Stats
 {
     public class StandardCommandMetricsStatsTests : TestFixture
     {
-        [Fact]
-        public async Task Construct_CreatesGauges()
-        {
-            const long gaugeIntervalMillis = 50;
-
-            var mockStats = new Mock<IStats>();
-            var metrics = CreateMetrics("Test", mockStats, null, null, null, new TransientConfigurableValue<long>(gaugeIntervalMillis));
-
-            await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
-
-            mockStats.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.windowMillis", It.IsAny<long>()), Times.AtLeastOnce);
-            mockStats.Verify(m => m.ConfigGauge("mjolnir metrics Test conf.snapshotTtlMillis", It.IsAny<long>()), Times.AtLeastOnce);
-        }
-
         [Fact]
         public void MarkCommandSuccess_Event()
         {
@@ -81,15 +66,14 @@ namespace Hudl.Mjolnir.Tests.Stats
         }
 
         private static StandardCommandMetrics CreateMetrics(string key, IMock<IStats> mockStats, IClock clock = null,
-            long? windowMillis = null, long? snapshotTtlMillis = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+            long? windowMillis = null, long? snapshotTtlMillis = null)
         {
             return new StandardCommandMetrics(
                 GroupKey.Named(key),
                 new TransientConfigurableValue<long>(windowMillis ?? 30000),
                 new TransientConfigurableValue<long>(snapshotTtlMillis ?? 10000),
                 (clock ?? new ManualTestClock()),
-                mockStats.Object,
-                gaugeIntervalMillisOverride);
+                mockStats.Object);
         }
     }
 }

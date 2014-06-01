@@ -5,7 +5,6 @@ using Hudl.Common.Clock;
 using Hudl.Config;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
-using Hudl.Mjolnir.Util;
 
 namespace Hudl.Mjolnir.Metrics
 {
@@ -17,15 +16,10 @@ namespace Hudl.Mjolnir.Metrics
         private readonly GroupKey _key;
         private readonly IStats _stats;
 
-        // ReSharper disable NotAccessedField.Local
-        // Don't let these get garbage collected.
-        private readonly GaugeTimer _timer;
-        // ReSharper restore NotAccessedField.Local
-
         internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IStats stats)
             : this(key, windowMillis, snapshotTtlMillis, new SystemClock(), stats) {}
 
-        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock, IStats stats, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock, IStats stats)
         {
             if (key == null)
             {
@@ -42,20 +36,6 @@ namespace Hudl.Mjolnir.Metrics
                 throw new ArgumentNullException("stats");
             }
             _stats = stats;
-
-            _timer = new GaugeTimer((source, args) =>
-            {
-                // If our stats are sparse, _lastSnapshot might be fairly stale, and not reflective of
-                // the actual state of the metrics/bucket. Actually grab a snapshot here (which will
-                // rebuild the cached _lastSnapshot if its TTL has expired).
-
-                // Note that it's helpful if the Timer is on an interval that's a bit larger than the 
-                // snapshot's TTL to avoid flapping, and also to avoid rather unnecessary snapshot
-                // rebuilds.
-
-                _stats.ConfigGauge(StatsPrefix + " conf.windowMillis", windowMillis.Value);
-                _stats.ConfigGauge(StatsPrefix + " conf.snapshotTtlMillis", _snapshotTtlMillis.Value);
-            }, gaugeIntervalMillisOverride);
         }
 
         private string StatsPrefix

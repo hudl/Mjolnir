@@ -63,12 +63,6 @@ namespace Hudl.Mjolnir.Breaker
             _timer = new GaugeTimer((source, args) =>
             {
                 var snapshot = _metrics.GetSnapshot();
-                _stats.ConfigGauge(StatsPrefix + " conf.minimumOperations", properties.MinimumOperations.Value);
-                _stats.ConfigGauge(StatsPrefix + " conf.thresholdPercentage", properties.ThresholdPercentage.Value);
-                _stats.ConfigGauge(StatsPrefix + " conf.trippedDurationMillis", properties.TrippedDurationMillis.Value);
-                _stats.ConfigGauge(StatsPrefix + " conf.forceTripped", Convert.ToInt32(properties.ForceTripped.Value));
-                _stats.ConfigGauge(StatsPrefix + " conf.forceFixed", Convert.ToInt32(properties.ForceFixed.Value));
-
                 _stats.Gauge(StatsPrefix + " total", snapshot.Total >= properties.MinimumOperations.Value ? "Above" : "Below", snapshot.Total);
                 _stats.Gauge(StatsPrefix + " error", snapshot.ErrorPercentage >= properties.ThresholdPercentage.Value ? "Above" : "Below", snapshot.ErrorPercentage);
             }, gaugeIntervalMillisOverride);

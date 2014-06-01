@@ -585,11 +585,6 @@ namespace Hudl.Mjolnir.Tests.Breaker
             ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
         }
 
-        public void ConfigGauge(string service, long metric)
-        {
-            // Ignored.
-        }
-
         public class ServiceAndState
         {
             public string Service { get; set; }

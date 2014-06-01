@@ -24,12 +24,6 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
             
-            mockStats.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.minimumOperations", It.IsAny<long>()), Times.AtLeastOnce);
-            mockStats.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.thresholdPercentage", It.IsAny<long>()), Times.AtLeastOnce);
-            mockStats.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.trippedDurationMillis", It.IsAny<long>()), Times.AtLeastOnce);
-            mockStats.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceTripped", It.IsAny<long>()), Times.AtLeastOnce);
-            mockStats.Verify(m => m.ConfigGauge("mjolnir breaker Test conf.forceFixed", It.IsAny<long>()), Times.AtLeastOnce);
-
             mockStats.Verify(m => m.Gauge("mjolnir breaker Test total", It.IsIn("Above", "Below"), It.IsAny<long>()), Times.AtLeastOnce);
             mockStats.Verify(m => m.Gauge("mjolnir breaker Test error", It.IsIn("Above", "Below"), It.IsAny<int>()), Times.AtLeastOnce);
         }

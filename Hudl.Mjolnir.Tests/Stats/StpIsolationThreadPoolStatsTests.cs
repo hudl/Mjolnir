@@ -30,8 +30,6 @@ namespace Hudl.Mjolnir.Tests.Stats
             mockStats.Verify(m => m.Gauge("mjolnir pool Test activeThreads", null, It.IsAny<long>()), Times.AtLeastOnce);
             mockStats.Verify(m => m.Gauge("mjolnir pool Test inUseThreads", null, It.IsAny<long>()), Times.AtLeastOnce);
             mockStats.Verify(m => m.Gauge("mjolnir pool Test pendingCompletion", null, It.IsAny<long>()), Times.AtLeastOnce);
-            mockStats.Verify(m => m.ConfigGauge("mjolnir pool Test conf.threadCount", 10), Times.AtLeastOnce);
-            mockStats.Verify(m => m.ConfigGauge("mjolnir pool Test conf.queueLength", 20), Times.AtLeastOnce);
         }
 
         // TODO This isn't deterministic, it can fail depending on how/when it gets scheduled. Would be nice to test, though.

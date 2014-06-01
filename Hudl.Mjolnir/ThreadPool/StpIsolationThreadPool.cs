@@ -59,9 +59,6 @@ namespace Hudl.Mjolnir.ThreadPool
                 // Note: Don't use _pool.WaitingCallbacks. It has the potential to get locked out by
                 // queue/dequeue operations, and may block here if the pool's getting queued into heavily.
                 _stats.Gauge(StatsPrefix + " pendingCompletion", null, _pool.CurrentWorkItemsCount);
-
-                _stats.ConfigGauge(StatsPrefix + " conf.threadCount", _threadCount.Value);
-                _stats.ConfigGauge(StatsPrefix + " conf.queueLength", _queueLength.Value);
             }, gaugeIntervalMillisOverride);
 
             _pool.OnThreadInitialization += () => _stats.Event(StatsPrefix + " thread", "Initialized", null);

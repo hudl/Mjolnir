@@ -37,7 +37,6 @@ namespace Hudl.Mjolnir.ThreadPool
             _timer = new GaugeTimer((source, args) =>
             {
                 var count = _semaphore.CurrentCount;
-                _stats.ConfigGauge(StatsPrefix + " conf.maxConcurrent", _maxConcurrent);
                 _stats.Gauge(StatsPrefix + " available", (count == 0 ? "Full" : "Available"), count);
             }, gaugeIntervalMillisOverride);
         }

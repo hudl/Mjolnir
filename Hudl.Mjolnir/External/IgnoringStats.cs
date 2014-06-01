@@ -9,6 +9,5 @@ namespace Hudl.Mjolnir.External
         public void Event(string service, string state, float? metric) {}
         public void Elapsed(string service, string state, TimeSpan elapsed) {}
         public void Gauge(string service, string state, long? metric = null) {}
-        public void ConfigGauge(string service, long metric) {}
     }
 }

@@ -75,10 +75,5 @@ namespace Hudl.Mjolnir.SystemTests
         {
             Store(service, state, metric);
         }
-
-        public void ConfigGauge(string service, long metric)
-        {
-            Store(service, null, metric);
-        }
     }
 }
