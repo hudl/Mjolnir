@@ -468,7 +468,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
             {
                 var mockMetrics = CreateMockMetricsWithSnapshot(_metricsTotal, _metricsPercent);
                 var properties = CreateBreakerProperties(_breakerTotal, _breakerPercent, 30000);
-                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, properties);
+                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringRiemannStats(), properties);
 
                 Assert.NotEqual(_shouldTrip, breaker.IsAllowing());
             }

@@ -86,7 +86,7 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", false),
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", false));
 
-                return new FailurePercentageCircuitBreaker(key, metrics, properties);
+                return new FailurePercentageCircuitBreaker(key, metrics, Riemann, properties);
             });
         }
 
