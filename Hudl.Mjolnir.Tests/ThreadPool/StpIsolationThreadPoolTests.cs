@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading;
 using Hudl.Config;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.ThreadPool;
-using Hudl.Riemann;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.ThreadPool
@@ -76,7 +76,7 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<int>(threadCount),
                 new TransientConfigurableValue<int>(queueLength),
-                new IgnoringRiemannStats());
+                new IgnoringStats());
             pool.Start();
             return pool;
         }

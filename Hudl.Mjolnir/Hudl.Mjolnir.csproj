@@ -47,14 +47,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Config.1.3.0.0\lib\net40\Hudl.Config.dll</HintPath>
     </Reference>
-    <Reference Include="Hudl.Riemann, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Riemann.1.2.0.0\lib\net45\Hudl.Riemann.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.RiemannClient, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.RiemannClient.1.1.0.0\lib\net45\Hudl.RiemannClient.dll</HintPath>
-    </Reference>
     <Reference Include="Hudl.Stats, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Stats.1.2.0.0\lib\net40\Hudl.Stats.dll</HintPath>
@@ -62,9 +54,6 @@
     <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net, Version=2.0.0.622, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
-      <HintPath>..\packages\protobuf-net.2.0.0.622\lib\net40\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="SmartThreadPool, Version=2.2.3.3, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -90,6 +79,8 @@
     <Compile Include="Command\CommandContext.cs" />
     <Compile Include="Command\CommandFailedException.cs" />
     <Compile Include="Command\VoidResult.cs" />
+    <Compile Include="External\IgnoringStats.cs" />
+    <Compile Include="External\IStats.cs" />
     <Compile Include="Key\GroupKey.cs" />
     <Compile Include="Metrics\CounterMetric.cs" />
     <Compile Include="Metrics\ICommandMetrics.cs" />

@@ -3,9 +3,9 @@ using System.Diagnostics;
 using System.Threading;
 using Hudl.Common.Clock;
 using Hudl.Config;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
-using Hudl.Riemann;
 
 namespace Hudl.Mjolnir.Metrics
 {
@@ -15,17 +15,17 @@ namespace Hudl.Mjolnir.Metrics
         private readonly ResettingNumbersBucket _resettingNumbersBucket;
         private readonly IConfigurableValue<long> _snapshotTtlMillis;
         private readonly GroupKey _key;
-        private readonly IRiemann _riemann;
+        private readonly IStats _stats;
 
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
         private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
-        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IRiemann riemann)
-            : this(key, windowMillis, snapshotTtlMillis, new SystemClock(), riemann) {}
+        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IStats stats)
+            : this(key, windowMillis, snapshotTtlMillis, new SystemClock(), stats) {}
 
-        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock, IRiemann riemann = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock, IStats stats, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             if (key == null)
             {
@@ -37,11 +37,11 @@ namespace Hudl.Mjolnir.Metrics
             _snapshotTtlMillis = snapshotTtlMillis;
             _resettingNumbersBucket = new ResettingNumbersBucket(_clock, windowMillis);
 
-            if (riemann == null)
+            if (stats == null)
             {
-                throw new ArgumentNullException("riemann");
+                throw new ArgumentNullException("stats");
             }
-            _riemann = riemann;
+            _stats = stats;
 
             _timer = new GaugeTimer((source, args) =>
             {
@@ -53,25 +53,25 @@ namespace Hudl.Mjolnir.Metrics
                 // snapshot's TTL to avoid flapping, and also to avoid rather unnecessary snapshot
                 // rebuilds.
 
-                _riemann.ConfigGauge(RiemannPrefix + " conf.windowMillis", windowMillis.Value);
-                _riemann.ConfigGauge(RiemannPrefix + " conf.snapshotTtlMillis", _snapshotTtlMillis.Value);
+                _stats.ConfigGauge(StatsPrefix + " conf.windowMillis", windowMillis.Value);
+                _stats.ConfigGauge(StatsPrefix + " conf.snapshotTtlMillis", _snapshotTtlMillis.Value);
             }, gaugeIntervalMillisOverride);
         }
 
-        private string RiemannPrefix
+        private string StatsPrefix
         {
             get { return "mjolnir metrics " + _key; }
         }
 
         public void MarkCommandSuccess()
         {
-            _riemann.Event(RiemannPrefix + " Mark", CounterMetric.CommandSuccess.ToString(), null);
+            _stats.Event(StatsPrefix + " Mark", CounterMetric.CommandSuccess.ToString(), null);
             _resettingNumbersBucket.Increment(CounterMetric.CommandSuccess);
         }
 
         public void MarkCommandFailure()
         {
-            _riemann.Event(RiemannPrefix + " Mark", CounterMetric.CommandFailure.ToString(), null);
+            _stats.Event(StatsPrefix + " Mark", CounterMetric.CommandFailure.ToString(), null);
             _resettingNumbersBucket.Increment(CounterMetric.CommandFailure);
         }
 
@@ -115,7 +115,7 @@ namespace Hudl.Mjolnir.Metrics
                         finally
                         {
                             createwatch.Stop();
-                            _riemann.Elapsed(RiemannPrefix + " CreateSnapshot", null, createwatch.Elapsed);
+                            _stats.Elapsed(StatsPrefix + " CreateSnapshot", null, createwatch.Elapsed);
                         }
                     }
                 }
@@ -124,7 +124,7 @@ namespace Hudl.Mjolnir.Metrics
             }
             finally
             {
-                _riemann.Elapsed(RiemannPrefix + " GetSnapshot", null, stopwatch.Elapsed);
+                _stats.Elapsed(StatsPrefix + " GetSnapshot", null, stopwatch.Elapsed);
             }
         }
 
@@ -138,7 +138,7 @@ namespace Hudl.Mjolnir.Metrics
             }
             finally
             {
-                _riemann.Elapsed(RiemannPrefix + " Reset", null, stopwatch.Elapsed);
+                _stats.Elapsed(StatsPrefix + " Reset", null, stopwatch.Elapsed);
             }
         }
     }

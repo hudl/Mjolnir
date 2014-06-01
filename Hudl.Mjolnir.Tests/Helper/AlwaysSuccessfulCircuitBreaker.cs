@@ -1,8 +1,8 @@
 ﻿using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
-using Hudl.Riemann;
 
 namespace Hudl.Mjolnir.Tests.Helper
 {
@@ -29,7 +29,7 @@ namespace Hudl.Mjolnir.Tests.Helper
                     GroupKey.Named("Test"),
                     new TransientConfigurableValue<long>(30000),
                     new TransientConfigurableValue<long>(5000),
-                    new IgnoringRiemannStats());
+                    new IgnoringStats());
             }
         }
     }

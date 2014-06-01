@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 using Hudl.Common.Extensions;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.ThreadPool;
-using Hudl.Riemann;
-using Hudl.Stats;
+using Hudl.Stats; // TODO remove this dependency.
 using log4net;
 
 namespace Hudl.Mjolnir.Command
@@ -58,11 +58,11 @@ namespace Hudl.Mjolnir.Command
 
         // Setters should be used for testing only.
 
-        private IRiemann _riemann;
-        internal IRiemann Riemann
+        private IStats _stats;
+        internal IStats Stats
         {
-            private get { return _riemann ?? CommandContext.Riemann; }
-            set { _riemann = value; }
+            private get { return _stats ?? CommandContext.Stats; }
+            set { _stats = value; }
         }
 
         private ICircuitBreaker _breaker;
@@ -176,8 +176,8 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
-                CommandContext.Riemann.Elapsed("mjolnir command mjolnir-meta.CacheProvidedName", null, stopwatch.Elapsed);
+                // Not using _stats here because it may not be initialized in tests before we call Name in the constructor.
+                CommandContext.Stats.Elapsed("mjolnir command mjolnir-meta.CacheProvidedName", null, stopwatch.Elapsed);
             }
         }
 
@@ -201,8 +201,8 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
-                CommandContext.Riemann.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
+                // Not using _stats here because it may not be initialized in tests before we call Name in the constructor.
+                CommandContext.Stats.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
             }
         }
 
@@ -226,7 +226,7 @@ namespace Hudl.Mjolnir.Command
             get { return _poolKey; }
         }
 
-        private string RiemannKeyPrefix
+        private string StatsPrefix
         {
             get { return "mjolnir command " + Name; }
         }
@@ -311,8 +311,8 @@ namespace Hudl.Mjolnir.Command
             {
                 invokeStopwatch.Stop();
 
-                Riemann.Elapsed(RiemannKeyPrefix + " ExecuteInIsolation", status.ToString(), executeStopwatch.Elapsed);
-                Riemann.Elapsed(RiemannKeyPrefix + " InvokeAsync", status.ToString(), invokeStopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " ExecuteInIsolation", status.ToString(), executeStopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " InvokeAsync", status.ToString(), invokeStopwatch.Elapsed);
 
                 StatsDClient.ManualTime("mjolnir.command." + Name + ".execute." + status, invokeStopwatch.ElapsedMilliseconds);
                 StatsDClient.ManualTime("mjolnir.command." + Name + ".invoke." + status, invokeStopwatch.ElapsedMilliseconds);
@@ -404,7 +404,7 @@ namespace Hudl.Mjolnir.Command
             var semaphore = FallbackSemaphore; // Locally reference in case the property gets updated (highly unlikely).
             if (!semaphore.TryEnter())
             {
-                Riemann.Elapsed(RiemannKeyPrefix + " TryFallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " TryFallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
                 StatsDClient.ManualTime("mjolnir.command." + Name + ".fallback." + FallbackStatus.Rejected, stopwatch.ElapsedMilliseconds);
 
                 instigator.FallbackStatus = FallbackStatus.Rejected;
@@ -441,7 +441,7 @@ namespace Hudl.Mjolnir.Command
                 semaphore.Release();
 
                 stopwatch.Stop();
-                Riemann.Elapsed(RiemannKeyPrefix + " TryFallback", fallbackStatus.ToString(), stopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " TryFallback", fallbackStatus.ToString(), stopwatch.Elapsed);
                 StatsDClient.ManualTime("mjolnir.command." + Name + ".fallback." + fallbackStatus, stopwatch.ElapsedMilliseconds);
             }
         }
