@@ -10,7 +10,6 @@ using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.ThreadPool;
-using Hudl.Stats; // TODO remove this dependency.
 using log4net;
 
 namespace Hudl.Mjolnir.Command
@@ -295,9 +294,6 @@ namespace Hudl.Mjolnir.Command
 
                 Stats.Elapsed(StatsPrefix + " ExecuteInIsolation", status.ToString(), executeStopwatch.Elapsed);
                 Stats.Elapsed(StatsPrefix + " InvokeAsync", status.ToString(), invokeStopwatch.Elapsed);
-
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".execute." + status, invokeStopwatch.ElapsedMilliseconds);
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".invoke." + status, invokeStopwatch.ElapsedMilliseconds);
             }
         }
 
@@ -387,7 +383,6 @@ namespace Hudl.Mjolnir.Command
             if (!semaphore.TryEnter())
             {
                 Stats.Elapsed(StatsPrefix + " TryFallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".fallback." + FallbackStatus.Rejected, stopwatch.ElapsedMilliseconds);
 
                 instigator.FallbackStatus = FallbackStatus.Rejected;
                 throw instigator;
@@ -424,7 +419,6 @@ namespace Hudl.Mjolnir.Command
 
                 stopwatch.Stop();
                 Stats.Elapsed(StatsPrefix + " TryFallback", fallbackStatus.ToString(), stopwatch.Elapsed);
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".fallback." + fallbackStatus, stopwatch.ElapsedMilliseconds);
             }
         }
 
