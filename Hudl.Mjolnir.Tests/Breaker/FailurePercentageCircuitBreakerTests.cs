@@ -565,16 +565,6 @@ namespace Hudl.Mjolnir.Tests.Breaker
             ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
         }
 
-        public void Event(string service, string state, float? metric = null)
-        {
-            ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
-        public void Event(string service, string state, double? metric = null)
-        {
-            ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
         public void Elapsed(string service, string state, TimeSpan elapsed)
         {
             ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });

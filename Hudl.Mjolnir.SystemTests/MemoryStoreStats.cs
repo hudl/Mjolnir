@@ -56,16 +56,6 @@ namespace Hudl.Mjolnir.SystemTests
             Store(service, state, metric);
         }
 
-        public void Event(string service, string state, float? metric = null)
-        {
-            Store(service, state, metric);
-        }
-
-        public void Event(string service, string state, double? metric = null)
-        {
-            Store(service, state, metric);
-        }
-
         public void Elapsed(string service, string state, TimeSpan elapsed)
         {
             Store(service, state, elapsed.TotalMilliseconds);
