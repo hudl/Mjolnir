@@ -40,7 +40,7 @@ namespace Hudl.Mjolnir.Breaker
         private volatile State _state;
         private long _lastTrippedTimestamp;
 
-        public FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IRiemann riemann, FailurePercentageCircuitBreakerProperties properties)
+        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IRiemann riemann, FailurePercentageCircuitBreakerProperties properties)
             : this(key, new SystemClock(), metrics, riemann, properties) {}
 
         internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IRiemann riemann, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
@@ -277,10 +277,10 @@ namespace Hudl.Mjolnir.Breaker
             _forceFixed = forceFixed;
         }
 
-        public IConfigurableValue<long> MinimumOperations { get { return _minimumOperations; } }
-        public IConfigurableValue<int> ThresholdPercentage { get { return _thresholdPercentage; } }
-        public IConfigurableValue<long> TrippedDurationMillis { get { return _trippedDurationMillis; } }
-        public IConfigurableValue<bool> ForceTripped { get { return _forceTripped; } }
-        public IConfigurableValue<bool> ForceFixed { get { return _forceFixed; } }
+        internal IConfigurableValue<long> MinimumOperations { get { return _minimumOperations; } }
+        internal IConfigurableValue<int> ThresholdPercentage { get { return _thresholdPercentage; } }
+        internal IConfigurableValue<long> TrippedDurationMillis { get { return _trippedDurationMillis; } }
+        internal IConfigurableValue<bool> ForceTripped { get { return _forceTripped; } }
+        internal IConfigurableValue<bool> ForceFixed { get { return _forceFixed; } }
     }
 }

@@ -21,7 +21,7 @@ namespace Hudl.Mjolnir.Util
         /// </summary>
         /// <param name="onTick">Event handler to invoke on tick</param>
         /// <param name="intervalMillisOverride">Interval override (for unit testing)</param>
-        public GaugeTimer(ElapsedEventHandler onTick, IConfigurableValue<long> intervalMillisOverride = null)
+        internal GaugeTimer(ElapsedEventHandler onTick, IConfigurableValue<long> intervalMillisOverride = null)
         {
             _gaugeIntervalMillis = intervalMillisOverride ?? new ConfigurableValue<long>("mjolnir.gaugeIntervalMillis", 5000, UpdateStatsGaugeInterval);
 

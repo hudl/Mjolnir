@@ -24,7 +24,7 @@ namespace Hudl.Mjolnir.Metrics
         private ILongCounter[] _counters;
         private long _lastResetAtTime = 0;
 
-        public ResettingNumbersBucket(IConfigurableValue<long> periodMillis) : this(new SystemClock(), periodMillis) {}
+        internal ResettingNumbersBucket(IConfigurableValue<long> periodMillis) : this(new SystemClock(), periodMillis) {}
         internal ResettingNumbersBucket(IClock clock, IConfigurableValue<long> periodMillis)
         {
             _clock = clock;
@@ -33,7 +33,7 @@ namespace Hudl.Mjolnir.Metrics
             _lastResetAtTime = clock.GetMillisecondTimestamp();
         }
 
-        public void Increment(CounterMetric metric)
+        internal void Increment(CounterMetric metric)
         {
             // Notes:
             // - If we have long periods with no stats, we won't reset until we get one.
@@ -62,12 +62,12 @@ namespace Hudl.Mjolnir.Metrics
             return counters;
         }
 
-        public long GetCount(CounterMetric metric)
+        internal long GetCount(CounterMetric metric)
         {
             return _counters[(int) metric].Get();
         }
 
-        public void Reset()
+        internal void Reset()
         {
             if (!Monitor.TryEnter(_resetBucketLock))
             {
