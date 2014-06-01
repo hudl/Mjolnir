@@ -1,6 +1,6 @@
-﻿## Complete list of events provide to `IStats` methods.
+﻿## Events sent to `IStats` methods
 
-### Calls to `Event(..., ..., long?)`
+### Calls to `Event()`
 
 None of these actually send metric values, they just indicate method results and state changes.
 
