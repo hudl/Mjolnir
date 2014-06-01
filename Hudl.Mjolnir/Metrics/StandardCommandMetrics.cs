@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Threading;
 using Hudl.Common.Clock;
 using Hudl.Config;
-using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
 using Hudl.Riemann;
@@ -23,8 +22,8 @@ namespace Hudl.Mjolnir.Metrics
         private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
-        public StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis)
-            : this(key, windowMillis, snapshotTtlMillis, new SystemClock()) {}
+        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IRiemann riemann)
+            : this(key, windowMillis, snapshotTtlMillis, new SystemClock(), riemann) {}
 
         internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock, IRiemann riemann = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
@@ -37,7 +36,12 @@ namespace Hudl.Mjolnir.Metrics
             _clock = clock;
             _snapshotTtlMillis = snapshotTtlMillis;
             _resettingNumbersBucket = new ResettingNumbersBucket(_clock, windowMillis);
-            _riemann = (riemann ?? CommandContext.Riemann);
+
+            if (riemann == null)
+            {
+                throw new ArgumentNullException("riemann");
+            }
+            _riemann = riemann;
 
             _timer = new GaugeTimer((source, args) =>
             {

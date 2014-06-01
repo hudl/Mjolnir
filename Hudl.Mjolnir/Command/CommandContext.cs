@@ -101,7 +101,8 @@ namespace Hudl.Mjolnir.Command
                 new StandardCommandMetrics(
                     key,
                     new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", 30000),
-                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", 1000)));
+                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", 1000),
+                    Riemann));
         }
 
         public static IIsolationThreadPool GetThreadPool(GroupKey key)

@@ -3,6 +3,7 @@ using Hudl.Config;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
+using Hudl.Riemann;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Metrics
@@ -12,7 +13,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         [Fact]
         public void MarkCommandSuccess_BeforeFirstSnapshot_GetsIncludedInSnapshot()
         {
-            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(30000), new TransientConfigurableValue<long>(1000));
+            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(30000), new TransientConfigurableValue<long>(1000), new IgnoringRiemannStats());
             metrics.MarkCommandSuccess();
 
             var snapshot = metrics.GetSnapshot();
@@ -23,7 +24,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         [Fact]
         public void MarkCommandFailure_BeforeFirstSnapshot_GetsIncludedInSnapshot()
         {
-            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(30000), new TransientConfigurableValue<long>(1000));
+            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(30000), new TransientConfigurableValue<long>(1000), new IgnoringRiemannStats());
             metrics.MarkCommandFailure();
 
             var snapshot = metrics.GetSnapshot();
@@ -61,7 +62,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
             // Within the metrics, the last snapshot timestamp will probably be zero.
             // Let's start our clock with something far away from zero.
             clock.AddMilliseconds(new SystemClock().GetMillisecondTimestamp());
-            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(10000), new TransientConfigurableValue<long>(1000), clock);
+            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(10000), new TransientConfigurableValue<long>(1000), clock, new IgnoringRiemannStats());
 
             metrics.MarkCommandSuccess();
             metrics.GetSnapshot(); // Take the first snapshot to cache it.
@@ -74,7 +75,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
 
         private MetricsSnapshot SnapshotFor(int success, int failure)
         {
-            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(10000), new TransientConfigurableValue<long>(0)); // Don't cache snapshots.
+            var metrics = new StandardCommandMetrics(GroupKey.Named("Test"), new TransientConfigurableValue<long>(10000), new TransientConfigurableValue<long>(0), new IgnoringRiemannStats()); // Don't cache snapshots.
             for (var i = 0; i < success; i++)
             {
                 metrics.MarkCommandSuccess();
