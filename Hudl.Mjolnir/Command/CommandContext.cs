@@ -21,27 +21,6 @@ namespace Hudl.Mjolnir.Command
 
         private IStats _stats = new IgnoringStats();
 
-        /// <summary>
-        /// Get/set the default Stats that all Mjolnir code should use.
-        /// 
-        /// This should be set as soon as possible if it's going to be implemented.
-        /// Other parts of Mjolnir will cache their Stats members, so changing
-        /// this after Breakers and Pools have been created won't update the
-        /// client for them.
-        /// </summary>
-        internal IStats DefaultStats
-        {
-            get { return _stats; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentException();
-                }
-                _stats = value;
-            }
-        }
-
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
         private readonly GaugeTimer _timer;
@@ -58,10 +37,25 @@ namespace Hudl.Mjolnir.Command
             });
         }
 
+        /// <summary>
+        /// Get/set the Stats implementation that all Mjolnir code should use.
+        /// 
+        /// This should be set as soon as possible if it's going to be implemented.
+        /// Other parts of Mjolnir will cache their Stats members, so changing
+        /// this after Breakers and Pools have been created won't update the
+        /// client for them.
+        /// </summary>
         internal static IStats Stats
         {
-            get { return Instance.DefaultStats; }
-            set { Instance.DefaultStats = value; }
+            get { return Instance._stats; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException();
+                }
+                Instance._stats = value;
+            }
         }
 
         public static ICircuitBreaker GetCircuitBreaker(GroupKey key)
