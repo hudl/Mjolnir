@@ -211,9 +211,9 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        private IConfigurableValue<long> GetTimeoutConfigurableValue(string name)
+        private static IConfigurableValue<long> GetTimeoutConfigurableValue(string commandName)
         {
-            return TimeoutConfigCache.GetOrAdd(name, n => new ConfigurableValue<long>("command." + Name + ".Timeout"));
+            return TimeoutConfigCache.GetOrAdd(commandName, n => new ConfigurableValue<long>("command." + commandName + ".Timeout"));
         }
 
         internal string Name
