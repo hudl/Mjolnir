@@ -41,8 +41,10 @@ namespace Hudl.Mjolnir.Command
 
         /// <summary>
         /// Maps command names to IConfigurableValues with command timeouts.
+        /// 
+        /// This is only internal so that we can look at it during unit tests.
         /// </summary>
-        protected static readonly ConcurrentDictionary<string, IConfigurableValue<long>> TimeoutConfigCache = new ConcurrentDictionary<string, IConfigurableValue<long>>();
+        internal static readonly ConcurrentDictionary<string, IConfigurableValue<long>> TimeoutConfigCache = new ConcurrentDictionary<string, IConfigurableValue<long>>();
     }
 
     /// <summary>
