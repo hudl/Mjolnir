@@ -38,6 +38,13 @@ namespace Hudl.Mjolnir.Command
         /// avoid repeatedly generating the same Name for every distinct command.
         /// </summary>
         protected static readonly ConcurrentDictionary<Tuple<string, GroupKey>, string> ProvidedNameCache = new ConcurrentDictionary<Tuple<string, GroupKey>, string>();
+
+        /// <summary>
+        /// Maps command names to IConfigurableValues with command timeouts.
+        /// 
+        /// This is only internal so that we can look at it during unit tests.
+        /// </summary>
+        internal static readonly ConcurrentDictionary<string, IConfigurableValue<long>> TimeoutConfigCache = new ConcurrentDictionary<string, IConfigurableValue<long>>();
     }
 
     /// <summary>
@@ -157,7 +164,7 @@ namespace Hudl.Mjolnir.Command
             _breakerKey = GroupKey.Named(breakerKey);
             _poolKey = GroupKey.Named(poolKey);
 
-            var timeout = new ConfigurableValue<long>("command." + Name + ".Timeout").Value;
+            var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
             {
                 timeout = (long)defaultTimeout.TotalMilliseconds;
@@ -204,6 +211,11 @@ namespace Hudl.Mjolnir.Command
                 // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
                 CommandContext.Riemann.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
             }
+        }
+
+        private static IConfigurableValue<long> GetTimeoutConfigurableValue(string commandName)
+        {
+            return TimeoutConfigCache.GetOrAdd(commandName, n => new ConfigurableValue<long>("command." + commandName + ".Timeout"));
         }
 
         internal string Name

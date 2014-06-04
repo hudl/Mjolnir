@@ -28,7 +28,7 @@ namespace Hudl.Mjolnir.SystemTests
         private readonly IConfigurationProvider _testConfigProvider = new SystemTestConfigProvider();
         private readonly MemoryStoreRiemann _testRiemann = new MemoryStoreRiemann();
 
-        [Fact]
+        //[Fact]
         public async Task RunAllScenarios()
         {
             ConfigProvider.UseProvider(_testConfigProvider);
