@@ -1,46 +1,46 @@
 Mjolnir
 =======
 
-When bad things like network partition or resource exhaustion happen, Mjolnir
-- isolates them from the rest of the application/system.
-- sheds load from failing downstream dependencies.
-- fails fast back to the caller.
+When bad things like network partition or resource exhaustion happen, Mjolnir helps you
+- isolate them from the rest of the application/system.
+- shed load from failing downstream dependencies.
+- fail fast back to the caller.
 
-Modeled after Netflix's [Hystrix](https://github.com/Netflix/Hystrix) library.
+Mjolnir is modelled after Netflix's awesome [Hystrix](https://github.com/Netflix/Hystrix) library. Some components are ports, but much of it has been written using C#- and .NET-specific features (e.g. `async/await`, `CancellationToken`s).
 
 When To Use
 -----
 
-What dangerous code might you want to wrap in a Mjolnir [Command](#commands)?
-- Network operations (inter-cluster, database, cache, search, etc.)
+What dangerous code might you wrap in a Mjolnir [Command](#commands)?
+- Network operations (inter-cluster, database, cache, search, etc.).
 - Operations that use files or read/write from/to disk.
-- Long-running or high-resource (CPU, Memory) operations
+- Long-running or high-resource (CPU, Memory) operations.
 
 Commands
 -----
 
 Commands are the heart of Mjolnir, and are how you use its protections. You can either:
 - extend `Command<TResult>` and put dangerous code in its `ExecuteAsync()` method, or
-- add `[Command]` to an `interface`, which wraps all of its methods in a Command.
+- add `[Command]` to an `interface`, which wraps all of its methods in a `Command`.
 
 **Extend `Command<TResult>`**
 
 *Example*
 
 ```csharp
-public class GetTeamCommand : Command<TeamDto>
+public class GetUserCommand : Command<UserDto>
 {
-    private readonly string _teamId;
+    private readonly string _userId;
 
-    public UpdateTeamCommand(string teamId)
-        : base("core-client", "core-team", TimeSpan.FromMilliseconds(15000))
+    public UpdateUserCommand(string userId)
+        : base("core-client", "core-user", TimeSpan.FromMilliseconds(15000))
     {
-        _teamId = teamId;
+        _userId = userId;
     }
     
-    protected override Task<TeamDto> ExecuteAsync(CancellationToken token)
+    protected override Task<UserDto> ExecuteAsync(CancellationToken token)
     {
-        // Go over the network to query the TeamDto using _teamId.
+        // Go over the network to query the UserDto using _userId.
     }
 }
 ```
@@ -67,30 +67,35 @@ For more information on the keys, see [Circuit Breakers](#circuit-breakers) and 
 
 **`[Command]` attribute**
 
+Because extending `Command` can get very boilerplatey for lots of service calls, you can use Mjolnir's `[Command]` attribute if you're okay with sacrificing a little flexibility. The attribute lets you wrap each method of an `interface` within a `Command`.
+
 *Example*
 
 ```csharp
-[Command("core-client", "core-team", 15000)]
-public interface ITeamService
+[Command("core-client", "core-user", 15000)]
+public interface IUserService
 {
-    TeamDto GetTeam(string teamId, CancellationToken? token = null);
-    void UpdateTeam(TeamDto teamDto, CancellationToken? token = null);
+    UserDto GetUser(string userId, CancellationToken? token = null);
+    void UpdateUser(UserDto userDto, CancellationToken? token = null);
 }
 
-public class TeamService : ITeamService { /* implementation */ }
+public class UserService : IUserService { /* implementation */ }
 
 // ...
 
 void Main() {
     // This is typically done in a service locator of some sort and cached.
-    var proxy = CommandInterceptor.CreateProxy<ITeamService>(new TeamService());
-    var teamDto = proxy.GetTeam("1234");
+    var proxy = CommandInterceptor.CreateProxy<IUserService>(new UserService());
+    var userDto = proxy.GetUser("1234");
+	...
 }
 ```
 
-Using `[Command]` provides the same benefits as extending `Command<TResult>`, but can be more convenient at times.
+Using `[Command]` provides the same benefits as extending `Command<TResult>`, but can be more convenient.
 
 Note the presence of `CancellationToken`s on the interface methods. If your interface method signature contains a `CancellationToken` (which is optional), Mjolnir will pass a token created from the timeout through to your method, allowing you to cooperatively cancel your operation. If no `CancellationToken` parameter is present, the Command timeout may be less effective. Mjolnir will only pass its token through if it doesn't already see a non-null or non-empty token as the parameter value.
+
+Fallbacks aren't supported when using `[Command]`.
 
 Thread Pools
 -----
@@ -99,13 +104,13 @@ Thread pools help guard against one type of operation consuming more than its sh
 
 *Example:*
 
-Imagine an operation that makes a network call to a different cluster. If that downstream cluster becomes very slow, our calls will start blocking and waiting for responses.
+Imagine we have an operation that makes a network call to a different cluster. If that downstream cluster becomes very slow, our calls will start blocking and waiting for responses.
 
-Under high enough traffic volume, our cluster will start building up pending operations that are waiting for the downstream cluster to respond, which means they're taking up increasingly more threads - potentially as many as they can - leaving fewer threads for normal, succeeding operatiosn to work with.
+Under high enough traffic volume, our cluster will start building up pending operations that are waiting for the downstream cluster to respond, which means they're taking up increasingly more threads - potentially as many as they can - leaving fewer threads for normal, unrelated operations to work with.
 
 To prevent this, Commands are grouped into thread pools. Each thread pool receives a fixed number of threads to work with, along with a small queue in front of it.
 
-When the thread pool is at capacity, operations will begin getting rejected from the pool, resulting in an immediately-thrown Exception.
+When the thread pool is at capacity, operations will begin getting rejected from the pool, resulting in an immediately-thrown `CommandFailedException`.
 
 *Configuration + Defaults*
 
@@ -210,4 +215,7 @@ Command names will always have exactly one dot (`.`) separator. Configuring a Co
 
 The default timeouts are fairly permissive; timeouts should be tuned after observing the Command's typical behavior in production.
 
-*TODO: More information about how to tune timeouts, and what ideal timeout values are.*
+TODO
+-----
+
+- More information about how to tune configuration, and what ideal configuration values are.
