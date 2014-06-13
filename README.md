@@ -32,7 +32,7 @@ public class GetUserCommand : Command<UserDto>
 {
     private readonly string _userId;
 
-    public UpdateUserCommand(string userId)
+    public GetUserCommand(string userId)
         : base("core-client", "core-user", TimeSpan.FromMilliseconds(15000))
     {
         _userId = userId;
