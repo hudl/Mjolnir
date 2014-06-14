@@ -10,7 +10,14 @@ using Hudl.Mjolnir.Util;
 
 namespace Hudl.Mjolnir.Command
 {
-    internal sealed class CommandContext
+    /// <summary>
+    /// Manages all of Mjolnir's pools, breakers, and other state. Also handles
+    /// dependency injection for replaceable components (stats, config, etc.).
+    /// 
+    /// Client code typically doesn't interact with CommandContext other than
+    /// to inject dependencies.
+    /// </summary>
+    public sealed class CommandContext
     {
         private static readonly CommandContext Instance = new CommandContext();
 
@@ -21,8 +28,7 @@ namespace Hudl.Mjolnir.Command
 
         private IStats _stats = new IgnoringStats();
 
-        private CommandContext()
-        {}
+        private CommandContext() {}
 
         /// <summary>
         /// Get/set the Stats implementation that all Mjolnir code should use.
@@ -32,7 +38,7 @@ namespace Hudl.Mjolnir.Command
         /// this after Breakers and Pools have been created won't update the
         /// client for them.
         /// </summary>
-        internal static IStats Stats
+        public static IStats Stats
         {
             get { return Instance._stats; }
             set
@@ -45,7 +51,7 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        public static ICircuitBreaker GetCircuitBreaker(GroupKey key)
+        internal static ICircuitBreaker GetCircuitBreaker(GroupKey key)
         {
             if (key == null)
             {
@@ -81,7 +87,7 @@ namespace Hudl.Mjolnir.Command
                     Stats));
         }
 
-        public static IIsolationThreadPool GetThreadPool(GroupKey key)
+        internal static IIsolationThreadPool GetThreadPool(GroupKey key)
         {
             if (key == null)
             {
@@ -96,7 +102,7 @@ namespace Hudl.Mjolnir.Command
                     Stats));
         }
 
-        public static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
+        internal static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
         {
             if (key == null)
             {
