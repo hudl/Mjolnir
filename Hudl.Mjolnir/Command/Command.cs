@@ -292,8 +292,8 @@ namespace Hudl.Mjolnir.Command
             {
                 invokeStopwatch.Stop();
 
-                Stats.Elapsed(StatsPrefix + " ExecuteInIsolation", status.ToString(), executeStopwatch.Elapsed);
-                Stats.Elapsed(StatsPrefix + " InvokeAsync", status.ToString(), invokeStopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
             }
         }
 
@@ -382,7 +382,7 @@ namespace Hudl.Mjolnir.Command
             var semaphore = FallbackSemaphore; // Locally reference in case the property gets updated (highly unlikely).
             if (!semaphore.TryEnter())
             {
-                Stats.Elapsed(StatsPrefix + " TryFallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " fallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
 
                 instigator.FallbackStatus = FallbackStatus.Rejected;
                 throw instigator;
@@ -418,7 +418,7 @@ namespace Hudl.Mjolnir.Command
                 semaphore.Release();
 
                 stopwatch.Stop();
-                Stats.Elapsed(StatsPrefix + " TryFallback", fallbackStatus.ToString(), stopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " fallback", fallbackStatus.ToString(), stopwatch.Elapsed);
             }
         }
 

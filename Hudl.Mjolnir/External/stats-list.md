@@ -15,22 +15,23 @@ mjolnir pool [key] thread                  Initialized | Terminated           nu
 
 ### Calls to `Elapsed()`
 
-Each of these send a millisecond value for their metric. These are mostly for profiling, and many will likely be removed in the future.
-
-The three significant metrics are:
-- `mjolnir command [name] InvokeAsync` - the entire command + fallback
-- `mjolnir command [name] ExecuteInIsolation` - the command only (without fallback)
-- `mjolnir command [name] TryFallback` - the command's fallback execution
+Each of these send a millisecond value for their metric.
 
 ```
-service                                    possible states
-----------------------------------------------------------
+service                                    possible states                                   description
+--------------------------------------------------------------------------------------------------------
+
+// These three are the most useful, and can help profile your application's Commands.
+
+mjolnir command [name] execute             RanToCompletion | Canceled | Rejected | Faulted   ExecuteAsync() elapsed
+mjolnir command [name] fallback            Success | Rejected | NotImplemented | Failure     Fallback() elapsed
+mjolnir command [name] total               RanToCompletion | Canceled | Rejected | Faulted   ExecuteAsync() + Fallback() elapsed
+
+// These are mainly for internal Mjolnir profiling, and may be removed in the future.
+
 mjolnir breaker [key] IsAllowing           Allowed | Rejected
 mjolnir breaker [key] AllowSingleTest      Unknown | MissedLock | Allowed | NotEligible
 mjolnir breaker [key] CheckAndSetTripped   Unknown | AlreadyTripped | MissedLock | CriteriaNotMet | JustTripped
-mjolnir command [name] ExecuteInIsolation  RanToCompletion | Canceled | Rejected | Faulted
-mjolnir command [name] InvokeAsync         RanToCompletion | Canceled | Rejected | Faulted
-mjolnir command [name] TryFallback         Success | Rejected | NotImplemented | Failure
 mjolnir metrics [key] CreateSnapshot       null
 mjolnir metrics [key] GetSnapshot          null
 mjolnir metrics [key] Reset                null
@@ -47,10 +48,6 @@ service                                    possible states    description
 -------------------------------------------------------------------------
 mjolnir breaker [key] total                Above | Below      total breaker operation count in current window (0+)
 mjolnir breaker [key] error                Above | Below      error percentage in current window (0-100)
-mjolnir context breakers                   null               number of active circuit breakers
-mjolnir context metrics                    null               number of active metrics counter instances
-mjolnir context pools                      null               number of active thread pools
-mjolnir context semaphores                 null               number of active fallback semaphores
 mjolnir fallback-semaphore [key]           Full | Available   semaphore available spots (0 = full, will reject)
 mjolnir pool [key] activeThreads           null               active thread count
 mjolnir pool [key] inUseThreads            null               in use thread count
