@@ -16,6 +16,55 @@ What dangerous code might you wrap in a Mjolnir [Command](#commands)?
 - Operations that use files or read/write from/to disk.
 - Long-running or high-resource (CPU, Memory) operations.
 
+Installing & Configuring
+-----
+
+Installation is fairly minimal - just grab Hudl.Mjolnir from NuGet (www.nuget.org) using your Package Manager GUI or Console.
+
+The project works out-of-the-box, but you'll undoubtedly want to adjust a few things.
+
+**Configuration**
+
+Mjolnir can read configuration values from a file; set the provider on application startup (before you use any Commands):
+
+```csharp
+using Hudl.Config;
+
+//...
+
+ConfigProvider.UseProvider(new FileConfigurationProvider(@"c:\path\to", "config-file.txt"));
+```
+
+Configuration file contents are just `Key=Value` pairs, e.g.:
+
+```
+mjolnir.command.core-client.GetUser.Timeout=5000
+mjolnir.pools.core-user.threadCount=20
+```
+
+See the different sections of this README for available configuration keys.
+
+If you don't set a configuration provider, default values will be used for everything in Mjolnir (which isn't ideal, because you'll want to tune components and commands for your application).
+
+**Metrics/Stats**
+
+You can also inject your own metrics handler. We typically use [Riemann](http://riemann.io/), but other services like [statsd](https://github.com/etsy/statsd/) should work well, also.
+
+You'll need to implement [`Hudl.Mjolnir.External.IStats`](Hudl.Mjolnir/External/IStats.cs) and set it on [`CommandContext`](Hudl.Mjolnir/Command/CommandContext.cs#L33).
+
+```csharp
+using Hudl.Mjolnir;
+using Hudl.Mjolnir.External;
+
+//...
+
+CommandContext.Stats = new MyStats();
+```
+
+You'll want to set `CommandContext.Stats` early on application startup; breakers and pools will cache their stats implementations, and won't pick up a new one if you set if after they've been created.
+
+See [the list of available metrics](Hudl.Mjolnir/External/stats-list.md).
+
 Commands
 -----
 
