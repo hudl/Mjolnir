@@ -67,6 +67,19 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(configuredTimeout, command.Timeout);
         }
 
+        [Fact]
+        public void Construct_CachesAndReusesTimeoutConfigurableValue()
+        {
+            var command1 = new CachedTimeoutConfigurationCommand1();
+            var command2 = new CachedTimeoutConfigurationCommand1();
+
+            Assert.Equal(command1.GetCachedTimeout(), command2.GetCachedTimeout());
+            
+            var command3 = new CachedTimeoutConfigurationCommand2();
+
+            Assert.NotEqual(command1.GetCachedTimeout(), command3.GetCachedTimeout());
+        }
+
         private class UnconfiguredTimeoutCommand : BaseTestCommand<object>
         {
             // Use a dot in the group name to also test dot-dash conversion and that we're using the converted Name as the config value.
@@ -87,6 +100,29 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 throw new NotImplementedException();
             }
+        }
+
+        private abstract class CachedTimeoutConfigurationCommand : BaseTestCommand<object>
+        {
+            internal IConfigurableValue<long> GetCachedTimeout()
+            {
+                return TimeoutConfigCache[Name];
+            }
+
+            protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private class CachedTimeoutConfigurationCommand1 : CachedTimeoutConfigurationCommand
+        {
+            
+        }
+
+        private class CachedTimeoutConfigurationCommand2 : CachedTimeoutConfigurationCommand
+        {
+
         }
     }
 }
