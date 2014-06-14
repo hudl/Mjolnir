@@ -21,21 +21,8 @@ namespace Hudl.Mjolnir.Command
 
         private IStats _stats = new IgnoringStats();
 
-        // ReSharper disable NotAccessedField.Local
-        // Don't let these get garbage collected.
-        private readonly GaugeTimer _timer;
-        // ReSharper restore NotAccessedField.Local
-
         private CommandContext()
-        {
-            _timer = new GaugeTimer((source, args) =>
-            {
-                _stats.Gauge("mjolnir context breakers", null, _circuitBreakers.Count);
-                _stats.Gauge("mjolnir context metrics", null, _metrics.Count);
-                _stats.Gauge("mjolnir context pools", null, _pools.Count);
-                _stats.Gauge("mjolnir context semaphores", null, _fallbackSemaphores.Count);
-            });
-        }
+        {}
 
         /// <summary>
         /// Get/set the Stats implementation that all Mjolnir code should use.
