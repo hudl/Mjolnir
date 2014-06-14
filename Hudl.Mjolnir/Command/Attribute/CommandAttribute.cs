@@ -4,6 +4,7 @@ namespace Hudl.Mjolnir.Command.Attribute
 {
     /// <summary>
     /// Used on an interface to proxy all of its method calls through a <see cref="Command"/>.
+    /// See Command and its constructors for more information.
     /// </summary>
     [AttributeUsage(AttributeTargets.Interface)]
     public sealed class CommandAttribute : System.Attribute
@@ -15,8 +16,10 @@ namespace Hudl.Mjolnir.Command.Attribute
         private readonly string _poolKey;
         private readonly int _timeout;
 
+        /// <see cref="Command(string, string, TimeSpan)"/>
         public CommandAttribute(string group, string isolationKey, int timeout = DefaultTimeout) : this(group, isolationKey, isolationKey, timeout) {}
 
+        /// <see cref="Command(string, string, string, TimeSpan)"/>
         public CommandAttribute(string group, string breakerKey, string poolKey, int timeout = DefaultTimeout)
         {
             if (string.IsNullOrWhiteSpace(group))
