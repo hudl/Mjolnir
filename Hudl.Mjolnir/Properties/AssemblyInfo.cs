@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Hudl.Mjolnir")]
-[assembly: AssemblyDescription("Isolation library for protecting against cascading failure.")]
+[assembly: AssemblyDescription("Fault tolerance library for protecting against cascading failure. Uses thread pools and circuit breakers to isolate problems and fail fast.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Hudl")]
 [assembly: AssemblyProduct("Hudl.Mjolnir")]
