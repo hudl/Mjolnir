@@ -158,11 +158,25 @@ var result = await new GetUserCommand("1234").InvokeAsync();
 
 Though `InvokeAsync()` is preferred, we realize that it's difficult to convert lower-level code to use `async`. For those situations, you can use [`Invoke()`](Hudl.Mjolnir/Command/Command.cs#L250), which safely unwraps and returns the result.
 
-```charp
+```csharp
 var result = new GetUserCommand("1234").Invoke();
 ```
 
-If you defined the command using `[Command]`, you can simply invoke the method. See [`CommandInterceptor`](Hudl.Mjolnir/Command/Attribute/CommandInterceptor.cs#L11) for details on how different method return types affect the way the Command behaves.
+If you defined the command using `[Command]`, you can simply call the methods.
+
+```csharp
+
+[Command("foo", "bar")]
+public interface ICommandInterface {
+    Task<bool> MyMethod(CancellationToken? token = null);
+}
+
+//...
+
+var result = myServiceLocator.GetService<ICommandInterface>().MyMethod();
+```
+
+See [`CommandInterceptor`](Hudl.Mjolnir/Command/Attribute/CommandInterceptor.cs#L11) for details on how different method return types affect the way the Command behaves.
 
 Thread Pools
 -----
