@@ -173,6 +173,7 @@ public interface ICommandInterface {
 
 //...
 
+// Assumes your service locator has used CommandInterceptor.CreateProxy() on ICommandInterface.
 var result = myServiceLocator.GetService<ICommandInterface>().MyMethod();
 ```
 
