@@ -150,7 +150,7 @@ Fallbacks aren't supported when using `[Command]`.
 
 #### Invoking Commands
 
-If you defined the command by extending `Command<TResult>`, you can invoke it using [`InvokeAsync()`](Hudl.Mjolnir/Command/Command.cs#L274):
+If you defined the Command by extending `Command<TResult>`, you can invoke it using [`InvokeAsync()`](Hudl.Mjolnir/Command/Command.cs#L274):
 
 ```csharp
 var result = await new GetUserCommand("1234").InvokeAsync();
@@ -162,7 +162,7 @@ Though `InvokeAsync()` is preferred, we realize that it's difficult to convert l
 var result = new GetUserCommand("1234").Invoke();
 ```
 
-If you defined the command using `[Command]`, you can simply call the methods.
+If you defined the Command using `[Command]`, you can simply call the methods.
 
 ```csharp
 
@@ -177,7 +177,7 @@ public interface ICommandInterface {
 var result = myServiceLocator.GetService<ICommandInterface>().MyMethod();
 ```
 
-See [`CommandInterceptor`](Hudl.Mjolnir/Command/Attribute/CommandInterceptor.cs#L11) for details on how different method return types affect the way the Command behaves.
+See [`CommandInterceptor`](Hudl.Mjolnir/Command/Attribute/CommandInterceptor.cs#L11) for details on how different method return types affect the way the Command behaves when using `[Command]`.
 
 Thread Pools
 -----
