@@ -68,6 +68,8 @@ See [the list of available metrics](Hudl.Mjolnir/External/stats-list.md).
 Commands
 -----
 
+#### Defining Commands
+
 Commands are the heart of Mjolnir, and are how you use its protections. You can either:
 - extend `Command<TResult>` and put dangerous code in its `ExecuteAsync()` method, or
 - add `[Command]` to an `interface`, which wraps all of its methods in a `Command`.
@@ -145,6 +147,22 @@ Using `[Command]` provides the same benefits as extending `Command<TResult>`, bu
 Note the presence of `CancellationToken`s on the interface methods. If your interface method signature contains a `CancellationToken` (which is optional), Mjolnir will pass a token created from the timeout through to your method, allowing you to cooperatively cancel your operation. If no `CancellationToken` parameter is present, the Command timeout may be less effective. Mjolnir will only pass its token through if it doesn't already see a non-null or non-empty token as the parameter value.
 
 Fallbacks aren't supported when using `[Command]`.
+
+#### Invoking Commands
+
+If you defined the command by extending `Command<TResult>`, you can invoke it using [`InvokeAsync()`](Hudl.Mjolnir/Command/Command.cs#L274):
+
+```csharp
+var result = await new GetUserCommand("1234").InvokeAsync();
+```
+
+Though `InvokeAsync()` is preferred, we realize that it's difficult to convert lower-level code to use `async`. For those situations, you can use [`Invoke()`](Hudl.Mjolnir/Command/Command.cs#L250), which safely unwraps and returns the result.
+
+```charp
+var result = new GetUserCommand("1234").Invoke();
+```
+
+If you defined the command using `[Command]`, you can simply invoke the method. See [`CommandInterceptor`](Hudl.Mjolnir/Command/Attribute/CommandInterceptor.cs#L11) for details on how different method return types affect the way the Command behaves.
 
 Thread Pools
 -----
