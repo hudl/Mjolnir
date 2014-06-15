@@ -21,11 +21,11 @@ Installing & Configuring
 
 Installation is fairly minimal - just grab Hudl.Mjolnir from NuGet (www.nuget.org) using your Package Manager GUI or Console.
 
-The project works out-of-the-box, but you'll undoubtedly want to adjust a few things.
+Mjolnir requires you to specify a configuration provider. The configurable values within the app all have sensible defaults, but you'll want to adjust them after observing how your application behaves.
 
 **Configuration**
 
-Mjolnir can read configuration values from a file; set the provider on application startup (before you use any Commands):
+Mjolnir ships with a configuration provider implementation that can read configuration values from a file; set the provider on application startup (before you use any Commands):
 
 ```csharp
 using Hudl.Config;
