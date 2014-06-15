@@ -9,6 +9,7 @@
     <projectUrl>https://github.com/hudl/Mjolnir</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <tags>isolation resilience threadpool circuitbreaker</tags>
+    <iconUrl>https://raw.githubusercontent.com/hudl/Mjolnir/master/hudl.png</iconUrl>
   </metadata>
   <files>
     <file src="bin\Release\$id$.dll" target="lib\net45"/>
