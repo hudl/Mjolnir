@@ -60,7 +60,7 @@ namespace Hudl.Mjolnir.Tests.Command
         {
             var configuredTimeout = 12.Seconds();
             var constructedTimeout = configuredTimeout.Add(2.Seconds()); // Just needs to be different than configured value.
-            ConfigurationUtility.Set("command.timeout-test.ConfiguredTimeout.Timeout", configuredTimeout.TotalMilliseconds);
+            ConfigProvider.Instance.Set("command.timeout-test.ConfiguredTimeout.Timeout", configuredTimeout.TotalMilliseconds);
 
             var command = new ConfiguredTimeoutCommand(constructedTimeout);
 

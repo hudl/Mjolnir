@@ -37,21 +37,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AWSSDK, Version=1.5.10.0, Culture=neutral, PublicKeyToken=cd2d24cd2bace800, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\AWSSDK.1.5.10.0\lib\AWSSDK.dll</HintPath>
-    </Reference>
     <Reference Include="Castle.Core">
       <HintPath>..\packages\Castle.Core.2.5.1\lib\NET35\Castle.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Couchbase">
-      <HintPath>..\packages\CouchbaseNetClient.1.2.7\lib\net40\Couchbase.dll</HintPath>
-    </Reference>
-    <Reference Include="Enyim.Caching">
-      <HintPath>..\packages\CouchbaseNetClient.1.2.7\lib\net40\Enyim.Caching.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Bifrost">
-      <HintPath>..\packages\Hudl.Bifrost.1.21.0.0\lib\net45\Hudl.Bifrost.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -61,51 +48,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Config.1.5.0\lib\net40\Hudl.Config.dll</HintPath>
     </Reference>
-    <Reference Include="Hudl.Eureka, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Eureka.1.6.3.0\lib\net40\Hudl.Eureka.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Eureka.Heartbeat">
-      <HintPath>..\packages\Hudl.Eureka.Heartbeat.1.6.1.0\lib\net40\Hudl.Eureka.Heartbeat.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Hudl.Logging, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Logging.1.4.2.0\lib\net40\Hudl.Logging.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Multiverse.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Multiverse.Core.1.30.0.0\lib\net45\Hudl.Multiverse.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Riemann">
-      <HintPath>..\packages\Hudl.Riemann.1.2.6.0\lib\net45\Hudl.Riemann.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Hudl.RiemannClient">
-      <HintPath>..\packages\Hudl.RiemannClient.1.1.0.0\lib\net45\Hudl.RiemannClient.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Stats">
-      <HintPath>..\packages\Hudl.Stats.1.2.0.0\lib\net40\Hudl.Stats.dll</HintPath>
-    </Reference>
     <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="MiniProfiler">
-      <HintPath>..\packages\Hudl.Multiverse.Core.1.30.0.0\lib\net45\MiniProfiler.dll</HintPath>
-    </Reference>
     <Reference Include="Moq">
       <HintPath>..\packages\Moq.4.1.1309.1617\lib\net40\Moq.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net">
-      <HintPath>..\packages\protobuf-net.2.0.0.622\lib\net40\protobuf-net.dll</HintPath>
-    </Reference>
-    <Reference Include="ServiceStack.Text">
-      <HintPath>..\packages\ServiceStack.Text.4.0.5\lib\net40\ServiceStack.Text.dll</HintPath>
     </Reference>
     <Reference Include="SmartThreadPool, Version=2.2.3.3, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -167,6 +115,7 @@
     <Compile Include="ThreadPool\StpIsolationThreadPoolTests.cs" />
     <Compile Include="ThreadPool\StpWorkItemTests.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensionsTests.cs" />
+    <Compile Include="Util\TestConfigProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
