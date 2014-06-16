@@ -51,9 +51,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="SmartThreadPool, Version=2.2.3.3, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SmartThreadPool.dll.hudlcustom.2.2.3.3\lib\net20\SmartThreadPool.dll</HintPath>
+    <Reference Include="SmartThreadPool">
+      <HintPath>dll\SmartThreadPool.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

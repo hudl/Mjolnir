@@ -55,9 +55,8 @@
     <Reference Include="Moq">
       <HintPath>..\packages\Moq.4.1.1309.1617\lib\net40\Moq.dll</HintPath>
     </Reference>
-    <Reference Include="SmartThreadPool, Version=2.2.3.3, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SmartThreadPool.dll.hudlcustom.2.2.3.3\lib\net20\SmartThreadPool.dll</HintPath>
+    <Reference Include="SmartThreadPool">
+      <HintPath>..\Hudl.Mjolnir\dll\SmartThreadPool.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="xunit">
