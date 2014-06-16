@@ -65,6 +65,10 @@ You'll want to set `CommandContext.Stats` early on application startup; breakers
 
 See [the list of available metrics](Hudl.Mjolnir/External/stats-list.md).
 
+**SmartThreadPool dependency**
+
+Mjolnir uses SmartThreadPool, but has to package and reference it directly. See [Issue #16](https://github.com/hudl/Mjolnir/issues/16).
+
 Commands
 -----
 
