@@ -6,7 +6,7 @@ When bad things like network partition or resource exhaustion happen, Mjolnir he
 - shed load from failing downstream dependencies.
 - fail fast back to the caller.
 
-Mjolnir is modelled after Netflix's awesome [Hystrix](https://github.com/Netflix/Hystrix) library. Some components are ports, but much of it has been written using C#- and .NET-specific features (e.g. `async/await`, `CancellationToken`s).
+Mjolnir is modeled after Netflix's awesome [Hystrix](https://github.com/Netflix/Hystrix) library. Some components are ports, but much of it has been written using C#- and .NET-specific features (e.g. `async/await`, `CancellationToken`s).
 
 When To Use
 -----
