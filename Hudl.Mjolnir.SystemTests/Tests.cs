@@ -26,14 +26,15 @@ namespace Hudl.Mjolnir.SystemTests
         private static readonly ILog Log = LogManager.GetLogger(typeof (Tests));
 
         private readonly IConfigurationProvider _testConfigProvider = new SystemTestConfigProvider();
-        private readonly MemoryStoreRiemann _testRiemann = new MemoryStoreRiemann();
+        private readonly MemoryStoreStats _testStats = new MemoryStoreStats();
 
+        // This is a long-running test. Uncomment [Fact] to run it.
         //[Fact]
         public async Task RunAllScenarios()
         {
             ConfigProvider.UseProvider(_testConfigProvider);
             InitializeLogging();
-            CommandContext.Riemann = _testRiemann;
+            CommandContext.Stats = _testStats;
 
             File.Delete(ReportFile);
 
@@ -125,7 +126,7 @@ h2 { margin: 0px; padding: 0; }
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Immediate200();
 
-                _testRiemann.ClearAndStart();
+                _testStats.ClearAndStart();
 
                 await Task.WhenAll(Repeat(10, 30, () =>
                 {
@@ -136,15 +137,15 @@ h2 { margin: 0px; padding: 0; }
                 server.Stop();
             }
 
-            _testRiemann.Stop();
+            _testStats.Stop();
 
-            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testStats.Metrics.Select(m => m.ToCsvLine()));
 
             return new ChartSet
             {
                 Name = "Ideal (Inherited Command)",
                 Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
-                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+                Charts = GatherChartData(_testStats.Metrics, key, key + ".HttpClient"),
             };
         }
 
@@ -166,22 +167,22 @@ h2 { margin: 0px; padding: 0; }
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Immediate200();
 
-                _testRiemann.ClearAndStart();
+                _testStats.ClearAndStart();
 
                 await Task.WhenAll(Repeat(10, 30, () => proxy.MakeRequest(url, CancellationToken.None)));
 
                 server.Stop();
             }
 
-            _testRiemann.Stop();
+            _testStats.Stop();
 
-            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testStats.Metrics.Select(m => m.ToCsvLine()));
 
             return new ChartSet
             {
                 Name = "Ideal (Command Attribute)",
                 Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: Immediate 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
-                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".IHttpClientService-MakeRequest"),
+                Charts = GatherChartData(_testStats.Metrics, key, key + ".IHttpClientService-MakeRequest"),
             };
         }
 
@@ -199,7 +200,7 @@ h2 { margin: 0px; padding: 0; }
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Delayed200(TimeSpan.FromMilliseconds(15000));
 
-                _testRiemann.ClearAndStart();
+                _testStats.ClearAndStart();
 
                 await Task.WhenAll(Repeat(1, 30, () =>
                 {
@@ -210,15 +211,15 @@ h2 { margin: 0px; padding: 0; }
                 server.Stop();
             }
 
-            _testRiemann.Stop();
+            _testStats.Stop();
 
-            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testStats.Metrics.Select(m => m.ToCsvLine()));
 
             return new ChartSet
             {
                 Name = "Slow Success",
                 Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Delayed (15s) 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
-                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+                Charts = GatherChartData(_testStats.Metrics, key, key + ".HttpClient"),
             };
         }
 
@@ -236,7 +237,7 @@ h2 { margin: 0px; padding: 0; }
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Immediate500();
 
-                _testRiemann.ClearAndStart();
+                _testStats.ClearAndStart();
 
                 await Task.WhenAll(Repeat(5, 30, async () =>
                 {
@@ -255,15 +256,15 @@ h2 { margin: 0px; padding: 0; }
                 server.Stop();
             }
 
-            _testRiemann.Stop();
+            _testStats.Stop();
 
-            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testStats.Metrics.Select(m => m.ToCsvLine()));
 
             return new ChartSet
             {
                 Name = "Fast Failures",
                 Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 30000<br/>Server: Immediate 500<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
-                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+                Charts = GatherChartData(_testStats.Metrics, key, key + ".HttpClient"),
             };
         }
 
@@ -284,7 +285,7 @@ h2 { margin: 0px; padding: 0; }
                 server.Start(ServerPort);
                 server.ProcessRequest += ServerBehavior.Delayed200(TimeSpan.FromMilliseconds(200));
 
-                _testRiemann.ClearAndStart();
+                _testStats.ClearAndStart();
 
                 await Task.WhenAll(Repeat(5, 30, async () =>
                 {
@@ -302,15 +303,15 @@ h2 { margin: 0px; padding: 0; }
                 server.Stop();
             }
 
-            _testRiemann.Stop();
+            _testStats.Stop();
 
-            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testStats.Metrics.Select(m => m.ToCsvLine()));
 
             return new ChartSet
             {
                 Name = "Fast Timeouts",
                 Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 100<br/>Server: Delayed (200ms) 200<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
-                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+                Charts = GatherChartData(_testStats.Metrics, key, key + ".HttpClient"),
             };
         }
 
@@ -335,7 +336,7 @@ h2 { margin: 0px; padding: 0; }
 
                 server.ProcessRequest += okayBehavior;
 
-                _testRiemann.ClearAndStart();
+                _testStats.ClearAndStart();
 
                 await Task.WhenAll(Repeat(5, 5, () => new HttpClientCommand(key, url, TimeSpan.FromMilliseconds(10000)).InvokeAsync()));
 
@@ -374,15 +375,15 @@ h2 { margin: 0px; padding: 0; }
                 server.Stop();
             }
 
-            _testRiemann.Stop();
+            _testStats.Stop();
 
-            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testRiemann.Metrics.Select(m => m.ToCsvLine()));
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testStats.Metrics.Select(m => m.ToCsvLine()));
 
             return new ChartSet
             {
                 Name = "Error for 5s",
                 Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: 500 for 5 seconds in the middle<br/>Breaker: 50% / 10sec, min 5 ops, 5s tripped",
-                Charts = GatherChartData(_testRiemann.Metrics, key, key + ".HttpClient"),
+                Charts = GatherChartData(_testStats.Metrics, key, key + ".HttpClient"),
             };
         }
 

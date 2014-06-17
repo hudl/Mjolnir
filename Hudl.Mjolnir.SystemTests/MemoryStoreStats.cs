@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Hudl.Riemann;
+using Hudl.Mjolnir.External;
 
 namespace Hudl.Mjolnir.SystemTests
 {
-    internal class MemoryStoreRiemann : IRiemann
+    internal class MemoryStoreStats : IStats
     {
         // Normally you'll want to .Stop() before accessing this.
         public List<Metric> Metrics
@@ -51,34 +51,19 @@ namespace Hudl.Mjolnir.SystemTests
             }
         }
 
-        public void Event(string service, string state, long? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
+        public void Event(string service, string state, long? metric = null)
         {
             Store(service, state, metric);
         }
 
-        public void Event(string service, string state, float? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
-        {
-            Store(service, state, metric);
-        }
-
-        public void Event(string service, string state, double? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
-        {
-            Store(service, state, metric);
-        }
-
-        public void Elapsed(string service, string state, TimeSpan elapsed, ISet<string> tags = null, string description = null, int? ttl = null)
+        public void Elapsed(string service, string state, TimeSpan elapsed)
         {
             Store(service, state, elapsed.TotalMilliseconds);
         }
 
-        public void Gauge(string service, string state, long? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
+        public void Gauge(string service, string state, long? metric = null)
         {
             Store(service, state, metric);
-        }
-
-        public void ConfigGauge(string service, long metric)
-        {
-            Store(service, null, metric);
         }
     }
 }

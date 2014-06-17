@@ -180,8 +180,6 @@ namespace Hudl.Mjolnir.Tests.Command
         [Fact]
         public void InvokeAsync_WhenUsingDotResult_DoesntDeadlock()
         {
-            ConfigurationUtility.Init();
-
             var expected = new { };
             var command = new SuccessfulEchoCommandWithoutFallback(expected);
 

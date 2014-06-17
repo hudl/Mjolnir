@@ -7,20 +7,32 @@ using System.Threading.Tasks;
 using Hudl.Common.Extensions;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.ThreadPool;
-using Hudl.Riemann;
-using Hudl.Stats;
 using log4net;
 
 namespace Hudl.Mjolnir.Command
 {
+    /// <see cref="Command"/>
+    /// <typeparam name="TResult">The type of the result returned by the Command's execution.</typeparam>
     public interface ICommand<TResult>
     {
+        /// <summary>
+        /// Invoke the Command synchronously. See <see cref="Command#Invoke()"/>.
+        /// </summary>
         TResult Invoke();
+
+        /// <summary>
+        /// Invoke the Command asynchronously. See <see cref="Command#InvokeAsync()"/>.
+        /// </summary>
         Task<TResult> InvokeAsync();
     }
 
+    /// <summary>
+    /// Abstract class for <see cref="Command">Command</see>. Used mainly as a
+    /// holder for a few shared/static properties.
+    /// </summary>
     public abstract class Command
     {
         protected static readonly ILog Log = LogManager.GetLogger(typeof(Command<>));
@@ -52,8 +64,10 @@ namespace Hudl.Mjolnir.Command
     /// 
     /// Provides isolation and fail-fast behavior around dangerous operations using timeouts,
     /// circuit breakers, and thread pools.
+    /// 
+    /// See https://github.com/hudl/Mjolnir for an overview.
     /// </summary>
-    /// <typeparam name="TResult">The type of the result returned by this command's execution.</typeparam>
+    /// <typeparam name="TResult">The type of the result returned by this Command's execution.</typeparam>
     public abstract class Command<TResult> : Command, ICommand<TResult>
     {
         internal readonly TimeSpan Timeout;
@@ -65,11 +79,11 @@ namespace Hudl.Mjolnir.Command
 
         // Setters should be used for testing only.
 
-        private IRiemann _riemann;
-        internal IRiemann Riemann
+        private IStats _stats;
+        internal IStats Stats
         {
-            private get { return _riemann ?? CommandContext.Riemann; }
-            set { _riemann = value; }
+            private get { return _stats ?? CommandContext.Stats; }
+            set { _stats = value; }
         }
 
         private ICircuitBreaker _breaker;
@@ -175,42 +189,26 @@ namespace Hudl.Mjolnir.Command
 
         private string CacheProvidedName(GroupKey group, string name)
         {
-            var stopwatch = Stopwatch.StartNew();
-            try
-            {
-                var cacheKey = new Tuple<string, GroupKey>(name, group);
-                return ProvidedNameCache.GetOrAdd(cacheKey, t => cacheKey.Item2.Name.Replace(".", "-") + "." + name.Replace(".", "-"));
-            }
-            finally
-            {
-                // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
-                CommandContext.Riemann.Elapsed("mjolnir command mjolnir-meta.CacheProvidedName", null, stopwatch.Elapsed);
-            }
+            var cacheKey = new Tuple<string, GroupKey>(name, group);
+            return ProvidedNameCache.GetOrAdd(cacheKey, t => cacheKey.Item2.Name.Replace(".", "-") + "." + name.Replace(".", "-"));
         }
 
+        // Since creating the Command's name is non-trivial, we'll keep a local
+        // cache of them.
         private string GenerateAndCacheName(GroupKey group)
         {
-            var stopwatch = Stopwatch.StartNew();
-            try
+            var type = GetType();
+            var cacheKey = new Tuple<Type, GroupKey>(type, group);
+            return GeneratedNameCache.GetOrAdd(cacheKey, t =>
             {
-                var type = GetType();
-                var cacheKey = new Tuple<Type, GroupKey>(type, group);
-                return GeneratedNameCache.GetOrAdd(cacheKey, t =>
+                var className = cacheKey.Item1.Name;
+                if (className.EndsWith("Command", StringComparison.InvariantCulture))
                 {
-                    var className = cacheKey.Item1.Name;
-                    if (className.EndsWith("Command", StringComparison.InvariantCulture))
-                    {
-                        className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
-                    }
+                    className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
+                }
 
-                    return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
-                });
-            }
-            finally
-            {
-                // Not using _riemann here because it may not be initialized in tests before we call Name in the constructor.
-                CommandContext.Riemann.Elapsed("mjolnir command mjolnir-meta.GenerateAndCacheName", null, stopwatch.Elapsed);
-            }
+                return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
+            });
         }
 
         private static IConfigurableValue<long> GetTimeoutConfigurableValue(string commandName)
@@ -238,7 +236,7 @@ namespace Hudl.Mjolnir.Command
             get { return _poolKey; }
         }
 
-        private string RiemannKeyPrefix
+        private string StatsPrefix
         {
             get { return "mjolnir command " + Name; }
         }
@@ -249,7 +247,6 @@ namespace Hudl.Mjolnir.Command
         /// Prefer <see cref="InvokeAsync()"/>, but use this when integrating commands into
         /// synchronous code that's difficult to port to async.
         /// </summary>
-        /// <returns></returns>
         public TResult Invoke()
         {
             try
@@ -323,11 +320,8 @@ namespace Hudl.Mjolnir.Command
             {
                 invokeStopwatch.Stop();
 
-                Riemann.Elapsed(RiemannKeyPrefix + " ExecuteInIsolation", status.ToString(), executeStopwatch.Elapsed);
-                Riemann.Elapsed(RiemannKeyPrefix + " InvokeAsync", status.ToString(), invokeStopwatch.Elapsed);
-
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".execute." + status, invokeStopwatch.ElapsedMilliseconds);
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".invoke." + status, invokeStopwatch.ElapsedMilliseconds);
+                Stats.Elapsed(StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
+                Stats.Elapsed(StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
             }
         }
 
@@ -375,7 +369,11 @@ namespace Hudl.Mjolnir.Command
             try
             {
                 var stopwatch = Stopwatch.StartNew();
+
+                // Await here so we can catch the Exception and track the state.
+                // I suppose we could do this with a continuation, too. Await's easier.
                 result = await ExecuteAsync(cancellationToken);
+
                 CircuitBreaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
                 CircuitBreaker.Metrics.MarkCommandSuccess();
             }
@@ -416,8 +414,7 @@ namespace Hudl.Mjolnir.Command
             var semaphore = FallbackSemaphore; // Locally reference in case the property gets updated (highly unlikely).
             if (!semaphore.TryEnter())
             {
-                Riemann.Elapsed(RiemannKeyPrefix + " TryFallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".fallback." + FallbackStatus.Rejected, stopwatch.ElapsedMilliseconds);
+                Stats.Elapsed(StatsPrefix + " fallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
 
                 instigator.FallbackStatus = FallbackStatus.Rejected;
                 throw instigator;
@@ -453,30 +450,39 @@ namespace Hudl.Mjolnir.Command
                 semaphore.Release();
 
                 stopwatch.Stop();
-                Riemann.Elapsed(RiemannKeyPrefix + " TryFallback", fallbackStatus.ToString(), stopwatch.Elapsed);
-                StatsDClient.ManualTime("mjolnir.command." + Name + ".fallback." + fallbackStatus, stopwatch.ElapsedMilliseconds);
+                Stats.Elapsed(StatsPrefix + " fallback", fallbackStatus.ToString(), stopwatch.Elapsed);
             }
         }
 
         /// <summary>
         /// The operation that should be performed when this command is invoked.
+        /// 
+        /// If this method throws an Exception, the Command's execution will be
+        /// tracked as a failure with its circuit breaker. Otherwise, it will be
+        /// considered successful.
+        /// 
+        /// Failures will cause <see cref="Fallback(CommandFailedException)">Fallback()</see>
+        /// to be invoked.
         /// </summary>
-        /// <param name="cancellationToken">Token used to cancel and detect cancellation of the command.</param>
-        /// <returns>A Task that will provide the command's result.</returns>
+        /// <param name="cancellationToken">Token used to cancel and detect cancellation of the Command.</param>
+        /// <returns>A Task that will provide the Command's result.</returns>
         protected abstract Task<TResult> ExecuteAsync(CancellationToken cancellationToken);
 
         /// <summary>
-        /// May be optionally implemented. Will be invoked if <see cref="ExecuteAsync(CancellationToken)"/> fails
-        /// (for any reason: timeout, fault, rejected, etc.).
+        /// May be optionally implemented. Will be invoked if
+        /// <see cref="ExecuteAsync(CancellationToken)"/> fails (for any reason:
+        /// timeout, fault, rejected, etc.).
         /// 
-        /// If you need to make another service (or other potentially-latent) call in the fallback, make sure
-        /// to do it via a Command.
+        /// If you need to make another service (or other potentially-latent)
+        /// call in the fallback, make sure to do it via a Command.
         /// 
-        /// Although the triggering Exception (<see cref="instigator"/>) is provided, you don't have to use it. You
-        /// may ignore it, rethrow it, wrap it, etc. If you decide not to rethrow the exception, it's recommended
-        /// that you log it here; it won't be logged anywhere else.
+        /// Although the triggering Exception (<see cref="instigator"/>) is
+        /// provided, you don't have to use it. You may ignore it, rethrow it,
+        /// wrap it, etc. If you decide not to rethrow the exception, it's
+        /// recommended that you log it here; it won't be logged anywhere else.
         /// 
-        /// Any exception thrown from this method will propagate up to the <code>Command</code> caller.
+        /// Any exception thrown from this method will propagate up to the
+        /// <code>Command</code> caller.
         /// </summary>
         /// <param name="instigator">The exception that triggered the fallback.</param>
         /// <returns>Result, likely from an alternative source (cache, solr, etc.).</returns>

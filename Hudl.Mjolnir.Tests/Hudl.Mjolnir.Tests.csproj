@@ -37,40 +37,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AWSSDK, Version=1.5.10.0, Culture=neutral, PublicKeyToken=cd2d24cd2bace800, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\AWSSDK.1.5.10.0\lib\AWSSDK.dll</HintPath>
-    </Reference>
     <Reference Include="Castle.Core">
       <HintPath>..\packages\Castle.Core.2.5.1\lib\NET35\Castle.Core.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Common.1.2.0.0\lib\net35\Hudl.Common.dll</HintPath>
+      <HintPath>..\packages\Hudl.Common.1.4.1\lib\net35\Hudl.Common.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Config, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Config.1.3.0.0\lib\net40\Hudl.Config.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Eureka">
-      <HintPath>..\packages\Hudl.Eureka.1.6.0.0\lib\net40\Hudl.Eureka.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Eureka.Heartbeat">
-      <HintPath>..\packages\Hudl.Eureka.Heartbeat.1.4.0.0\lib\net40\Hudl.Eureka.Heartbeat.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Logging">
-      <HintPath>..\packages\Hudl.Logging.1.3.0.0\lib\net40\Hudl.Logging.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Multiverse.Core">
-      <HintPath>..\packages\Hudl.Multiverse.Core.1.13.0.0\lib\net40\Hudl.Multiverse.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Riemann, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Riemann.1.2.0.0\lib\net45\Hudl.Riemann.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.RiemannClient, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.RiemannClient.1.1.0.0\lib\net45\Hudl.RiemannClient.dll</HintPath>
+      <HintPath>..\packages\Hudl.Config.1.5.0\lib\net40\Hudl.Config.dll</HintPath>
     </Reference>
     <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -79,21 +55,13 @@
     <Reference Include="Moq">
       <HintPath>..\packages\Moq.4.1.1309.1617\lib\net40\Moq.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net, Version=2.0.0.622, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\protobuf-net.2.0.0.622\lib\net40\protobuf-net.dll</HintPath>
-    </Reference>
-    <Reference Include="SmartThreadPool, Version=2.2.3.3, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SmartThreadPool.dll.hudlcustom.2.2.3.3\lib\net20\SmartThreadPool.dll</HintPath>
+    <Reference Include="SmartThreadPool">
+      <HintPath>..\Hudl.Mjolnir\dll\SmartThreadPool.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="xunit">
-      <HintPath>..\packages\xunit.1.9.1\lib\net20\xunit.dll</HintPath>
+    <Reference Include="xunit, Version=1.9.2.1705, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Choose>
@@ -147,6 +115,7 @@
     <Compile Include="ThreadPool\StpIsolationThreadPoolTests.cs" />
     <Compile Include="ThreadPool\StpWorkItemTests.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensionsTests.cs" />
+    <Compile Include="Util\TestConfigProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -185,7 +154,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <UsingTask AssemblyFile="../packages/xunit.1.9.1/lib/net20/xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
+  <UsingTask AssemblyFile="../packages/xunit.1.9.2/lib/net20/xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
   <Target Name="UnitTest">
     <xunit Assembly="bin\Release\Hudl.Mjolnir.Tests.dll" />
   </Target>

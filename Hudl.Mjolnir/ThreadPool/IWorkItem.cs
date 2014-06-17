@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Hudl.Mjolnir.ThreadPool
 {
-    public interface IWorkItem<TResult>
+    internal interface IWorkItem<TResult>
     {
         TResult Get(CancellationToken cancellationToken, TimeSpan timeout);
     }

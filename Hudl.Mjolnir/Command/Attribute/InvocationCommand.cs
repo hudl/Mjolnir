@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,12 +11,12 @@ namespace Hudl.Mjolnir.Command.Attribute
     /// Used by the <see cref="CommandInterceptor"/> proxy to wrap the <code>Proceed()</code>
     /// execution in a Command.
     /// </summary>
-    /// <typeparam name="TResult"></typeparam>
+    /// <typeparam name="TResult">The Command's return type.</typeparam>
     internal class InvocationCommand<TResult> : Command<TResult>
     {
         private readonly IInvocation _invocation;
 
-        public InvocationCommand(string group, string name, string breakerKey, string poolKey, int timeout, IInvocation invocation)
+        internal InvocationCommand(string group, string name, string breakerKey, string poolKey, int timeout, IInvocation invocation)
             : base(group, name, breakerKey, poolKey, TimeSpan.FromMilliseconds(timeout))
         {
             _invocation = invocation;

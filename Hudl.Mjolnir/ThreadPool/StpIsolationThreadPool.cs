@@ -1,10 +1,10 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Amib.Threading;
 using Hudl.Config;
-using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
-using Hudl.Riemann;
 
 namespace Hudl.Mjolnir.ThreadPool
 {
@@ -15,7 +15,7 @@ namespace Hudl.Mjolnir.ThreadPool
     {
         private readonly GroupKey _key;
         private readonly SmartThreadPool _pool;
-        private readonly IRiemann _riemann;
+        private readonly IStats _stats;
 
         private readonly IConfigurableValue<int> _threadCount;
         private readonly IConfigurableValue<int> _queueLength;
@@ -25,12 +25,17 @@ namespace Hudl.Mjolnir.ThreadPool
         private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
-        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IRiemann riemann = null, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IStats stats, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _threadCount = threadCount;
             _queueLength = queueLength;
-            _riemann = (riemann ?? CommandContext.Riemann);
+
+            if (stats == null)
+            {
+                throw new ArgumentNullException("stats");
+            }
+            _stats = stats;
 
             var count = _threadCount.Value;
             var info = new STPStartInfo
@@ -48,25 +53,22 @@ namespace Hudl.Mjolnir.ThreadPool
 
             _timer = new GaugeTimer((source, args) =>
             {
-                _riemann.Gauge(RiemannPrefix + " activeThreads", null, _pool.ActiveThreads);
-                _riemann.Gauge(RiemannPrefix + " inUseThreads", null, _pool.InUseThreads);
+                _stats.Gauge(StatsPrefix + " activeThreads", null, _pool.ActiveThreads);
+                _stats.Gauge(StatsPrefix + " inUseThreads", null, _pool.InUseThreads);
 
                 // Note: Don't use _pool.WaitingCallbacks. It has the potential to get locked out by
                 // queue/dequeue operations, and may block here if the pool's getting queued into heavily.
-                _riemann.Gauge(RiemannPrefix + " pendingCompletion", null, _pool.CurrentWorkItemsCount);
-
-                _riemann.ConfigGauge(RiemannPrefix + " conf.threadCount", _threadCount.Value);
-                _riemann.ConfigGauge(RiemannPrefix + " conf.queueLength", _queueLength.Value);
+                _stats.Gauge(StatsPrefix + " pendingCompletion", null, _pool.CurrentWorkItemsCount);
             }, gaugeIntervalMillisOverride);
 
-            _pool.OnThreadInitialization += () => _riemann.Event(RiemannPrefix + " thread", "Initialized", null);
-            _pool.OnThreadTermination += () => _riemann.Event(RiemannPrefix + " thread", "Terminated", null);
+            _pool.OnThreadInitialization += () => _stats.Event(StatsPrefix + " thread", "Initialized", null);
+            _pool.OnThreadTermination += () => _stats.Event(StatsPrefix + " thread", "Terminated", null);
 
             _threadCount.AddChangeHandler(UpdateThreadCount);
             _queueLength.AddChangeHandler(UpdateQueueLength);
         }
 
-        private string RiemannPrefix
+        private string StatsPrefix
         {
             get { return "mjolnir pool " + _key; }
         }
@@ -80,7 +82,7 @@ namespace Hudl.Mjolnir.ThreadPool
             }
             finally
             {
-                _riemann.Elapsed(RiemannPrefix + " Start", null, stopwatch.Elapsed);
+                _stats.Elapsed(StatsPrefix + " Start", null, stopwatch.Elapsed);
             }
         }
 
@@ -90,7 +92,7 @@ namespace Hudl.Mjolnir.ThreadPool
             var state = "Enqueued";
             try
             {
-                var workItem = _pool.QueueWorkItem(new Func<TResult>(func));
+                var workItem = _pool.QueueWorkItem(new Amib.Threading.Func<TResult>(func));
                 return new StpWorkItem<TResult>(workItem);
             }
             catch (QueueRejectedException)
@@ -100,7 +102,7 @@ namespace Hudl.Mjolnir.ThreadPool
             }
             finally
             {
-                _riemann.Elapsed(RiemannPrefix + " Enqueue", state, stopwatch.Elapsed);
+                _stats.Elapsed(StatsPrefix + " Enqueue", state, stopwatch.Elapsed);
             }
         }
 

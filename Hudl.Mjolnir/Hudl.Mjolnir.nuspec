@@ -1,10 +1,15 @@
 <?xml version="1.0"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
   <metadata>
-	<id>$id$</id>
-	<version>$version$</version>
-	<authors>$author$</authors>
-	<description>$description$</description>
+    <id>$id$</id>
+    <version>$version$</version>
+    <authors>$author$</authors>
+    <description>$description$</description>
+    <licenseUrl>https://github.com/hudl/Mjolnir/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/hudl/Mjolnir</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>isolation resilience threadpool circuitbreaker</tags>
+    <iconUrl>https://raw.githubusercontent.com/hudl/Mjolnir/master/hudl.png</iconUrl>
   </metadata>
   <files>
     <file src="bin\Release\$id$.dll" target="lib\net45"/>

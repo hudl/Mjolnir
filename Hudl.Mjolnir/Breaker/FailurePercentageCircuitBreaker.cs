@@ -3,11 +3,10 @@ using System.Diagnostics;
 using System.Threading;
 using Hudl.Common.Clock;
 using Hudl.Config;
-using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Util;
-using Hudl.Riemann;
 using log4net;
 
 namespace Hudl.Mjolnir.Breaker
@@ -31,7 +30,7 @@ namespace Hudl.Mjolnir.Breaker
         private readonly ICommandMetrics _metrics;
 
         private readonly GroupKey _key;
-        private readonly IRiemann _riemann;
+        private readonly IStats _stats;
 
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
@@ -41,15 +40,21 @@ namespace Hudl.Mjolnir.Breaker
         private volatile State _state;
         private long _lastTrippedTimestamp;
 
-        public FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, FailurePercentageCircuitBreakerProperties properties)
-            : this(key, new SystemClock(), metrics, CommandContext.Riemann, properties) {}
+        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IStats stats, FailurePercentageCircuitBreakerProperties properties)
+            : this(key, new SystemClock(), metrics, stats, properties) {}
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IRiemann riemann, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IStats stats, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _clock = clock;
             _metrics = metrics;
-            _riemann = riemann ?? CommandContext.Riemann;
+
+            if (stats == null)
+            {
+                throw new ArgumentNullException("stats");
+            }
+
+            _stats = stats;
 
             Properties = properties;
             _state = State.Fixed; // Start off assuming everything's fixed.
@@ -57,24 +62,9 @@ namespace Hudl.Mjolnir.Breaker
 
             _timer = new GaugeTimer((source, args) =>
             {
-                // TODO On the riemann side:
-                // - Make all stat comparisons case-insensitive? Might save us some headaches.
-                // - Pass any stats that don't have null metrics on to statsd.
-                // - Look for :state changes on "mjolnir breaker *"; alert on Tripped.
-                // - Anything tagged type:elapsed gets auto-percentiled and pushed to statsd.
-
-                // TODO Questions
-                // - Is it even possible to compare different metrics in Riemann? (e.g. a high-water gauge vs the observed value)
-
                 var snapshot = _metrics.GetSnapshot();
-                _riemann.ConfigGauge(RiemannPrefix + " conf.minimumOperations", properties.MinimumOperations.Value);
-                _riemann.ConfigGauge(RiemannPrefix + " conf.thresholdPercentage", properties.ThresholdPercentage.Value);
-                _riemann.ConfigGauge(RiemannPrefix + " conf.trippedDurationMillis", properties.TrippedDurationMillis.Value);
-                _riemann.ConfigGauge(RiemannPrefix + " conf.forceTripped", Convert.ToInt32(properties.ForceTripped.Value));
-                _riemann.ConfigGauge(RiemannPrefix + " conf.forceFixed", Convert.ToInt32(properties.ForceFixed.Value));
-
-                _riemann.Gauge(RiemannPrefix + " total", snapshot.Total >= properties.MinimumOperations.Value ? "Above" : "Below", snapshot.Total);
-                _riemann.Gauge(RiemannPrefix + " error", snapshot.ErrorPercentage >= properties.ThresholdPercentage.Value ? "Above" : "Below", snapshot.ErrorPercentage);
+                _stats.Gauge(StatsPrefix + " total", snapshot.Total >= properties.MinimumOperations.Value ? "Above" : "Below", snapshot.Total);
+                _stats.Gauge(StatsPrefix + " error", snapshot.ErrorPercentage >= properties.ThresholdPercentage.Value ? "Above" : "Below", snapshot.ErrorPercentage);
             }, gaugeIntervalMillisOverride);
         }
 
@@ -83,7 +73,7 @@ namespace Hudl.Mjolnir.Breaker
             get { return _metrics; }
         }
 
-        private string RiemannPrefix
+        private string StatsPrefix
         {
             get { return "mjolnir breaker " + _key; }
         }
@@ -100,7 +90,7 @@ namespace Hudl.Mjolnir.Breaker
             if (_state != State.Tripped || _clock.GetMillisecondTimestamp() - elapsedMillis < _lastTrippedTimestamp)
             {
                 // Ignore.
-                _riemann.Event(RiemannPrefix + " MarkSuccess", "Ignored", null);
+                _stats.Event(StatsPrefix + " MarkSuccess", "Ignored", null);
                 return;
             }
 
@@ -109,7 +99,7 @@ namespace Hudl.Mjolnir.Breaker
             _state = State.Fixed;
             _metrics.Reset();
 
-            _riemann.Event(RiemannPrefix + " MarkSuccess", "Fixed", null);
+            _stats.Event(StatsPrefix + " MarkSuccess", "Fixed", null);
         }
 
         /// <summary>
@@ -138,7 +128,7 @@ namespace Hudl.Mjolnir.Breaker
             }
             finally
             {
-                _riemann.Elapsed(RiemannPrefix + " IsAllowing", (result ? "Allowed" : "Rejected"), stopwatch.Elapsed);
+                _stats.Elapsed(StatsPrefix + " IsAllowing", (result ? "Allowed" : "Rejected"), stopwatch.Elapsed);
             }
 
             return result;
@@ -179,7 +169,7 @@ namespace Hudl.Mjolnir.Breaker
             }
             finally
             {
-                _riemann.Elapsed(RiemannPrefix + " AllowSingleTest", state, stopwatch.Elapsed);
+                _stats.Elapsed(StatsPrefix + " AllowSingleTest", state, stopwatch.Elapsed);
             }
         }
 
@@ -204,9 +194,6 @@ namespace Hudl.Mjolnir.Breaker
                     return true;
                 }
 
-                // TODO rob.hruska 11/18/2013 - 
-                // Should we worry about anything that might accidentally hold onto this lock longer than we expect?
-                // Do we need a timeout here? Logging?
                 if (!Monitor.TryEnter(_stateChangeLock))
                 {
                     state = "MissedLock";
@@ -235,7 +222,7 @@ namespace Hudl.Mjolnir.Breaker
                     _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
                     state = "JustTripped";
 
-                    _riemann.Event(RiemannPrefix, State.Tripped.ToString(), null);
+                    _stats.Event(StatsPrefix, State.Tripped.ToString(), null);
                     Log.ErrorFormat("Tripped Breaker={0} Operations={1} ErrorPercentage={2} Wait={3}",
                         _key,
                         snapshot.Total,
@@ -251,7 +238,7 @@ namespace Hudl.Mjolnir.Breaker
             }
             finally
             {
-                _riemann.Elapsed(RiemannPrefix + " CheckAndSetTripped", state, stopwatch.Elapsed);
+                _stats.Elapsed(StatsPrefix + " CheckAndSetTripped", state, stopwatch.Elapsed);
             }
         }
 
@@ -284,10 +271,10 @@ namespace Hudl.Mjolnir.Breaker
             _forceFixed = forceFixed;
         }
 
-        public IConfigurableValue<long> MinimumOperations { get { return _minimumOperations; } }
-        public IConfigurableValue<int> ThresholdPercentage { get { return _thresholdPercentage; } }
-        public IConfigurableValue<long> TrippedDurationMillis { get { return _trippedDurationMillis; } }
-        public IConfigurableValue<bool> ForceTripped { get { return _forceTripped; } }
-        public IConfigurableValue<bool> ForceFixed { get { return _forceFixed; } }
+        internal IConfigurableValue<long> MinimumOperations { get { return _minimumOperations; } }
+        internal IConfigurableValue<int> ThresholdPercentage { get { return _thresholdPercentage; } }
+        internal IConfigurableValue<long> TrippedDurationMillis { get { return _trippedDurationMillis; } }
+        internal IConfigurableValue<bool> ForceTripped { get { return _forceTripped; } }
+        internal IConfigurableValue<bool> ForceFixed { get { return _forceFixed; } }
     }
 }

@@ -4,10 +4,10 @@ using System.Linq;
 using Hudl.Common.Clock;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
-using Hudl.Riemann;
 using Moq;
 using Xunit;
 
@@ -357,19 +357,19 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const long durationMillis = 10000;
 
             var mockMetrics = CreateMockMetricsWithSnapshot(10, 100); // 10 ops, 100% failing.
-            var riemann = new InternallyCountingRiemann();
+            var stats = new InternallyCountingStats();
             var breaker = new BreakerBuilder(1, 1, "Test") // Trip at 1 op, 1% failing.
                 .WithMockMetrics(mockMetrics)
                 .WithWaitMillis(durationMillis)
-                .WithRiemann(riemann)
+                .WithStats(stats)
                 .Create();
             breaker.IsAllowing(); // Trip the breaker.
-            Assert.Equal(1, riemann.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
+            Assert.Equal(1, stats.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
 
             breaker.IsAllowing(); // Make another call, which should bail immediately (and not re-trip).
 
             // Best way to test this right now is to make sure we don't fire a stat for the state change.
-            Assert.Equal(1, riemann.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
+            Assert.Equal(1, stats.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
         }
 
         // The following tests compare the metrics to the threshold. The names have been made more concise.
@@ -468,7 +468,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
             {
                 var mockMetrics = CreateMockMetricsWithSnapshot(_metricsTotal, _metricsPercent);
                 var properties = CreateBreakerProperties(_breakerTotal, _breakerPercent, 30000);
-                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, properties);
+                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringStats(), properties);
 
                 Assert.NotEqual(_shouldTrip, breaker.IsAllowing());
             }
@@ -504,7 +504,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
         private long _waitMillis = 30000;
         private IClock _clock = new SystemClock();
         private IMock<ICommandMetrics> _mockMetrics = FailurePercentageCircuitBreakerTests.CreateMockMetricsWithSnapshot(0, 0);
-        private IRiemann _riemann = new Mock<IRiemann>().Object;
+        private IStats _stats = new Mock<IStats>().Object;
         private TransientConfigurableValue<long> _gaugeIntervalOverrideMillis;
 
         public BreakerBuilder(long minimumOperations, int failurePercent, string key = null)
@@ -532,9 +532,9 @@ namespace Hudl.Mjolnir.Tests.Breaker
             return this;
         }
 
-        public BreakerBuilder WithRiemann(IRiemann riemann)
+        public BreakerBuilder WithStats(IStats stats)
         {
-            _riemann = riemann;
+            _stats = stats;
             return this;
         }
 
@@ -547,47 +547,32 @@ namespace Hudl.Mjolnir.Tests.Breaker
         public FailurePercentageCircuitBreaker Create()
         {
             var properties = FailurePercentageCircuitBreakerTests.CreateBreakerProperties(_minimumOperations, _failurePercent, _waitMillis);
-            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _riemann, properties, _gaugeIntervalOverrideMillis);
+            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _stats, properties, _gaugeIntervalOverrideMillis);
         }
     }
 
-    internal class InternallyCountingRiemann : IRiemann
+    internal class InternallyCountingStats : IStats
     {
         public List<ServiceAndState> ServicesAndStates { get; set; }
 
-        public InternallyCountingRiemann()
+        public InternallyCountingStats()
         {
              ServicesAndStates = new List<ServiceAndState>(); 
         }
 
-        public void Event(string service, string state, long? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
+        public void Event(string service, string state, long? metric = null)
         {
             ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
         }
 
-        public void Event(string service, string state, float? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
+        public void Elapsed(string service, string state, TimeSpan elapsed)
         {
             ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
         }
 
-        public void Event(string service, string state, double? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
+        public void Gauge(string service, string state, long? metric = null)
         {
             ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
-        public void Elapsed(string service, string state, TimeSpan elapsed, ISet<string> tags = null, string description = null, int? ttl = null)
-        {
-            ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
-        public void Gauge(string service, string state, long? metric = null, ISet<string> tags = null, string description = null, int? ttl = null)
-        {
-            ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
-        public void ConfigGauge(string service, long metric)
-        {
-            // Ignored.
         }
 
         public class ServiceAndState

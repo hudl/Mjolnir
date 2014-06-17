@@ -2,15 +2,22 @@
 using System.Collections.Concurrent;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.ThreadPool;
 using Hudl.Mjolnir.Util;
-using Hudl.Riemann;
 
 namespace Hudl.Mjolnir.Command
 {
-    internal sealed class CommandContext
+    /// <summary>
+    /// Manages all of Mjolnir's pools, breakers, and other state. Also handles
+    /// dependency injection for replaceable components (stats, config, etc.).
+    /// 
+    /// Client code typically doesn't interact with CommandContext other than
+    /// to inject dependencies.
+    /// </summary>
+    public sealed class CommandContext
     {
         private static readonly CommandContext Instance = new CommandContext();
 
@@ -19,57 +26,32 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
-        private IRiemann _riemann = RiemannStats.Instance;
+        private IStats _stats = new IgnoringStats();
+
+        private CommandContext() {}
 
         /// <summary>
-        /// Get/set the default Riemann client that all Mjolnir code should use.
-        /// Defaults to RiemannStats.Instance, which is fine for most
-        /// situations. Useful for controlling Riemann for system testing.
+        /// Get/set the Stats implementation that all Mjolnir code should use.
         /// 
-        /// This should be set as soon as possible if you're going to change it.
-        /// Other parts of Mjolnir will cache their Riemann clients, so changing
+        /// This should be set as soon as possible if it's going to be implemented.
+        /// Other parts of Mjolnir will cache their Stats members, so changing
         /// this after Breakers and Pools have been created won't update the
         /// client for them.
-        /// 
-        /// <remarks>If we ever build a DI framework into Mjolnir, we should
-        /// switch this over to it.</remarks>
         /// </summary>
-        internal IRiemann DefaultRiemannClient
+        public static IStats Stats
         {
-            get { return _riemann; }
+            get { return Instance._stats; }
             set
             {
                 if (value == null)
                 {
                     throw new ArgumentException();
                 }
-                _riemann = value;
+                Instance._stats = value;
             }
         }
 
-        // ReSharper disable NotAccessedField.Local
-        // Don't let these get garbage collected.
-        private readonly GaugeTimer _timer;
-        // ReSharper restore NotAccessedField.Local
-
-        private CommandContext()
-        {
-            _timer = new GaugeTimer((source, args) =>
-            {
-                _riemann.Gauge("mjolnir context breakers", null, _circuitBreakers.Count);
-                _riemann.Gauge("mjolnir context metrics", null, _metrics.Count);
-                _riemann.Gauge("mjolnir context pools", null, _pools.Count);
-                _riemann.Gauge("mjolnir context semaphores", null, _fallbackSemaphores.Count);
-            });
-        }
-
-        internal static IRiemann Riemann
-        {
-            get { return Instance.DefaultRiemannClient; }
-            set { Instance.DefaultRiemannClient = value; }
-        }
-
-        public static ICircuitBreaker GetCircuitBreaker(GroupKey key)
+        internal static ICircuitBreaker GetCircuitBreaker(GroupKey key)
         {
             if (key == null)
             {
@@ -86,7 +68,7 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", false),
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", false));
 
-                return new FailurePercentageCircuitBreaker(key, metrics, properties);
+                return new FailurePercentageCircuitBreaker(key, metrics, Stats, properties);
             });
         }
 
@@ -101,10 +83,11 @@ namespace Hudl.Mjolnir.Command
                 new StandardCommandMetrics(
                     key,
                     new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", 30000),
-                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", 1000)));
+                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", 1000),
+                    Stats));
         }
 
-        public static IIsolationThreadPool GetThreadPool(GroupKey key)
+        internal static IIsolationThreadPool GetThreadPool(GroupKey key)
         {
             if (key == null)
             {
@@ -115,10 +98,11 @@ namespace Hudl.Mjolnir.Command
                 new StpIsolationThreadPool(
                     key,
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10),
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10)));
+                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10),
+                    Stats));
         }
 
-        public static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
+        internal static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
         {
             if (key == null)
             {
@@ -131,7 +115,7 @@ namespace Hudl.Mjolnir.Command
                 // several commands may using the same pool, and we should therefore try to allow for a bit
                 // more concurrent fallback execution.
                 var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", 50);
-                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent);
+                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);
             });
         }
     }

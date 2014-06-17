@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Hudl.Mjolnir")]
-[assembly: AssemblyDescription("Isolation library for protecting against cascading failure.")]
+[assembly: AssemblyDescription("Fault tolerance library for protecting against cascading failure. Uses thread pools and circuit breakers to isolate problems and fail fast.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Hudl")]
 [assembly: AssemblyProduct("Hudl.Mjolnir")]
@@ -27,10 +27,11 @@ using System.Runtime.InteropServices;
 [assembly: Guid("97b23684-6c4a-4749-b307-5867cbce2dff")]
 
 // Used for NuGet packaging, uses semantic versioning: major.minor.patch-prerelease.
-[assembly: AssemblyInformationalVersion("1.8.1")]
+[assembly: AssemblyInformationalVersion("2.0.0")]
 
 // Keep this the same as AssemblyInformationalVersion.
-[assembly: AssemblyFileVersion("1.8.1")]
+[assembly: AssemblyFileVersion("2.0.0")]
 
 // ONLY change this when the major version changes; never with minor/patch/build versions.
-[assembly: AssemblyVersion("1.0.0.0")]
+// It'll almost always be the major version followed by three zeroes (e.g. 1.0.0.0).
+[assembly: AssemblyVersion("2.0.0.0")]

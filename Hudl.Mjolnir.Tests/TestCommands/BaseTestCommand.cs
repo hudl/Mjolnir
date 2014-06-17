@@ -1,7 +1,7 @@
 ﻿using System;
 using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Tests.Helper;
-using Hudl.Riemann;
 
 namespace Hudl.Mjolnir.Tests.TestCommands
 {
@@ -12,7 +12,7 @@ namespace Hudl.Mjolnir.Tests.TestCommands
         internal BaseTestCommand(string group, string isolationKey, TimeSpan? timeout) : this(group, null, isolationKey, timeout) {}
         internal BaseTestCommand(string group, string name, string isolationKey, TimeSpan? timeout) : base(group, name, isolationKey, isolationKey, timeout ?? TimeSpan.FromMilliseconds(10000))
         {
-            Riemann = new IgnoringRiemannStats();
+            Stats = new IgnoringStats();
             CircuitBreaker = new AlwaysSuccessfulCircuitBreaker();
             ThreadPool = new AlwaysSuccessfulIsolationThreadPool();
             FallbackSemaphore = new AlwaysSuccessfulIsolationSemaphore();

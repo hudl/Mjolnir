@@ -1,9 +1,9 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Hudl.Config;
-using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
-using Hudl.Riemann;
 
 namespace Hudl.Mjolnir.ThreadPool
 {
@@ -12,20 +12,23 @@ namespace Hudl.Mjolnir.ThreadPool
         private readonly SemaphoreSlim _semaphore;
         private readonly GroupKey _key;
         private readonly int _maxConcurrent;
-        private readonly IRiemann _riemann;
+        private readonly IStats _stats;
 
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
         private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
-        public SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent)
-            : this(key, maxConcurrent, null) {}
-
-        internal SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent, IRiemann riemann, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal SemaphoreSlimIsolationSemaphore(GroupKey key, IConfigurableValue<int> maxConcurrent, IStats stats, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
-            _riemann = (riemann ?? CommandContext.Riemann);
+
+            if (stats == null)
+            {
+                throw new ArgumentNullException("stats");
+            }
+
+            _stats = stats;
 
             // Note: Changing the semaphore maximum at runtime is not currently supported.
             _maxConcurrent = maxConcurrent.Value;
@@ -34,12 +37,11 @@ namespace Hudl.Mjolnir.ThreadPool
             _timer = new GaugeTimer((source, args) =>
             {
                 var count = _semaphore.CurrentCount;
-                _riemann.ConfigGauge(RiemannPrefix + " conf.maxConcurrent", _maxConcurrent);
-                _riemann.Gauge(RiemannPrefix + " available", (count == 0 ? "Full" : "Available"), count);
+                _stats.Gauge(StatsPrefix + " available", (count == 0 ? "Full" : "Available"), count);
             }, gaugeIntervalMillisOverride);
         }
 
-        private string RiemannPrefix
+        private string StatsPrefix
         {
             get { return "mjolnir fallback-semaphore " + _key; }
         }

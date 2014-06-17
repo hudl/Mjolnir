@@ -2,10 +2,10 @@ namespace Hudl.Mjolnir.Metrics
 {
     internal class MetricsSnapshot
     {
-        public long Total { get; private set; }
-        public int ErrorPercentage { get; private set; }
+        internal long Total { get; private set; }
+        internal int ErrorPercentage { get; private set; }
 
-        public MetricsSnapshot(long total, int errorPercentage)
+        internal MetricsSnapshot(long total, int errorPercentage)
         {
             Total = total;
             ErrorPercentage = errorPercentage;
