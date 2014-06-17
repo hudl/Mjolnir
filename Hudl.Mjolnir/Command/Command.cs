@@ -36,7 +36,7 @@ namespace Hudl.Mjolnir.Command
     public abstract class Command
     {
         protected static readonly ILog Log = LogManager.GetLogger(typeof(Command<>));
-        protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers");
+        protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
 
         /// <summary>
         /// Cache of known command names, keyed by Type and group key. Helps
