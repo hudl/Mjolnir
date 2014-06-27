@@ -5,7 +5,7 @@
     <version>$version$</version>
     <authors>$author$</authors>
     <description>$description$</description>
-    <licenseUrl>https://github.com/hudl/Mjolnir/LICENSE</licenseUrl>
+    <licenseUrl>https://raw.githubusercontent.com/hudl/Mjolnir/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/hudl/Mjolnir</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <tags>isolation resilience threadpool circuitbreaker</tags>
