@@ -5,7 +5,7 @@
     <version>$version$</version>
     <authors>$author$</authors>
     <description>$description$</description>
-    <licenseUrl>https://github.com/hudl/Mjolnir/LICENSE</licenseUrl>
+    <licenseUrl>https://raw.githubusercontent.com/hudl/Mjolnir/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/hudl/Mjolnir</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <tags>isolation resilience threadpool circuitbreaker</tags>
@@ -14,5 +14,7 @@
   <files>
     <file src="bin\Release\$id$.dll" target="lib\net45"/>
     <file src="bin\Release\$id$.pdb" target="lib\net45"/>
+    <file src="dll\SmartThreadPool.dll" target="lib\net45"/>
+    <file src="dll\SmartThreadPool.pdb" target="lib\net45"/>
   </files>
 </package>

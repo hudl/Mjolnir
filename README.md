@@ -6,7 +6,7 @@ When bad things like network partition or resource exhaustion happen, Mjolnir he
 - shed load from failing downstream dependencies.
 - fail fast back to the caller.
 
-Mjolnir is modelled after Netflix's awesome [Hystrix](https://github.com/Netflix/Hystrix) library. Some components are ports, but much of it has been written using C#- and .NET-specific features (e.g. `async/await`, `CancellationToken`s).
+Mjolnir is modeled after Netflix's awesome [Hystrix](https://github.com/Netflix/Hystrix) library. Some components are ports, but much of it has been written using C#- and .NET-specific features (e.g. `async/await`, `CancellationToken`s).
 
 When To Use
 -----
@@ -61,7 +61,7 @@ using Hudl.Mjolnir.External;
 CommandContext.Stats = new MyStats();
 ```
 
-You'll want to set `CommandContext.Stats` early on application startup; breakers and pools will cache their stats implementations, and won't pick up a new one if you set if after they've been created.
+You'll want to set `CommandContext.Stats` early on application startup; breakers and pools will cache their stats implementations, and won't pick up a new one if you set it after they've been created.
 
 See [the list of available metrics](Hudl.Mjolnir/External/stats-list.md).
 
@@ -301,7 +301,10 @@ Command names will always have exactly one dot (`.`) separator. Configuring a Co
 
 The default timeouts are fairly permissive; timeouts should be tuned after observing the Command's typical behavior in production.
 
-TODO
+Thanks
 -----
 
-- More information about how to tune configuration, and what ideal configuration values are.
+- The [Netflix Engineering](http://techblog.netflix.com/) team, authors of [Hystrix OSS](https://github.com/Netflix/Hystrix), which inspired much of Mjolnir.
+- Michael Nygard, for [*Release It! Design and Deploy Production-Ready Software*](http://www.amazon.com/Release-Production-Ready-Software-Pragmatic-Programmers-ebook/dp/B00A32NXZO/ref=sr_1_1?ie=UTF8&qid=1402974176&sr=8-1&keywords=release+it), which does a fantastic job of discussing patterns like circuit breakers and bulkheads. Buy it, it's good.
+- Ami Bar, for [SmartThreadPool](http://www.codeproject.com/Articles/7933/Smart-Thread-Pool).
+- [Stephen Cleary](http://stephencleary.com/), author of many great articles and StackOverflow answers about `async`/`await` and TAP.
