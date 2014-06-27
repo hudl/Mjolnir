@@ -14,5 +14,6 @@
   <files>
     <file src="bin\Release\$id$.dll" target="lib\net45"/>
     <file src="bin\Release\$id$.pdb" target="lib\net45"/>
+	<file src="dll\SmartThreadPool.dll" target="lib\net45"/>
   </files>
 </package>
