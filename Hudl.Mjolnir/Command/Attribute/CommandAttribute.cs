@@ -6,6 +6,7 @@ namespace Hudl.Mjolnir.Command.Attribute
     /// Used on an interface to proxy all of its method calls through a <see cref="Command"/>.
     /// See Command and its constructors for more information.
     /// </summary>
+    [Obsolete("Use [Command] from the Hudl.Mjolnir.Attributes package instead")]
     [AttributeUsage(AttributeTargets.Interface)]
     public sealed class CommandAttribute : System.Attribute
     {

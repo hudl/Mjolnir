@@ -8,6 +8,7 @@ namespace Hudl.Mjolnir.Command.Attribute
     /// 
     /// Should only be used on interface methods.
     /// </summary>
+    [Obsolete("Use [CommandTimeout] from the Hudl.Mjolnir.Attributes package instead")]
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class CommandTimeoutAttribute : System.Attribute
     {

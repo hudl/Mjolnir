@@ -47,6 +47,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Config.1.5.0\lib\net40\Hudl.Config.dll</HintPath>
     </Reference>
+    <Reference Include="Hudl.Mjolnir.Attributes, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Hudl.Mjolnir.Attributes.1.0.0\lib\net45\Hudl.Mjolnir.Attributes.dll</HintPath>
+    </Reference>
     <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
@@ -98,9 +102,9 @@
     <Compile Include="Util\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Util\GaugeTimer.cs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <None Include="External\stats-list.md" />
+    <None Include="Hudl.Mjolnir.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
