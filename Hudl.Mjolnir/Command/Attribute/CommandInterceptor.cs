@@ -57,7 +57,9 @@ namespace Hudl.Mjolnir.Command.Attribute
                 {
                     // TODO We only apply [FireAndForget] to void methods, but we could probably do it for any return type.
 
-                    var isFireAndForget = (invocation.Method.GetCustomAttribute<FireAndForgetAttribute>(false) != null);
+                    var isFireAndForget =
+                        (invocation.Method.GetCustomAttribute<Attributes.FireAndForgetAttribute>(false) != null ||
+                         invocation.Method.GetCustomAttribute<FireAndForgetAttribute>(false) != null);
                     if (isFireAndForget)
                     {
                         try
@@ -143,20 +145,34 @@ namespace Hudl.Mjolnir.Command.Attribute
         {
             var classType = invocation.Method.DeclaringType;
 
-            var attribute = classType.GetCustomAttribute<CommandAttribute>();
-            if (attribute == null)
+            var oldAttribute = classType.GetCustomAttribute<CommandAttribute>();
+            var newAttribute = classType.GetCustomAttribute<Attributes.CommandAttribute>();
+            if (oldAttribute == null && newAttribute == null)
             {
                 throw new InvalidOperationException("Interface does not have [CommandAttribute]");
             }
 
-            var timeoutAttribute = invocation.Method.GetCustomAttribute<CommandTimeoutAttribute>();
+            var oldTimeoutAttribute = invocation.Method.GetCustomAttribute<CommandTimeoutAttribute>();
+            var newTimeoutAttribute = invocation.Method.GetCustomAttribute<Attributes.CommandTimeoutAttribute>();
+
+            // Grab the timeout from the [Command] attribute first, but look for one on the method itself to override that.
+            // Prefer the new (Attributes package) attribute first, but fall back to the deprecated one.
+            var timeout = (newAttribute != null ? newAttribute.Timeout : oldAttribute.Timeout);
+            if (newTimeoutAttribute != null)
+            {
+                timeout = newTimeoutAttribute.Timeout;
+            }
+            else if (oldTimeoutAttribute != null)
+            {
+                timeout = oldTimeoutAttribute.Timeout;
+            }
 
             return new InvocationCommand<TResult>(
-                attribute.Group,
+                (newAttribute != null ? newAttribute.Group : oldAttribute.Group),
                 classType.Name + "-" + invocation.Method.Name,
-                attribute.BreakerKey,
-                attribute.PoolKey,
-                timeoutAttribute != null ? timeoutAttribute.Timeout : attribute.Timeout,
+                (newAttribute != null ? newAttribute.BreakerKey : oldAttribute.BreakerKey),
+                (newAttribute != null ? newAttribute.PoolKey : oldAttribute.PoolKey),
+                timeout,
                 invocation);
         }
 
