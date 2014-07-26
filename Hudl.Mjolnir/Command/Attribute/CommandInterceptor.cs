@@ -155,6 +155,8 @@ namespace Hudl.Mjolnir.Command.Attribute
             var oldTimeoutAttribute = invocation.Method.GetCustomAttribute<CommandTimeoutAttribute>();
             var newTimeoutAttribute = invocation.Method.GetCustomAttribute<Attributes.CommandTimeoutAttribute>();
 
+            // Grab the timeout from the [Command] attribute first, but look for one on the method itself to override that.
+            // Prefer the new (Attributes package) attribute first, but fall back to the deprecated one.
             var timeout = (newAttribute != null ? newAttribute.Timeout : oldAttribute.Timeout);
             if (newTimeoutAttribute != null)
             {
