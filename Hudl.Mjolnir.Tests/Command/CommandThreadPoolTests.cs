@@ -86,7 +86,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True(command.FallbackCalled);
         }
 
-        private class RejectingIsolationThreadPool : IIsolationThreadPool
+        private class RejectingIsolationThreadPool : IQueuedIsolationStrategy
         {
             private readonly IsolationThreadPoolRejectedException _exceptionToThrow;
 

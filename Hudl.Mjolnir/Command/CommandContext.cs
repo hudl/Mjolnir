@@ -23,7 +23,7 @@ namespace Hudl.Mjolnir.Command
 
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<IQueuedIsolationStrategy>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IQueuedIsolationStrategy>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
         private IStats _stats = new IgnoringStats();
@@ -87,7 +87,7 @@ namespace Hudl.Mjolnir.Command
                     Stats));
         }
 
-        internal static IIsolationThreadPool GetThreadPool(GroupKey key)
+        internal static IQueuedIsolationStrategy GetThreadPool(GroupKey key)
         {
             if (key == null)
             {

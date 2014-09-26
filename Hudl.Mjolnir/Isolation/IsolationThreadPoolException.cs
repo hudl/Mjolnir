@@ -7,5 +7,9 @@ namespace Hudl.Mjolnir.Isolation
         internal IsolationThreadPoolException(Exception cause) : base(cause.Message, cause) {}
     }
 
-    internal class IsolationThreadPoolRejectedException : Exception {}
+    internal class IsolationStrategyRejectedException : Exception {}
+
+    internal class IsolationThreadPoolRejectedException : IsolationStrategyRejectedException {}
+
+    internal class IsolationSemaphoreRejectedException : IsolationStrategyRejectedException {}
 }

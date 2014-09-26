@@ -9,9 +9,9 @@ using Hudl.Mjolnir.Util;
 namespace Hudl.Mjolnir.Isolation
 {
     /// <summary>
-    /// IIsolationThreadPool that uses a backing SmartThreadPool.
+    /// IQueuedIsolationStrategy that uses a backing SmartThreadPool.
     /// </summary>
-    internal class StpIsolationThreadPool : IIsolationThreadPool
+    internal class StpIsolationThreadPool : IQueuedIsolationStrategy
     {
         private readonly GroupKey _key;
         private readonly SmartThreadPool _pool;

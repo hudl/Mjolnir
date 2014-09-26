@@ -4,7 +4,7 @@ using Hudl.Mjolnir.Isolation;
 
 namespace Hudl.Mjolnir.Tests.Helper
 {
-    internal class AlwaysSuccessfulIsolationThreadPool : IIsolationThreadPool
+    internal class AlwaysSuccessfulIsolationThreadPool : IQueuedIsolationStrategy
     {
         public void Start()
         {

@@ -93,8 +93,8 @@ namespace Hudl.Mjolnir.Command
             set { _breaker = value; }
         }
 
-        private IIsolationThreadPool _pool;
-        internal IIsolationThreadPool ThreadPool
+        private IQueuedIsolationStrategy _pool;
+        internal IQueuedIsolationStrategy ThreadPool
         {
             private get { return _pool ?? CommandContext.GetThreadPool(_poolKey); }
             set { _pool = value; }

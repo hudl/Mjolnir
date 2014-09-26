@@ -93,7 +93,7 @@
     <Compile Include="Command\CommandCompletionStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Isolation\IIsolationSemaphore.cs" />
-    <Compile Include="Isolation\IIsolationThreadPool.cs" />
+    <Compile Include="Isolation\IQueuedIsolationStrategy.cs" />
     <Compile Include="Isolation\IsolationThreadPoolException.cs" />
     <Compile Include="Isolation\IWorkItem.cs" />
     <Compile Include="Isolation\SemaphoreSlimIsolationSemaphore.cs" />
