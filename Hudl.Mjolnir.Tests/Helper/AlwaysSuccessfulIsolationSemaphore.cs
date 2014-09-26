@@ -1,4 +1,4 @@
-﻿using Hudl.Mjolnir.ThreadPool;
+﻿using Hudl.Mjolnir.Isolation;
 
 namespace Hudl.Mjolnir.Tests.Helper
 {

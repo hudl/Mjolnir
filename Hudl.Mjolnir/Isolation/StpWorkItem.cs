@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using Amib.Threading;
 
-namespace Hudl.Mjolnir.ThreadPool
+namespace Hudl.Mjolnir.Isolation
 {
     /// <summary>
     /// WorkItem implementation for SmartThreadPool work items.

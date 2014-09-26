@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Hudl.Config;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
-using Hudl.Mjolnir.ThreadPool;
 using Moq;
 using Xunit;
 

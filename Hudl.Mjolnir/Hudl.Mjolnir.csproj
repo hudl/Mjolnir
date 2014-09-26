@@ -92,13 +92,13 @@
     <Compile Include="Command\FallbackStatus.cs" />
     <Compile Include="Command\CommandCompletionStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ThreadPool\IIsolationSemaphore.cs" />
-    <Compile Include="ThreadPool\IIsolationThreadPool.cs" />
-    <Compile Include="ThreadPool\IsolationThreadPoolException.cs" />
-    <Compile Include="ThreadPool\IWorkItem.cs" />
-    <Compile Include="ThreadPool\SemaphoreSlimIsolationSemaphore.cs" />
-    <Compile Include="ThreadPool\StpIsolationThreadPool.cs" />
-    <Compile Include="ThreadPool\StpWorkItem.cs" />
+    <Compile Include="Isolation\IIsolationSemaphore.cs" />
+    <Compile Include="Isolation\IIsolationThreadPool.cs" />
+    <Compile Include="Isolation\IsolationThreadPoolException.cs" />
+    <Compile Include="Isolation\IWorkItem.cs" />
+    <Compile Include="Isolation\SemaphoreSlimIsolationSemaphore.cs" />
+    <Compile Include="Isolation\StpIsolationThreadPool.cs" />
+    <Compile Include="Isolation\StpWorkItem.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Util\GaugeTimer.cs" />
   </ItemGroup>

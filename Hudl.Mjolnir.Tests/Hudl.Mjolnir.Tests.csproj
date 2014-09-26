@@ -111,9 +111,9 @@
     <Compile Include="TestCommands\SuccessfulEchoCommandWithoutFallback.cs" />
     <Compile Include="TestCommands\TimingOutCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ThreadPool\SemaphoreSlimIsolationSemaphoreTests.cs" />
-    <Compile Include="ThreadPool\StpIsolationThreadPoolTests.cs" />
-    <Compile Include="ThreadPool\StpWorkItemTests.cs" />
+    <Compile Include="Isolation\SemaphoreSlimIsolationSemaphoreTests.cs" />
+    <Compile Include="Isolation\StpIsolationThreadPoolTests.cs" />
+    <Compile Include="Isolation\StpWorkItemTests.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensionsTests.cs" />
     <Compile Include="Util\TestConfigProvider.cs" />
   </ItemGroup>

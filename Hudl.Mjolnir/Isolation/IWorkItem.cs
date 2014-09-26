@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace Hudl.Mjolnir.ThreadPool
+namespace Hudl.Mjolnir.Isolation
 {
     internal interface IWorkItem<TResult>
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Hudl.Mjolnir.ThreadPool
+namespace Hudl.Mjolnir.Isolation
 {
     internal class IsolationThreadPoolException : Exception
     {

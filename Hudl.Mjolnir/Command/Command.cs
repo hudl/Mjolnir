@@ -8,8 +8,8 @@ using Hudl.Common.Extensions;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Key;
-using Hudl.Mjolnir.ThreadPool;
 using log4net;
 
 namespace Hudl.Mjolnir.Command

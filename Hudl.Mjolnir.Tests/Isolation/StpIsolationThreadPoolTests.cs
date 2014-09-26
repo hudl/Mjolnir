@@ -2,12 +2,12 @@
 using System.Threading;
 using Hudl.Config;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
-using Hudl.Mjolnir.ThreadPool;
 using Xunit;
 
-namespace Hudl.Mjolnir.Tests.ThreadPool
+namespace Hudl.Mjolnir.Tests.Isolation
 {
     public class StpIsolationThreadPoolTests : TestFixture
     {

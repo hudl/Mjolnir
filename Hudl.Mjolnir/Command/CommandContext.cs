@@ -3,9 +3,9 @@ using System.Collections.Concurrent;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
-using Hudl.Mjolnir.ThreadPool;
 using Hudl.Mjolnir.Util;
 
 namespace Hudl.Mjolnir.Command
