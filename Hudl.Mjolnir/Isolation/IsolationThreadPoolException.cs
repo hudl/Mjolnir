@@ -11,5 +11,5 @@ namespace Hudl.Mjolnir.Isolation
 
     internal class IsolationThreadPoolRejectedException : IsolationStrategyRejectedException {}
 
-    internal class IsolationSemaphoreRejectedException : IsolationStrategyRejectedException {}
+    internal class TaskSchedulerIsolationRejectionException : IsolationStrategyRejectedException {}
 }

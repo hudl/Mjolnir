@@ -75,7 +75,7 @@ namespace Hudl.Mjolnir.Command
         private readonly GroupKey _group;
         private readonly string _name;
         private readonly GroupKey _breakerKey;
-        private readonly GroupKey _poolKey;
+        private readonly GroupKey _isolationKey;
 
         // Setters should be used for testing only.
 
@@ -96,7 +96,7 @@ namespace Hudl.Mjolnir.Command
         private IQueuedIsolationStrategy _pool;
         internal IQueuedIsolationStrategy IsolationStrategy
         {
-            private get { return _pool ?? CommandContext.GetThreadPool(_poolKey); }
+            private get { return _pool ?? CommandContext.GetIsolationStrategy(_isolationKey); }
             set { _pool = value; }
         }
 
@@ -104,7 +104,7 @@ namespace Hudl.Mjolnir.Command
         internal IIsolationSemaphore FallbackSemaphore
         {
             // TODO Consider isolating these per-command instead of per-pool.
-            private get { return _fallbackSemaphore ?? CommandContext.GetFallbackSemaphore(_poolKey); }
+            private get { return _fallbackSemaphore ?? CommandContext.GetFallbackSemaphore(_isolationKey); }
             set { _fallbackSemaphore = value; }
         }
 
@@ -117,8 +117,8 @@ namespace Hudl.Mjolnir.Command
         /// The group is used as part of the Command's <see cref="Name">Name</see>.
         /// If the group contains dots, they'll be converted to dashes.
         /// 
-        /// The provided <code>isolationKey</code> will be used as both the
-        /// breaker and pool keys.
+        /// The provided <code>breakerAndIsolationKey</code> will be used as both the
+        /// breaker and isolation strategy keys.
         /// 
         /// Command timeouts can be configured at runtime. Configuration keys
         /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
@@ -127,10 +127,10 @@ namespace Hudl.Mjolnir.Command
         /// 
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
-        /// <param name="isolationKey">Breaker and pool key to use.</param>
+        /// <param name="breakerAndIsolationKey">Named breaker and isolation strategy key to use.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected Command(string group, string isolationKey, TimeSpan defaultTimeout)
-            : this(group, null, isolationKey, isolationKey, defaultTimeout) {}
+        protected Command(string group, string breakerAndIsolationKey, TimeSpan defaultTimeout)
+            : this(group, null, breakerAndIsolationKey, breakerAndIsolationKey, defaultTimeout) {}
 
         /// <summary>
         /// Constructs the Command.
@@ -145,13 +145,13 @@ namespace Hudl.Mjolnir.Command
         /// 
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
-        /// <param name="breakerKey">Breaker to use for this command.</param>
-        /// <param name="poolKey">Pool to use for this command.</param>
+        /// <param name="breakerKey">Named breaker group to use for this command.</param>
+        /// <param name="isolationKey">Named isolation strategy group to use for this command.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)
-            : this(group, null, breakerKey, poolKey, defaultTimeout) {}
+        protected Command(string group, string breakerKey, string isolationKey, TimeSpan defaultTimeout)
+            : this(group, null, breakerKey, isolationKey, defaultTimeout) {}
 
-        internal Command(string group, string name, string breakerKey, string poolKey, TimeSpan defaultTimeout)
+        internal Command(string group, string name, string breakerKey, string isolationKey, TimeSpan defaultTimeout)
         {
             if (string.IsNullOrWhiteSpace(group))
             {
@@ -163,9 +163,9 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("breakerKey");
             }
 
-            if (string.IsNullOrWhiteSpace(poolKey))
+            if (string.IsNullOrWhiteSpace(isolationKey))
             {
-                throw new ArgumentNullException("poolKey");
+                throw new ArgumentNullException("isolationKey");
             }
 
             if (defaultTimeout.TotalMilliseconds <= 0)
@@ -176,7 +176,7 @@ namespace Hudl.Mjolnir.Command
             _group = GroupKey.Named(group);
             _name = string.IsNullOrWhiteSpace(name) ? GenerateAndCacheName(Group) : CacheProvidedName(Group, name);
             _breakerKey = GroupKey.Named(breakerKey);
-            _poolKey = GroupKey.Named(poolKey);
+            _isolationKey = GroupKey.Named(isolationKey);
 
             var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
@@ -231,9 +231,9 @@ namespace Hudl.Mjolnir.Command
             get { return _breakerKey; }
         }
 
-        internal GroupKey PoolKey
+        internal GroupKey IsolationKey
         {
-            get { return _poolKey; }
+            get { return _isolationKey; }
         }
 
         private string StatsPrefix
@@ -283,7 +283,7 @@ namespace Hudl.Mjolnir.Command
             var status = CommandCompletionStatus.RanToCompletion;
             try
             {
-                Log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
+                Log.InfoFormat("InvokeAsync Command={0} Breaker={1} Isolation={2} Timeout={3}", Name, BreakerKey, IsolationKey, Timeout.TotalMilliseconds);
 
                 var cancellationTokenSource = new CancellationTokenSource(Timeout);
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
@@ -302,7 +302,7 @@ namespace Hudl.Mjolnir.Command
                     Timeout = Timeout.TotalMilliseconds,
                     Status = status,
                     Breaker = BreakerKey,
-                    Pool = PoolKey,
+                    Pool = IsolationKey, // TODO deprecate and replace with "Isolation" something
                 });
 
                 // We don't log the exception here - that's intentional.
@@ -327,11 +327,11 @@ namespace Hudl.Mjolnir.Command
 
         private Task<TResult> ExecuteInIsolation(CancellationToken cancellationToken)
         {
-            // Note: Thread pool rejections shouldn't count as failures to the breaker.
-            // If a downstream dependency is slow, the pool will fill up, but the
-            // breaker + timeouts will already be providing protection against that.
-            // If the pool is filling up because of a surge of requests, the rejections
-            // will just be a way of shedding load - the breaker and downstream
+            // Note: Isolation rejections shouldn't count as failures to the breaker.
+            // If a downstream dependency is slow, the queue/concurrency will fill up,
+            // but the breaker + timeouts will already be providing protection against that.
+            // If the isolation strategy is filling up because of a surge of requests, the
+            // rejections will just be a way of shedding load - the breaker and downstream
             // dependency may be just fine, and we want to keep them that way.
 
             // We'll neither mark these as success *nor* failure, since they really didn't
@@ -343,9 +343,12 @@ namespace Hudl.Mjolnir.Command
             // be in a short while since we're queueing these up.
             return IsolationStrategy.Enqueue(() =>
             {
-                // Since we may have been on the thread pool queue for a bit, see if we
+                // Since we may have been on the strategy's queue for a bit, see if we
                 // should have canceled by now.
                 cancellationToken.ThrowIfCancellationRequested();
+
+                // TODO Make sure to test this and throughly understand the behavior.
+                // - What happens when an exception is thrown from any path?
 
                 // These return tasks themselves, hence the .Unwrap() below.
                 return UseCircuitBreakers.Value
@@ -369,6 +372,8 @@ namespace Hudl.Mjolnir.Command
 
                 // Await here so we can catch the Exception and track the state.
                 // I suppose we could do this with a continuation, too. Await's easier.
+                // TODO Come back and reconsider a .ContinueWith() here. If we can use
+                // it, we'll save a bit of state machine generation.
                 result = await ExecuteAsync(cancellationToken);
 
                 CircuitBreaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
@@ -390,7 +395,7 @@ namespace Hudl.Mjolnir.Command
                 return CommandCompletionStatus.Canceled;
             }
 
-            if (e is CircuitBreakerRejectedException || e is IsolationThreadPoolRejectedException)
+            if (e is CircuitBreakerRejectedException || e is IsolationStrategyRejectedException)
             {
                 return CommandCompletionStatus.Rejected;
             }

@@ -14,7 +14,7 @@ namespace Hudl.Mjolnir.Tests.TestCommands
         {
             Stats = new IgnoringStats();
             CircuitBreaker = new AlwaysSuccessfulCircuitBreaker();
-            IsolationStrategy = new AlwaysSuccessfulIsolationThreadPool();
+            IsolationStrategy = new AlwaysSuccessfulQueuedIsolationStrategy();
             FallbackSemaphore = new AlwaysSuccessfulIsolationSemaphore();
         }
     }

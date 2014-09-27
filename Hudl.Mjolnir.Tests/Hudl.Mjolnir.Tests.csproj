@@ -84,6 +84,7 @@
     <Compile Include="Helper\AlwaysSuccessfulCircuitBreaker.cs" />
     <Compile Include="Helper\AlwaysSuccessfulIsolationSemaphore.cs" />
     <Compile Include="Helper\AlwaysSuccessfulIsolationThreadPool.cs" />
+    <Compile Include="Helper\AlwaysSuccessfulQueuedIsolationStrategy.cs" />
     <Compile Include="Helper\AssertX.cs" />
     <Compile Include="Helper\ExpectedTestException.cs" />
     <Compile Include="Helper\TestFixture.cs" />

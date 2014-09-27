@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Command;
@@ -16,8 +17,8 @@ namespace Hudl.Mjolnir.Tests.Command
         [Fact]
         public async Task InvokeAsync_ThreadPoolRejects_ThrowsCommandFailedExceptionWithRejectedStatusAndInnerException()
         {
-            var exception = new IsolationThreadPoolRejectedException();
-            var pool = new RejectingIsolationThreadPool(exception);
+            var exception = new IsolationStrategyRejectedException();
+            var pool = new RejectingQueuedIsolationStrategy(exception);
             // Had a tough time getting It.IsAny<Func<Task<object>>> to work with a mock pool, so I just stubbed one here.
 
             var command = new SuccessfulEchoCommandWithoutFallback(new {})
@@ -42,8 +43,8 @@ namespace Hudl.Mjolnir.Tests.Command
         [Fact]
         public async Task InvokeAsync_ThreadPoolRejects_NotCountedByCircuitBreakerMetrics()
         {
-            var exception = new IsolationThreadPoolRejectedException();
-            var pool = new RejectingIsolationThreadPool(exception);
+            var exception = new IsolationStrategyRejectedException();
+            var pool = new RejectingQueuedIsolationStrategy(exception);
 
             var mockMetrics = new Mock<ICommandMetrics>();
             var mockBreaker = new Mock<ICircuitBreaker>();
@@ -74,8 +75,8 @@ namespace Hudl.Mjolnir.Tests.Command
         [Fact]
         public async Task InvokeAsync_ThreadPoolRejects_InvokesFallback()
         {
-            var exception = new IsolationThreadPoolRejectedException();
-            var pool = new RejectingIsolationThreadPool(exception);
+            var exception = new IsolationStrategyRejectedException();
+            var pool = new RejectingQueuedIsolationStrategy(exception);
 
             var command = new SuccessfulEchoCommandWithFallback(new { })
             {
@@ -86,7 +87,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True(command.FallbackCalled);
         }
 
-        private class RejectingIsolationThreadPool : IQueuedIsolationStrategy
+        private class RejectingIsolationThreadPool : IIsolationThreadPool
         {
             private readonly IsolationThreadPoolRejectedException _exceptionToThrow;
 
@@ -101,6 +102,21 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             public IWorkItem<TResult> Enqueue<TResult>(Func<TResult> func)
+            {
+                throw _exceptionToThrow;
+            }
+        }
+
+        private class RejectingQueuedIsolationStrategy : IQueuedIsolationStrategy
+        {
+            private readonly IsolationStrategyRejectedException _exceptionToThrow;
+
+            public RejectingQueuedIsolationStrategy(IsolationStrategyRejectedException exceptionToThrow)
+            {
+                _exceptionToThrow = exceptionToThrow;
+            }
+
+            public Task<TResult> Enqueue<TResult>(Func<TResult> func, CancellationToken cancellationToken)
             {
                 throw _exceptionToThrow;
             }

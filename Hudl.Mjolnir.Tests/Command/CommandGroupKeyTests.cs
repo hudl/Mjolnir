@@ -16,7 +16,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new KeyTestCommand("test", "foo");
 
             Assert.Equal(GroupKey.Named("foo"), command.BreakerKey);
-            Assert.Equal(GroupKey.Named("foo"), command.PoolKey);
+            Assert.Equal(GroupKey.Named("foo"), command.IsolationKey);
         }
 
         [Fact]
@@ -30,16 +30,16 @@ namespace Hudl.Mjolnir.Tests.Command
         public void Construct_WithSpecificPoolKey_UsesProvidedPoolKey()
         {
             var command = new KeyTestCommand("test", "test", "bar");
-            Assert.Equal(GroupKey.Named("bar"), command.PoolKey);
+            Assert.Equal(GroupKey.Named("bar"), command.IsolationKey);
         }
 
         private sealed class KeyTestCommand : Command<object>
         {
-            internal KeyTestCommand(string group, string isolationKey)
-                : base(group, isolationKey, TimeSpan.FromMilliseconds(10000)) { }
+            internal KeyTestCommand(string group, string breakerAndIsolationKey)
+                : base(group, breakerAndIsolationKey, TimeSpan.FromMilliseconds(10000)) { }
 
-            internal KeyTestCommand(string group, string breakerKey, string poolKey)
-                : base(group, breakerKey, poolKey, TimeSpan.FromMilliseconds(10000)) {}
+            internal KeyTestCommand(string group, string breakerKey, string isolationKey)
+                : base(group, breakerKey, isolationKey, TimeSpan.FromMilliseconds(10000)) {}
 
             protected override Task<object> ExecuteAsync(CancellationToken cancellationToken)
             {
