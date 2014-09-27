@@ -63,7 +63,7 @@ namespace Hudl.Mjolnir.Tests.Command
             }
             catch (CommandFailedException e)
             {
-                Assert.True(e.InnerException is IsolationThreadPoolRejectedException);
+                Assert.True(e.InnerException is IsolationStrategyRejectedException);
                 mockMetrics.Verify(m => m.MarkCommandFailure(), Times.Never);
                 mockMetrics.Verify(m => m.MarkCommandSuccess(), Times.Never);
                 return; // Expected.
