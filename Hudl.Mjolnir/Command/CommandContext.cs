@@ -95,11 +95,9 @@ namespace Hudl.Mjolnir.Command
             }
 
             return Instance._pools.GetOrAddSafe(key, k =>
-                new StpIsolationThreadPool(
-                    key,
+                new TaskSchedulerQueuedIsolationStrategy(
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10),
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10),
-                    Stats));
+                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10)));
         }
 
         internal static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)

@@ -22,7 +22,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new SuccessfulEchoCommandWithoutFallback(new {})
             {
-                ThreadPool = pool,
+                IsolationStrategy = pool,
             };
 
             try
@@ -53,7 +53,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SuccessfulEchoCommandWithoutFallback(new { })
             {
                 CircuitBreaker = mockBreaker.Object,
-                ThreadPool = pool,
+                IsolationStrategy = pool,
             };
 
             try
@@ -79,7 +79,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new SuccessfulEchoCommandWithFallback(new { })
             {
-                ThreadPool = pool,
+                IsolationStrategy = pool,
             };
 
             await command.InvokeAsync(); // Won't throw because there's a successful fallback.

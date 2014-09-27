@@ -94,7 +94,7 @@ namespace Hudl.Mjolnir.Command
         }
 
         private IQueuedIsolationStrategy _pool;
-        internal IQueuedIsolationStrategy ThreadPool
+        internal IQueuedIsolationStrategy IsolationStrategy
         {
             private get { return _pool ?? CommandContext.GetThreadPool(_poolKey); }
             set { _pool = value; }
@@ -338,23 +338,20 @@ namespace Hudl.Mjolnir.Command
             // even execute as far as the breaker and downstream dependencies are
             // concerned.
 
-            var workItem = ThreadPool.Enqueue(() =>
+            // The breaker check gets wrapped in a function; we don't actually want to 
+            // test the breaker until we're immediately ready to execute it, which may
+            // be in a short while since we're queueing these up.
+            return IsolationStrategy.Enqueue(() =>
             {
                 // Since we may have been on the thread pool queue for a bit, see if we
                 // should have canceled by now.
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // These return tasks themselves, hence the .Unwrap() below.
                 return UseCircuitBreakers.Value
                     ? ExecuteWithBreaker(cancellationToken)
                     : ExecuteAsync(cancellationToken);
-            });
-
-            // We could avoid passing both the token and timeout if either:
-            // A. SmartThreadPool.GetResult() took a CancellationToken.
-            // B. The CancellationToken provided an accessor for its Timeout.
-            // C. We wrapped CancellationToken and Timeout in another class and passed it.
-            // For now, this works, if a little janky.
-            return workItem.Get(cancellationToken, Timeout);
+            }, cancellationToken).Unwrap();
         }
 
         private async Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)
