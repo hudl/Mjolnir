@@ -33,6 +33,9 @@ namespace Hudl.Mjolnir.Isolation
         /// <summary>Whether the scheduler is currently processing work items.</summary>
         private int _delegatesQueuedOrRunning = 0; // protected by lock(_tasks)
 
+        /// <summary>The number of tasks currently queued or executing on any thread. Includes tasks queued in _tasks.</summary>
+        private int _tasksPendingCompletion = 0; // protected by lock(_tasks)
+
         /// <summary>
         /// Initializes an instance of the LimitedConcurrencyLevelTaskScheduler class with the
         /// specified degree of parallelism.
@@ -60,14 +63,33 @@ namespace Hudl.Mjolnir.Isolation
             // delegates currently queued or running to process tasks, schedule another.
             lock (_tasks)
             {
-                if (_tasks.Count >= _maxQueueLength.Value)
+                // Store config values locally in case the config changes, maintaining
+                // consistency with the values used within this method.
+                var maxParallelism = _maxDegreeOfParallelism.Value;
+                var maxQueueLength = _maxQueueLength.Value;
+
+                var currentQueueLength = _tasks.Count;
+
+                // The queue maximum isn't a strict maximum on the List<Task> itself. It's really a limit on
+                // how many we'll queue when the concurrency is hit. There may be periods of rapid queueing
+                // that push the list beyond the queue maximum, and that's okay, as long as we don't:
+                //   1. Execute more than _maxDegreeOfParallelism at any given time, and
+                //   2. Queue beyond _maxQueueLength when we're running at max parallelism
+                if (_tasksPendingCompletion >= maxParallelism + maxQueueLength)
                 {
-                    throw new QueueLengthExceededException();
+                    // Note that (_tasksPendingCompletion - currentQueueLength != tasks currently in flight). In fact,
+                    // there's the possibility that _tasksPendingCompletion == currentQueueLength (the condition where
+                    // many items were rapidly queued before any were able to be pulled off for execution).
+                    throw new QueueLengthExceededException(_tasksPendingCompletion, currentQueueLength);
                 }
 
+                ++_tasksPendingCompletion;
                 _tasks.AddLast(task);
-                if (_delegatesQueuedOrRunning < _maxDegreeOfParallelism.Value)
+                if (_delegatesQueuedOrRunning < maxParallelism)
                 {
+                    // Clarification: _delegatesQueuedOrRunning *isn't* the number of currently-executing
+                    // Tasks, it's the number of different ThreadPool Queue calls that we've dispatched
+                    // off for concurrent processing.
                     ++_delegatesQueuedOrRunning;
                     NotifyThreadPoolOfPendingWork();
                 }
@@ -106,7 +128,17 @@ namespace Hudl.Mjolnir.Isolation
                         }
 
                         // Execute the task we pulled out of the queue
-                        TryExecuteTask(item);
+                        try
+                        {
+                            TryExecuteTask(item);
+                        }
+                        finally
+                        {
+                            lock (_tasks)
+                            {
+                                --_tasksPendingCompletion;
+                            }
+                        }
                     }
                 }
                 // We're done processing items on the current thread
@@ -159,5 +191,15 @@ namespace Hudl.Mjolnir.Isolation
         }
     }
 
-    internal class QueueLengthExceededException : Exception { }
+    internal sealed class QueueLengthExceededException : Exception
+    {
+        internal const string PendingCompletionDataKey = "PendingCompletion";
+        internal const string CurrentlyQueuedDataKey = "CurrentlyQueued";
+
+        public QueueLengthExceededException(int pendingCompletion, int currentlyQueued)
+        {
+            Data[PendingCompletionDataKey] = pendingCompletion;
+            Data[CurrentlyQueuedDataKey] = currentlyQueued;
+        }
+    }
 }

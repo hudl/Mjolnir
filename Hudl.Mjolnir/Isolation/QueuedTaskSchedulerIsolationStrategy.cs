@@ -28,13 +28,20 @@ namespace Hudl.Mjolnir.Isolation
                 // its queue is also at capacity.
                 return _factory.StartNew(func, cancellationToken);
             }
-            catch (QueueLengthExceededException e)
+            catch (TaskSchedulerException e)
             {
-                // Hide the TaskScheduler implementation by wrapping with an
-                // isolation-specific exception.
-                ExceptionDispatchInfo.Capture(e).Throw();
+                if (e.InnerException is QueueLengthExceededException)
+                {
+                    var f = new IsolationStrategyRejectedException("TaskScheduler is at maximum concurrency and queue size", e);
+                    foreach (var key in e.InnerException.Data.Keys)
+                    {
+                        f.Data[key] = e.InnerException.Data[key];
+                    }
+                    throw f;
+                }
+
+                throw;
             }
-            throw new InvalidOperationException("Unexpectedly reached the end of Enqueue<TResult>() without returning or throwing");
         }
     }
 }

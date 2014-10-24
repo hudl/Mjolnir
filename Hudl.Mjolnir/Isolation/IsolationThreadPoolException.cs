@@ -7,9 +7,13 @@ namespace Hudl.Mjolnir.Isolation
         internal IsolationThreadPoolException(Exception cause) : base(cause.Message, cause) {}
     }
 
-    internal class IsolationStrategyRejectedException : Exception {}
+    internal class IsolationStrategyRejectedException : Exception
+    {
+        internal IsolationStrategyRejectedException() { }
+        internal IsolationStrategyRejectedException(string message, Exception inner) : base(message, inner) { }
+    }
 
-    internal class IsolationThreadPoolRejectedException : IsolationStrategyRejectedException {}
-
-    //internal class TaskSchedulerIsolationRejectionException : IsolationStrategyRejectedException {}
+    // TODO This is the original class that I'm keeping around for backwards compatibility.
+    // Moving forward, things should create and use IsolationStrategyRejectedExceptions instead.
+    internal class IsolationThreadPoolRejectedException : IsolationStrategyRejectedException { }
 }
