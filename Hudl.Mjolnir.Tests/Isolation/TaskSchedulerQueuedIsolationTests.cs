@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,21 +36,21 @@ namespace Hudl.Mjolnir.Tests.Isolation
         }
 
         [Fact]
-        public void Enqueue_MaxConcurrencyOne_QueueLengthZero_AcceptsOneAndRejectsRemaining()
+        public async Task Enqueue_MaxConcurrencyOne_QueueLengthZero_AcceptsOneAndRejectsRemaining()
         {
-            RunEnqueueTest(1, 0);
+            await RunEnqueueTest(1, 0);
         }
 
         [Fact]
-        public void Enqueue_MaxConcurrencyOne_QueueLengthOne_AcceptsTwoAndRejectsRemaining()
+        public async Task Enqueue_MaxConcurrencyOne_QueueLengthOne_AcceptsTwoAndRejectsRemaining()
         {
-            RunEnqueueTest(1, 1);
+            await RunEnqueueTest(1, 1);
         }
 
         [Fact]
-        public void Enqueue_MaxConcurrencyFive_QueueLengthOne_AcceptsSixAndRejectsRemaining()
+        public async Task Enqueue_MaxConcurrencyFive_QueueLengthOne_AcceptsSixAndRejectsRemaining()
         {
-            RunEnqueueTest(5, 1);
+            await RunEnqueueTest(5, 1);
         }
 
         [Fact]
@@ -70,36 +71,26 @@ namespace Hudl.Mjolnir.Tests.Isolation
         // - A risk point is pushing up on the application pool max (or current size). How fast does it scale?
         // - Get some metrics on current pool usage in production.
 
-        //[Fact]
-        //public void Blah()
-        //{
-        //    var isolation = new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(3), new TransientConfigurableValue<int>(1));
+        // TODO Consider using HideScheduler as a TaskCreationOption on the scheduler
 
-        //    // One executes immediately, one queued.
-        //    isolation.Enqueue(SleepTwoSeconds, CancellationToken.None);
-        //    isolation.Enqueue(SleepTwoSeconds, CancellationToken.None);
-        //    isolation.Enqueue(SleepTwoSeconds, CancellationToken.None);
-        //    isolation.Enqueue(SleepTwoSeconds, CancellationToken.None);
-        //    isolation.Enqueue(SleepTwoSeconds, CancellationToken.None);
-        //    isolation.Enqueue(SleepTwoSeconds, CancellationToken.None);
-        //    isolation.Enqueue(SleepTwoSeconds, CancellationToken.None);
-
-        //}
-
-        private static void RunEnqueueTest(int maxConcurrency, int maxQueueLength)
+        private async Task RunEnqueueTest(int maxConcurrency, int maxQueueLength)
         {
+            LogTime("Started");
             var isolation = CreateIsolation(maxConcurrency, maxQueueLength);
 
+            var tasks = new List<Task<object>>();
             for (var i = 0; i < maxConcurrency + maxQueueLength; i++)
             {
-                Assert.DoesNotThrow(() => isolation.Enqueue(SleepTwoSeconds, CancellationToken.None));
+                Assert.DoesNotThrow(() => tasks.Add(isolation.Enqueue(SleepOneSecond, CancellationToken.None)));
             }
 
-            var e = Assert.Throws<IsolationStrategyRejectedException>(() => isolation.Enqueue(SleepTwoSeconds, CancellationToken.None));
+            var e = Assert.Throws<IsolationStrategyRejectedException>(() => tasks.Add(isolation.Enqueue(SleepOneSecond, CancellationToken.None)));
 
             // Assumes *none* of the tasks have completed yet (an assumption that all of these tests make).
             Assert.Equal(maxConcurrency + maxQueueLength, e.Data[QueueLengthExceededException.PendingCompletionDataKey]);
-            
+
+            await Task.WhenAll(tasks);
+
             // We don't know *exactly* how many are queued. It could actually be up to _maxParallel + _maxQueueLength if
             // no tasks have started executing yet. Probably don't need to continue asserting this. There may be some other
             // assertion we can replace it with, though.
@@ -111,16 +102,24 @@ namespace Hudl.Mjolnir.Tests.Isolation
             return new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(maxConcurrency), new TransientConfigurableValue<int>(maxQueueLength));
         }
 
-        // TODO these don't hang the tests. why? i feel like they should.
-        private static object SleepTwoSeconds()
+        // TODO Sleeping is janky. It'd be better to wire in a TaskCompletionSource and control their lifecycle that way.
+        // - It's a bit difficult with the way I've wired the Scheduler and Factory together.
+        // - Also, since QueueTask() is internal/protected, I can't just call it from within the isolation strategy.
+        private static object SleepOneSecond()
         {
-            Thread.Sleep(TimeSpan.FromSeconds(2));
+            Thread.Sleep(TimeSpan.FromSeconds(1));
+            LogTime("Finished");
             return new { };
         }
 
         private static object ReturnImmediately()
         {
             return new { };
+        }
+
+        private static void LogTime(string message)
+        {
+            Debug.WriteLine(new TimeSpan(DateTime.UtcNow.Ticks).TotalMilliseconds + " - " + message);
         }
 
         // TODO Also test with some objects that:
