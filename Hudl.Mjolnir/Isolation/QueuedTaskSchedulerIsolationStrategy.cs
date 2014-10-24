@@ -9,12 +9,12 @@ namespace Hudl.Mjolnir.Isolation
     /// <summary>
     /// Isolates operations by using a concurrency-limiting, queue-driven TaskScheduler.
     /// </summary>
-    internal class TaskSchedulerQueuedIsolationStrategy : IQueuedIsolationStrategy
+    internal class QueuedTaskSchedulerIsolationStrategy : IQueuedIsolationStrategy
     {
         // Custom TaskFactory that handles concurrency and task queueing.
         private readonly TaskFactory _factory;
 
-        internal TaskSchedulerQueuedIsolationStrategy(IConfigurableValue<int> maxConcurrency, IConfigurableValue<int> maxQueueLength)
+        internal QueuedTaskSchedulerIsolationStrategy(IConfigurableValue<int> maxConcurrency, IConfigurableValue<int> maxQueueLength)
         {
             var scheduler = new LimitedConcurrencyLevelTaskScheduler(maxConcurrency, maxQueueLength);
             _factory = new TaskFactory(scheduler);
@@ -33,8 +33,8 @@ namespace Hudl.Mjolnir.Isolation
                 // Hide the TaskScheduler implementation by wrapping with an
                 // isolation-specific exception.
                 ExceptionDispatchInfo.Capture(e).Throw();
-                throw; // Should never get here.
             }
+            throw new InvalidOperationException("Unexpectedly reached the end of Enqueue<TResult>() without returning or throwing");
         }
     }
 }

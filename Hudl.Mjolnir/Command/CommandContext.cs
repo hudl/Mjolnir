@@ -95,7 +95,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             return Instance._isolationStrategy.GetOrAddSafe(key, k =>
-                new TaskSchedulerQueuedIsolationStrategy(
+                new QueuedTaskSchedulerIsolationStrategy(
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10), // TODO "threadCount" and "pools" are too specific; change while maintaining backwards compatibility
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10)));
         }

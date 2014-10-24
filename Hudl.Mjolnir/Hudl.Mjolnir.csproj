@@ -83,7 +83,7 @@
     <Compile Include="Isolation\IIsolationThreadPool.cs" />
     <Compile Include="Isolation\IQueuedIsolationStrategy.cs" />
     <Compile Include="Isolation\LimitedConcurrencyTaskScheduler.cs" />
-    <Compile Include="Isolation\TaskSchedulerQueuedIsolationStrategy.cs" />
+    <Compile Include="Isolation\QueuedTaskSchedulerIsolationStrategy.cs" />
     <Compile Include="Key\GroupKey.cs" />
     <Compile Include="Metrics\CounterMetric.cs" />
     <Compile Include="Metrics\ICommandMetrics.cs" />

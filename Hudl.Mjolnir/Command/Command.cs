@@ -93,11 +93,11 @@ namespace Hudl.Mjolnir.Command
             set { _breaker = value; }
         }
 
-        private IQueuedIsolationStrategy _pool;
+        private IQueuedIsolationStrategy _isolationStrategy;
         internal IQueuedIsolationStrategy IsolationStrategy
         {
-            private get { return _pool ?? CommandContext.GetIsolationStrategy(_isolationKey); }
-            set { _pool = value; }
+            private get { return _isolationStrategy ?? CommandContext.GetIsolationStrategy(_isolationKey); }
+            set { _isolationStrategy = value; }
         }
 
         private IIsolationSemaphore _fallbackSemaphore;
