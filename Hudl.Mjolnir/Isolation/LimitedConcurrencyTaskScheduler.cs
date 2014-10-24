@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Hudl.Config;
 
 namespace Hudl.Mjolnir.Isolation
 {
@@ -24,10 +25,10 @@ namespace Hudl.Mjolnir.Isolation
         private readonly LinkedList<Task> _tasks = new LinkedList<Task>(); // protected by lock(_tasks)
         
         /// <summary>The maximum concurrency level allowed by this scheduler.</summary>
-        private readonly int _maxDegreeOfParallelism;
+        private readonly IConfigurableValue<int> _maxDegreeOfParallelism;
 
         /// <summary>The number of items allowed to be queued before the scheduler starts rejecting them.</summary>
-        private readonly int _maxQueueLength;
+        private readonly IConfigurableValue<int> _maxQueueLength;
 
         /// <summary>Whether the scheduler is currently processing work items.</summary>
         private int _delegatesQueuedOrRunning = 0; // protected by lock(_tasks)
@@ -38,10 +39,14 @@ namespace Hudl.Mjolnir.Isolation
         /// </summary>
         /// <param name="maxDegreeOfParallelism">The maximum degree of parallelism provided by this scheduler.</param>
         /// <param name="maxQueueLength">The maximum number of tasks to queue up for execution before throwing.</param>
-        public LimitedConcurrencyLevelTaskScheduler(int maxDegreeOfParallelism, int maxQueueLength = 10)
+        public LimitedConcurrencyLevelTaskScheduler(IConfigurableValue<int> maxDegreeOfParallelism, IConfigurableValue<int> maxQueueLength)
         {
-            if (maxDegreeOfParallelism < 1) throw new ArgumentOutOfRangeException("maxDegreeOfParallelism");
-            if (maxQueueLength < 0) throw new ArgumentOutOfRangeException("maxQueueLength");
+            if (maxDegreeOfParallelism == null) throw new ArgumentNullException("maxDegreeOfParallelism");
+            if (maxQueueLength == null) throw new ArgumentNullException("maxQueueLength");
+
+            if (maxDegreeOfParallelism.Value < 1) throw new ArgumentOutOfRangeException("maxDegreeOfParallelism", "Initial value needs to be greater than 0");
+            if (maxQueueLength.Value < 0) throw new ArgumentOutOfRangeException("maxQueueLength", "Initial value needs to be at least 0");
+
             _maxDegreeOfParallelism = maxDegreeOfParallelism;
             _maxQueueLength = maxQueueLength;
         }
@@ -55,13 +60,13 @@ namespace Hudl.Mjolnir.Isolation
             // delegates currently queued or running to process tasks, schedule another.
             lock (_tasks)
             {
-                if (_tasks.Count >= _maxQueueLength)
+                if (_tasks.Count >= _maxQueueLength.Value)
                 {
                     throw new QueueLengthExceededException();
                 }
 
                 _tasks.AddLast(task);
-                if (_delegatesQueuedOrRunning < _maxDegreeOfParallelism)
+                if (_delegatesQueuedOrRunning < _maxDegreeOfParallelism.Value)
                 {
                     ++_delegatesQueuedOrRunning;
                     NotifyThreadPoolOfPendingWork();
@@ -134,7 +139,7 @@ namespace Hudl.Mjolnir.Isolation
         }
 
         /// <summary>Gets the maximum concurrency level supported by this scheduler.</summary>
-        public sealed override int MaximumConcurrencyLevel { get { return _maxDegreeOfParallelism; } }
+        public sealed override int MaximumConcurrencyLevel { get { return _maxDegreeOfParallelism.Value; } }
 
         /// <summary>Gets an enumerable of the tasks currently scheduled on this scheduler.</summary>
         /// <returns>An enumerable of the tasks currently scheduled.</returns>

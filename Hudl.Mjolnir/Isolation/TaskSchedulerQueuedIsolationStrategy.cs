@@ -7,7 +7,7 @@ using Hudl.Config;
 namespace Hudl.Mjolnir.Isolation
 {
     /// <summary>
-    /// Isolates operations by using a concurrency-limiting TaskScheduler.
+    /// Isolates operations by using a concurrency-limiting, queue-driven TaskScheduler.
     /// </summary>
     internal class TaskSchedulerQueuedIsolationStrategy : IQueuedIsolationStrategy
     {
@@ -16,7 +16,7 @@ namespace Hudl.Mjolnir.Isolation
 
         internal TaskSchedulerQueuedIsolationStrategy(IConfigurableValue<int> maxConcurrency, IConfigurableValue<int> maxQueueLength)
         {
-            var scheduler = new LimitedConcurrencyLevelTaskScheduler(maxConcurrency.Value, maxQueueLength.Value);
+            var scheduler = new LimitedConcurrencyLevelTaskScheduler(maxConcurrency, maxQueueLength);
             _factory = new TaskFactory(scheduler);
         }
 
