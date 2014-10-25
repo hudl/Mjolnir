@@ -6,7 +6,7 @@ using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
 
-namespace Hudl.Mjolnir.ThreadPool
+namespace Hudl.Mjolnir.Isolation
 {
     /// <summary>
     /// IIsolationThreadPool that uses a backing SmartThreadPool.

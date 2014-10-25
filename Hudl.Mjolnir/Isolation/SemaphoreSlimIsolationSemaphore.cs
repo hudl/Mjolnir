@@ -5,7 +5,7 @@ using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Util;
 
-namespace Hudl.Mjolnir.ThreadPool
+namespace Hudl.Mjolnir.Isolation
 {
     internal class SemaphoreSlimIsolationSemaphore : IIsolationSemaphore
     {

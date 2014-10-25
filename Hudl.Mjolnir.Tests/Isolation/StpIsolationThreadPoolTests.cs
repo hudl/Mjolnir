@@ -2,12 +2,12 @@
 using System.Threading;
 using Hudl.Config;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
-using Hudl.Mjolnir.ThreadPool;
 using Xunit;
 
-namespace Hudl.Mjolnir.Tests.ThreadPool
+namespace Hudl.Mjolnir.Tests.Isolation
 {
     public class StpIsolationThreadPoolTests : TestFixture
     {
@@ -15,10 +15,10 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         public void Enqueue_PoolSizeOneQueueSizeZero_AcceptsOneAndRejectsRemaining()
         {
             var pool = CreateAndStartPool(1, 0);
-            pool.Enqueue(SleepThreeSeconds);
+            pool.Enqueue(SleepTwoSeconds);
             Assert.Throws<IsolationThreadPoolRejectedException>(() =>
             {
-                pool.Enqueue(SleepThreeSeconds);
+                pool.Enqueue(SleepTwoSeconds);
             });
         }
 
@@ -26,11 +26,11 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         public void Enqueue_PoolSizeOneQueueSizeOne_AcceptsTwoAndRejectsRemaining()
         {
             var pool = CreateAndStartPool(1, 1);
-            pool.Enqueue(SleepThreeSeconds);
-            pool.Enqueue(SleepThreeSeconds);
+            pool.Enqueue(SleepTwoSeconds);
+            pool.Enqueue(SleepTwoSeconds);
             Assert.Throws<IsolationThreadPoolRejectedException>(() =>
             {
-                pool.Enqueue(SleepThreeSeconds);
+                pool.Enqueue(SleepTwoSeconds);
             });
         }
 
@@ -38,15 +38,15 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
         public void Enqueue_PoolSizeFiveQueueSizeOne_AcceptsSixAndRejectsRemaining()
         {
             var pool = CreateAndStartPool(5, 1);
-            pool.Enqueue(SleepThreeSeconds);
-            pool.Enqueue(SleepThreeSeconds);
-            pool.Enqueue(SleepThreeSeconds);
-            pool.Enqueue(SleepThreeSeconds);
-            pool.Enqueue(SleepThreeSeconds);
-            pool.Enqueue(SleepThreeSeconds);
+            pool.Enqueue(SleepTwoSeconds);
+            pool.Enqueue(SleepTwoSeconds);
+            pool.Enqueue(SleepTwoSeconds);
+            pool.Enqueue(SleepTwoSeconds);
+            pool.Enqueue(SleepTwoSeconds);
+            pool.Enqueue(SleepTwoSeconds);
             Assert.Throws<IsolationThreadPoolRejectedException>(() =>
             {
-                pool.Enqueue(SleepThreeSeconds);
+                pool.Enqueue(SleepTwoSeconds);
             });
         }
 
@@ -59,7 +59,7 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
             pool.Enqueue(ReturnImmediately); // Shouldn't be rejected.
         }
 
-        private object SleepThreeSeconds()
+        private object SleepTwoSeconds()
         {
             Thread.Sleep(TimeSpan.FromSeconds(2));
             return new {};

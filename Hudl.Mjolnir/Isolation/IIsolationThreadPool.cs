@@ -1,4 +1,4 @@
-﻿namespace Hudl.Mjolnir.ThreadPool
+﻿namespace Hudl.Mjolnir.Isolation
 {
     /// <summary>
     /// A thread pool whose purposes is to isolate a group of operations from the rest of the system.

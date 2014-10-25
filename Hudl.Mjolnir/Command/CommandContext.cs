@@ -3,16 +3,16 @@ using System.Collections.Concurrent;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
-using Hudl.Mjolnir.ThreadPool;
 using Hudl.Mjolnir.Util;
 
 namespace Hudl.Mjolnir.Command
 {
     /// <summary>
-    /// Manages all of Mjolnir's pools, breakers, and other state. Also handles
-    /// dependency injection for replaceable components (stats, config, etc.).
+    /// Manages all of Mjolnir's isolation strategies, breakers, and other state.
+    /// Also handles dependency injection for replaceable components (stats, config, etc.).
     /// 
     /// Client code typically doesn't interact with CommandContext other than
     /// to inject dependencies.
@@ -23,7 +23,7 @@ namespace Hudl.Mjolnir.Command
 
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<IQueuedIsolationStrategy>> _isolationStrategy = new ConcurrentDictionary<GroupKey, Lazy<IQueuedIsolationStrategy>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
         private IStats _stats = new IgnoringStats();
@@ -87,17 +87,17 @@ namespace Hudl.Mjolnir.Command
                     Stats));
         }
 
-        internal static IIsolationThreadPool GetThreadPool(GroupKey key)
+        internal static IQueuedIsolationStrategy GetIsolationStrategy(GroupKey key)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
             }
 
-            return Instance._pools.GetOrAddSafe(key, k =>
-                new StpIsolationThreadPool(
+            return Instance._isolationStrategy.GetOrAddSafe(key, k =>
+                new QueuedTaskSchedulerIsolationStrategy(
                     key,
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10),
+                    new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10), // TODO "threadCount" and "pools" are too specific; change while maintaining backwards compatibility
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10),
                     Stats));
         }
@@ -111,8 +111,8 @@ namespace Hudl.Mjolnir.Command
 
             return Instance._fallbackSemaphores.GetOrAddSafe(key, k =>
             {
-                // For now, the default here is 5x the default pool threadCount, with the presumption that
-                // several commands may using the same pool, and we should therefore try to allow for a bit
+                // For now, the default here is 5x the default isolation concurrency, with the presumption that
+                // several commands may using the same isolation group, and we should therefore try to allow for a bit
                 // more concurrent fallback execution.
                 var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", 50);
                 return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);

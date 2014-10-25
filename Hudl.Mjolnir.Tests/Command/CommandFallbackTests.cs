@@ -2,9 +2,9 @@
 using System.Threading.Tasks;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Tests.TestCommands;
-using Hudl.Mjolnir.ThreadPool;
 using Moq;
 using Xunit;
 

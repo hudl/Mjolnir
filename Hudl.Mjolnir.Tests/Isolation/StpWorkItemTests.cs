@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 using Amib.Threading;
+using Hudl.Mjolnir.Isolation;
 using Hudl.Mjolnir.Tests.Helper;
-using Hudl.Mjolnir.ThreadPool;
 using Moq;
 using Xunit;
 
-namespace Hudl.Mjolnir.Tests.ThreadPool
+namespace Hudl.Mjolnir.Tests.Isolation
 {
     public class StpWorkItemTests : TestFixture
     {

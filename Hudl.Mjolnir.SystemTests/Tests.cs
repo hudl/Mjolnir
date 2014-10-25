@@ -18,6 +18,10 @@ using Xunit;
 
 namespace Hudl.Mjolnir.SystemTests
 {
+    // 1. Run VS as Administrator (need to start the http server)
+    // 2. Uncomment [Fact] on RunAllScenarios()
+    // 3. Run tests
+
     public class Tests
     {
         private const ushort ServerPort = 22222;
@@ -29,7 +33,7 @@ namespace Hudl.Mjolnir.SystemTests
         private readonly MemoryStoreStats _testStats = new MemoryStoreStats();
 
         // This is a long-running test. Uncomment [Fact] to run it.
-        //[Fact]
+        [Fact]
         public async Task RunAllScenarios()
         {
             ConfigProvider.UseProvider(_testConfigProvider);
@@ -48,6 +52,7 @@ namespace Hudl.Mjolnir.SystemTests
                 await FastFailures("system-test-3"),
                 await FastTimeouts("system-test-5"),
                 await ErrorsInTheMiddle("system-test-6"),
+                await OverConcurrencyLimit("system-test-7"), // TODO broken, see comment on method
             };
 
             var output = @"<!doctype html>
@@ -59,7 +64,7 @@ namespace Hudl.Mjolnir.SystemTests
 html, body { margin: 0; padding: 0; font-family: Tahoma, Arial, sans-serif; background-color: #676B85; }
 h2 { margin: 0px; padding: 0; }
     </style>
-  </head>system-
+  </head>
   <body>
     <div style='white-space: nowrap;'>
 ";
@@ -387,6 +392,67 @@ h2 { margin: 0px; padding: 0; }
             };
         }
 
+        // TODO can't get this to hit a concurrency limit. nothing gets rejected. why?
+        private async Task<ChartSet> OverConcurrencyLimit(string key)
+        {
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".minimumOperations", 5);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".thresholdPercentage", 100);
+            _testConfigProvider.Set("mjolnir.breaker." + key + ".trippedDurationMillis", 5000);
+            _testConfigProvider.Set("mjolnir.metrics." + key + ".windowMillis", 10000);
+            _testConfigProvider.Set("mjolnir.pools." + key + ".threadCount", 1);
+            _testConfigProvider.Set("mjolnir.pools." + key + ".queueLength", 0);
+
+            // Cranked up the threads here. We're going to sleeping on the server just a bit longer than
+            // the timeout, so there's potential for server threads to grow while we throw more requests
+            // at them.
+            using (var server = new HttpServer(1))
+            {
+                var url = string.Format("http://localhost:{0}/", ServerPort);
+
+                server.Start(ServerPort);
+
+                var okayBehavior = ServerBehavior.Delayed200(TimeSpan.FromMilliseconds(50));
+                server.ProcessRequest += okayBehavior;
+
+                _testStats.ClearAndStart();
+
+                await Task.WhenAll(Repeat(20, 30, () =>
+                {
+                    var command = new HttpClientCommand(key, url, TimeSpan.FromSeconds(30));
+
+                    try
+                    {
+                        return command.InvokeAsync().ContinueWith(res =>
+                        {
+                            if (res.IsFaulted)
+                            {
+                                return HttpStatusCode.InternalServerError;
+                            }
+
+                            return HttpStatusCode.OK;
+                        });
+                    }
+                    catch (Exception)
+                    {
+                        return Task.FromResult(HttpStatusCode.InternalServerError);
+                    }
+                }));
+
+                server.Stop();
+            }
+
+            _testStats.Stop();
+
+            File.WriteAllLines(string.Format(@"c:\hudl\logs\mjolnir-metrics-{0}-{1}.txt", key, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")), _testStats.Metrics.Select(m => m.ToCsvLine()));
+
+            return new ChartSet
+            {
+                Name = "Max 5 Concurrent",
+                Description = "30s @ 5/sec.<br/>Command: Inherited<br/>Timeout: 10000<br/>Server: 5 max concurrency",
+                Charts = GatherChartData(_testStats.Metrics, key, key + ".HttpClient"),
+            };
+        }
+
         private static void InitializeLogging()
         {
             var appender = new FileAppender
@@ -429,7 +495,7 @@ h2 { margin: 0px; padding: 0; }
                     {
                         name = "elapsed (ms)",
                         data = metrics
-                            .Where(m => m.Service == "mjolnir command " + commandName + " InvokeAsync")
+                            .Where(m => m.Service == "mjolnir command " + commandName + " total")
                             .Select(m => new
                             {
                                 x = m.OffsetSeconds,
@@ -438,24 +504,43 @@ h2 { margin: 0px; padding: 0; }
                             }),
                     }
                 }),
-                Chart.Create("Thread pool use", new List<object>
+                //Chart.Create("Thread pool use", new List<object>
+                //{
+                //    new
+                //    {
+                //        name = "active",
+                //        data = metrics
+                //            .Where(m => m.Service == "mjolnir pool " + key + " activeThreads")
+                //            .Select((m) => new object[] { m.OffsetSeconds, m.Value })
+                //            .ToArray(),
+                //    },
+                //    new
+                //    {
+                //        name = "in use",
+                //        data = metrics
+                //            .Where(m => m.Service == "mjolnir pool " + key + " inUseThreads")
+                //            .Select((m) => new object[] { m.OffsetSeconds, m.Value })
+                //            .ToArray(),
+                //    }
+                //}),
+                Chart.Create("Thread pool activity", new List<object>
                 {
                     new
                     {
-                        name = "active",
+                        name = "enqueued",
                         data = metrics
-                            .Where(m => m.Service == "mjolnir pool " + key + " activeThreads")
-                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
-                            .ToArray(),
+                            .Where(m => m.Service == "mjolnir pool " + key + " Enqueue" && m.Status == "Enqueued")
+                            .Select((m, i) => new object[] { m.OffsetSeconds, i })
+                            .ToArray()
                     },
                     new
                     {
-                        name = "in use",
+                        name = "rejected",
                         data = metrics
-                            .Where(m => m.Service == "mjolnir pool " + key + " inUseThreads")
-                            .Select(m => new object[] { m.OffsetSeconds, m.Value })
-                            .ToArray(),
-                    }
+                            .Where(m => m.Service == "mjolnir pool " + key + " Enqueue" && m.Status == "Rejected")
+                            .Select((m, i) => new object[] { m.OffsetSeconds, i })
+                            .ToArray()
+                    },
                 }),
                 Chart.Create(metrics, "Breaker total observed operations", "total", "mjolnir breaker " + key + " total"),
                 Chart.Create(metrics, "Breaker observed error percent", "error %", "mjolnir breaker " + key + " error"),
