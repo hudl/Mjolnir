@@ -116,6 +116,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 _exceptionToThrow = exceptionToThrow;
             }
 
+            public Task Enqueue(Action action, CancellationToken cancellationToken)
+            {
+                throw _exceptionToThrow;
+            }
+
             public Task<TResult> Enqueue<TResult>(Func<TResult> func, CancellationToken cancellationToken)
             {
                 throw _exceptionToThrow;

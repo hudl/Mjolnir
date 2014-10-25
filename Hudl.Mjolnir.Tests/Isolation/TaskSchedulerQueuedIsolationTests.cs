@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hudl.Config;
 using Hudl.Mjolnir.Isolation;
+using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Isolation
@@ -57,13 +58,119 @@ namespace Hudl.Mjolnir.Tests.Isolation
         public void Enqueue_AfterOneTaskCompletes_AcceptsMore()
         {
             var isolation = CreateIsolation(1, 0);
-            Assert.DoesNotThrow(() => isolation.Enqueue(ReturnImmediately, CancellationToken.None));
+            Assert.DoesNotThrow(() => isolation.Enqueue<object>(ReturnImmediately, CancellationToken.None));
             Thread.Sleep(10); // Make sure it completes (by hacky-sleeping and hoping that's enough).
-            Assert.DoesNotThrow(() => isolation.Enqueue(ReturnImmediately, CancellationToken.None));
+            Assert.DoesNotThrow(() => isolation.Enqueue<object>(ReturnImmediately, CancellationToken.None));
         }
 
-        // TODO Make sure that the counts are maintained when a task throws exceptions.
-        // - Run a test that counts a bunch and verify that it zeroes out under high concurrency after it's done.
+        // TODO Also test:
+        // - Delayed exception
+        // - Throw exceptions from async when not awaited
+        // - Return values from an awaited async call
+        // - Return an async Task that's not awaited
+        // - Tasks (async and/or awaited) that get canceled via CancellationToken.
+        // - TaskScheduler throws an exception that's not a QueueLengthExceededException
+        // - Null tasks
+        // Test these when the Enqueue both is and is not awaited.
+
+        [Fact]
+        public async Task Enqueue_ImmediateSyncException_Awaited()
+        {
+            // When awaited, the enqueued task should throw its exception.
+
+            var expected = new ExpectedTestException("Expected");
+            var isolation = CreateIsolation(10, 10); // Constraints don't matter.
+
+            try
+            {
+                var task = isolation.Enqueue<object>(() =>
+                {
+                    throw expected;
+                }, CancellationToken.None);
+                await task;
+            }
+            catch (ExpectedTestException e)
+            {
+                Assert.Equal(expected, e);
+            }
+        }
+
+        [Fact]
+        public async Task Enqueue_ImmediateSyncException_Continuation()
+        {
+            // If the task is assigned a continuation and not immediately awaited,
+            // the task should be Faulted and contain the exception thrown from within.
+
+            var expected = new ExpectedTestException("Expected");
+            var isolation = CreateIsolation(10, 10); // Constraints don't matter.
+            var task = isolation.Enqueue<object>(() =>
+            {
+                throw expected;
+            }, CancellationToken.None);
+
+            await task.ContinueWith(res =>
+            {
+                Assert.True(res.IsFaulted);
+                Assert.True(res.Exception != null && res.Exception.InnerException == expected);
+            });
+        }
+
+        [Fact]
+        public async Task Enqueue_RapidFireExceptions()
+        {
+            var isolation = CreateIsolation(50, 50);
+            var tasks = new List<Task>();
+            for (var i = 0; i < 100; i++)
+            {
+                var i0 = i;
+                var task = isolation.Enqueue(() =>
+                {
+                    throw new ExpectedTestException("Expected " + i0);
+                }, CancellationToken.None);
+                tasks.Add(task);
+            }
+
+            await Task.WhenAll(tasks).ContinueWith(res =>
+            {
+                Assert.True(tasks.TrueForAll(task => task.IsFaulted));
+                Assert.True(tasks.TrueForAll(task => task.Exception.InnerException is ExpectedTestException));
+            });
+        }
+
+        [Fact]
+        public async Task Enqueue_OneThousandTasks()
+        {
+            var isolation = CreateIsolation(1000, 0);
+            var tasks = new List<Task>();
+            for (var i = 0; i < 1000; i++)
+            {
+                var task = isolation.Enqueue(() => Thread.Sleep(10), CancellationToken.None);
+                tasks.Add(task);
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        [Fact]
+        public async Task Enqueue_ChildTasksDontAffectIsolationConcurrency()
+        {
+            var isolation = CreateIsolation(2, 0);
+            var task = isolation.Enqueue(() => // First queued
+            {
+                // Kick off 10 tasks. None of them should use our isolation's custom scheduler,
+                // so none of them should throw an exception;
+                for (var i = 0; i < 10; i++)
+                {
+                    Task.Factory.StartNew(() => Thread.Sleep(10)); // Shouldn't be queued with isolation scheduler.
+                }
+            }, CancellationToken.None);
+
+            // Since only one (the initial Enqueue()) should have been queued to our scheduler above,
+            // we should have room for another.
+            Assert.DoesNotThrow(() => isolation.Enqueue(() => true, CancellationToken.None));
+
+            await task;
+        }
 
         // TODO Consideration for attached/detached child tasks.
 
@@ -71,9 +178,7 @@ namespace Hudl.Mjolnir.Tests.Isolation
         // - A risk point is pushing up on the application pool max (or current size). How fast does it scale?
         // - Get some metrics on current pool usage in production.
 
-        // TODO Consider using HideScheduler as a TaskCreationOption on the scheduler
-
-        private async Task RunEnqueueTest(int maxConcurrency, int maxQueueLength)
+        private static async Task RunEnqueueTest(int maxConcurrency, int maxQueueLength)
         {
             LogTime("Started");
             var isolation = CreateIsolation(maxConcurrency, maxQueueLength);
@@ -81,10 +186,10 @@ namespace Hudl.Mjolnir.Tests.Isolation
             var tasks = new List<Task<object>>();
             for (var i = 0; i < maxConcurrency + maxQueueLength; i++)
             {
-                Assert.DoesNotThrow(() => tasks.Add(isolation.Enqueue(SleepOneSecond, CancellationToken.None)));
+                Assert.DoesNotThrow(() => tasks.Add(isolation.Enqueue<object>(SleepOneSecond, CancellationToken.None)));
             }
 
-            var e = Assert.Throws<IsolationStrategyRejectedException>(() => tasks.Add(isolation.Enqueue(SleepOneSecond, CancellationToken.None)));
+            var e = Assert.Throws<IsolationStrategyRejectedException>(() => tasks.Add(isolation.Enqueue<object>(SleepOneSecond, CancellationToken.None)));
 
             // Assumes *none* of the tasks have completed yet (an assumption that all of these tests make).
             Assert.Equal(maxConcurrency + maxQueueLength, e.Data[QueueLengthExceededException.PendingCompletionDataKey]);
@@ -122,14 +227,6 @@ namespace Hudl.Mjolnir.Tests.Isolation
             Debug.WriteLine(new TimeSpan(DateTime.UtcNow.Ticks).TotalMilliseconds + " - " + message);
         }
 
-        // TODO Also test with some objects that:
-        // - Throw exceptions immediately
-        // - Throw exceptions from an async/await call
-        // - Throw exceptions from async when not awaited
-        // - Return values from an awaited async call
-        // - Return an async Task that's not awaited
-        // - Tasks (async and/or awaited) that get canceled via CancellationToken.
-        // - TaskScheduler throws an exception that's not a QueueLengthExceededException
-        // - Null tasks
+        
     }
 }
