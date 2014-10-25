@@ -4,8 +4,11 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Hudl.Config;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Isolation;
+using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
+using Moq;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Isolation
@@ -17,11 +20,11 @@ namespace Hudl.Mjolnir.Tests.Isolation
         {
             var maxQueueLength = new TransientConfigurableValue<int>(1); // Good value for queue length, not testing it here.
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(0), maxQueueLength));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(-1), maxQueueLength));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(Int32.MinValue), maxQueueLength));
-            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(1), maxQueueLength));
-            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(Int32.MaxValue), maxQueueLength));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), new TransientConfigurableValue<int>(0), maxQueueLength, new Mock<IStats>().Object));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), new TransientConfigurableValue<int>(-1), maxQueueLength, new Mock<IStats>().Object));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), new TransientConfigurableValue<int>(Int32.MinValue), maxQueueLength, new Mock<IStats>().Object));
+            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), new TransientConfigurableValue<int>(1), maxQueueLength, new Mock<IStats>().Object));
+            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), new TransientConfigurableValue<int>(Int32.MaxValue), maxQueueLength, new Mock<IStats>().Object));
         }
 
         [Fact]
@@ -29,11 +32,11 @@ namespace Hudl.Mjolnir.Tests.Isolation
         {
             var maxConcurrency = new TransientConfigurableValue<int>(1); // Good value for max concurrency, not testing it here.
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(maxConcurrency, new TransientConfigurableValue<int>(-1)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(maxConcurrency, new TransientConfigurableValue<int>(Int32.MinValue)));
-            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(maxConcurrency, new TransientConfigurableValue<int>(0)));
-            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(maxConcurrency, new TransientConfigurableValue<int>(1)));
-            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(maxConcurrency, new TransientConfigurableValue<int>(Int32.MaxValue)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), maxConcurrency, new TransientConfigurableValue<int>(-1), new Mock<IStats>().Object));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), maxConcurrency, new TransientConfigurableValue<int>(Int32.MinValue), new Mock<IStats>().Object));
+            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), maxConcurrency, new TransientConfigurableValue<int>(0), new Mock<IStats>().Object));
+            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), maxConcurrency, new TransientConfigurableValue<int>(1), new Mock<IStats>().Object));
+            Assert.DoesNotThrow(() => new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), maxConcurrency, new TransientConfigurableValue<int>(Int32.MaxValue), new Mock<IStats>().Object));
         }
 
         [Fact]
@@ -204,7 +207,7 @@ namespace Hudl.Mjolnir.Tests.Isolation
 
         private static QueuedTaskSchedulerIsolationStrategy CreateIsolation(int maxConcurrency, int maxQueueLength)
         {
-            return new QueuedTaskSchedulerIsolationStrategy(new TransientConfigurableValue<int>(maxConcurrency), new TransientConfigurableValue<int>(maxQueueLength));
+            return new QueuedTaskSchedulerIsolationStrategy(GroupKey.Named("foo"), new TransientConfigurableValue<int>(maxConcurrency), new TransientConfigurableValue<int>(maxQueueLength), new Mock<IStats>().Object);
         }
 
         // TODO Sleeping is janky. It'd be better to wire in a TaskCompletionSource and control their lifecycle that way.

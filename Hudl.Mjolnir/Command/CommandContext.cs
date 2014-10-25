@@ -96,8 +96,10 @@ namespace Hudl.Mjolnir.Command
 
             return Instance._isolationStrategy.GetOrAddSafe(key, k =>
                 new QueuedTaskSchedulerIsolationStrategy(
+                    key,
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10), // TODO "threadCount" and "pools" are too specific; change while maintaining backwards compatibility
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10)));
+                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10),
+                    Stats));
         }
 
         internal static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
