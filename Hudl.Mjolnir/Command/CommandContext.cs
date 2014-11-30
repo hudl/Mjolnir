@@ -21,6 +21,25 @@ namespace Hudl.Mjolnir.Command
     {
         private static readonly CommandContext Instance = new CommandContext();
 
+        // Circuit breaker global defaults.
+        private static readonly IConfigurableValue<long> DefaultBreakerMinimumOperations = new ConfigurableValue<long>("mjolnir.breaker.default.minimumOperations", 10);
+        private static readonly IConfigurableValue<int> DefaultBreakerThresholdPercentage = new ConfigurableValue<int>("mjolnir.breaker.default.thresholdPercentage", 50);
+        private static readonly IConfigurableValue<long> DefaultBreakerTrippedDurationMillis = new ConfigurableValue<long>("mjolnir.breaker.default.trippedDurationMillis", 10000);
+        private static readonly IConfigurableValue<bool> DefaultBreakerForceTripped = new ConfigurableValue<bool>("mjolnir.breaker.default.forceTripped", false);
+        private static readonly IConfigurableValue<bool> DefaultBreakerForceFixed = new ConfigurableValue<bool>("mjolnir.breaker.default.forceFixed", false);
+        
+        // Circuit breaker metrics global defaults.
+        private static readonly IConfigurableValue<long> DefaultMetricsWindowMillis = new ConfigurableValue<long>("mjolnir.metrics.default.windowMillis", 30000);
+        private static readonly IConfigurableValue<long> DefaultMetricsSnapshotTtlMillis = new ConfigurableValue<long>("mjolnir.metrics.default.snapshotTtlMillis", 1000);
+
+        // Thread pool global defaults.
+        private static readonly IConfigurableValue<int> DefaultPoolThreadCount = new ConfigurableValue<int>("mjolnir.pools.default.threadCount", 10);
+        private static readonly IConfigurableValue<int> DefaultPoolQueueLength = new ConfigurableValue<int>("mjolnir.pools.default.queueLength", 10);
+        
+        // Fallback global defaults.
+        private static readonly IConfigurableValue<int> DefaultFallbackMaxConcurrent = new ConfigurableValue<int>("mjolnir.fallback.default.maxConcurrent", 50);
+        
+        // Instance collections.
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
@@ -62,11 +81,11 @@ namespace Hudl.Mjolnir.Command
             {
                 var metrics = GetCommandMetrics(key);
                 var properties = new FailurePercentageCircuitBreakerProperties(
-                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".minimumOperations", 10),
-                    new ConfigurableValue<int>("mjolnir.breaker." + key + ".thresholdPercentage", 50),
-                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".trippedDurationMillis", 10000),
-                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", false),
-                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", false));
+                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".minimumOperations", DefaultBreakerMinimumOperations),
+                    new ConfigurableValue<int>("mjolnir.breaker." + key + ".thresholdPercentage", DefaultBreakerThresholdPercentage),
+                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".trippedDurationMillis", DefaultBreakerTrippedDurationMillis),
+                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", DefaultBreakerForceTripped),
+                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", DefaultBreakerForceFixed));
 
                 return new FailurePercentageCircuitBreaker(key, metrics, Stats, properties);
             });
@@ -82,8 +101,8 @@ namespace Hudl.Mjolnir.Command
             return Instance._metrics.GetOrAddSafe(key, k =>
                 new StandardCommandMetrics(
                     key,
-                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", 30000),
-                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", 1000),
+                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", DefaultMetricsWindowMillis),
+                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", DefaultMetricsSnapshotTtlMillis),
                     Stats));
         }
 
@@ -97,8 +116,8 @@ namespace Hudl.Mjolnir.Command
             return Instance._pools.GetOrAddSafe(key, k =>
                 new StpIsolationThreadPool(
                     key,
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", 10),
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", 10),
+                    new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", DefaultPoolThreadCount),
+                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", DefaultPoolQueueLength),
                     Stats));
         }
 
@@ -114,7 +133,7 @@ namespace Hudl.Mjolnir.Command
                 // For now, the default here is 5x the default pool threadCount, with the presumption that
                 // several commands may using the same pool, and we should therefore try to allow for a bit
                 // more concurrent fallback execution.
-                var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", 50);
+                var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", DefaultFallbackMaxConcurrent);
                 return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);
             });
         }

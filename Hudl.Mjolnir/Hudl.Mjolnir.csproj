@@ -45,7 +45,7 @@
     </Reference>
     <Reference Include="Hudl.Config, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Config.1.5.0\lib\net40\Hudl.Config.dll</HintPath>
+      <HintPath>..\packages\Hudl.Config.1.6.0-PlatformMatroska94\lib\net40\Hudl.Config.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Mjolnir.Attributes, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
