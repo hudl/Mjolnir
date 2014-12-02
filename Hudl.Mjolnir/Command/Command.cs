@@ -35,7 +35,6 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     public abstract class Command
     {
-        protected static readonly ILog Log = LogManager.GetLogger(typeof(Command<>));
         protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
 
         /// <summary>
@@ -71,6 +70,8 @@ namespace Hudl.Mjolnir.Command
     public abstract class Command<TResult> : Command, ICommand<TResult>
     {
         internal readonly TimeSpan Timeout;
+
+        private readonly ILog _log;
 
         private readonly GroupKey _group;
         private readonly string _name;
@@ -178,6 +179,8 @@ namespace Hudl.Mjolnir.Command
             _breakerKey = GroupKey.Named(breakerKey);
             _poolKey = GroupKey.Named(poolKey);
 
+            _log = LogManager.GetLogger("Hudl.Mjolnir.Command." + _name);
+
             var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
             {
@@ -283,7 +286,7 @@ namespace Hudl.Mjolnir.Command
             var status = CommandCompletionStatus.RanToCompletion;
             try
             {
-                Log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
+                _log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
                 var cancellationTokenSource = new CancellationTokenSource(Timeout);
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
