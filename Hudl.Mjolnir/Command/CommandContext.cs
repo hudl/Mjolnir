@@ -21,6 +21,20 @@ namespace Hudl.Mjolnir.Command
     {
         private static readonly CommandContext Instance = new CommandContext();
 
+        // Many properties in Mjolnir use a chain of possible configuration values, typically:
+        // - Explicitly-configured group value
+        // - Explicitly-configured default value
+        // - Hard-coded default value
+        // 
+        // For example, for a breaker named "my-breaker", the application will use the following
+        // order for finding a configured value:
+        //
+        // 1. mjolnir.breaker.my-breaker.thresholdPercentage=90
+        // 2. mjolnir.breaker.default.thresholdPercentage=70
+        // 3. <default value, hard-coded in CommandContext (50)>
+        //
+        // See the Mjolnir README for some additional information about configuration.
+
         // Circuit breaker global defaults.
         private static readonly IConfigurableValue<long> DefaultBreakerMinimumOperations = new ConfigurableValue<long>("mjolnir.breaker.default.minimumOperations", 10);
         private static readonly IConfigurableValue<int> DefaultBreakerThresholdPercentage = new ConfigurableValue<int>("mjolnir.breaker.default.thresholdPercentage", 50);
