@@ -247,7 +247,7 @@ mjolnir.breaker.default.forceTripped=false
 
 # Forces the breaker fixed.
 mjolnir.breaker.<breaker-key>.forceFixed=false
-mjolnir.breaker.forceFixed=false
+mjolnir.breaker.default.forceFixed=false
 
 # Period to accumulate metrics in. Resets at the end of every window.
 mjolnir.metrics.<breaker-key>.windowMillis=30000
