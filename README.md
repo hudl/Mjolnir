@@ -42,9 +42,16 @@ mjolnir.command.core-client.GetUser.Timeout=5000
 mjolnir.pools.core-user.threadCount=20
 ```
 
+If a specific configuration value (e.g. for a breaker or command) isn't defined, you can also define fallback defaults via config, e.g.:
+
+```
+mjolnir.breaker.default.windowMillis=10000
+mjolnir.pools.default.threadCount=10
+```
+
 See the different sections of this README for available configuration keys.
 
-If you don't set a configuration provider, default values will be used for everything in Mjolnir (which isn't ideal, because you'll want to tune components and commands for your application).
+If you don't set a configuration provider, default values (defined in the code) will be used for everything in Mjolnir (which isn't ideal, because you'll want to tune components and commands for your application).
 
 **Metrics/Stats**
 
@@ -203,9 +210,11 @@ When the thread pool is at capacity, operations will begin getting rejected from
 ```
 # Number of threads to allocate.
 mjolnir.pools.<pool-key>.threadCount=10
+mjolnir.pools.default.threadCount=10
 
 # Length of the queue that fronts the pool.
 mjolnir.pools.<pool-key>.queueLength=10
+mjolnir.pools.default.queueLength=10
 ```
 
 Changing these values requires an application restart (i.e. pools don't dynamically resize after creation).
@@ -222,24 +231,31 @@ After a configured period, the breaker sends a test operation through. If the op
 ```
 # The minimum operation count the breaker must see before considering tripping.
 mjolnir.breaker.<breaker-key>.minimumOperations=10
+mjolnir.breaker.default.minimumOperations=10
 
 # The error percentage at which the breaker should trip.
 mjolnir.breaker.<breaker-key>.thresholdPercentage=50
+mjolnir.breaker.default.thresholdPercentage=50
 
 # When the breaker trips, the duration to wait before allowing a test operation.
 mjolnir.breaker.<breaker-key>.trippedDurationMillis=10000
+mjolnir.breaker.default.trippedDurationMillis=10000
 
 # Forces the breaker tripped. Takes precedence over forceFixed.
 mjolnir.breaker.<breaker-key>.forceTripped=false
+mjolnir.breaker.default.forceTripped=false
 
 # Forces the breaker fixed.
 mjolnir.breaker.<breaker-key>.forceFixed=false
+mjolnir.breaker.default.forceFixed=false
 
 # Period to accumulate metrics in. Resets at the end of every window.
 mjolnir.metrics.<breaker-key>.windowMillis=30000
+mjolnir.metrics.default.windowMillis=30000
 
 # How long to cache the metrics snapshot that breakers read. Probably doesn't need adjusting.
 mjolnir.metrics.<breaker-key>.snapshotTtlMillis=1000
+mjolnir.metrics.default.snapshotTtlMillis=1000
 ```
 
 These values can be changed at runtime.
