@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
@@ -59,6 +60,17 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
+        // These exception types won't count toward breakers tripping or other error counters.
+        // Useful for things like validation, where the system isn't having any problems and the
+        // caller needs to validate before invoking. This list is most applicable when using
+        // [Command] attributes, since extending Command offers the ability to catch these types
+        // specifically within Execute() - though there may still be some benefit in extended
+        // Commands for validation-like situations where throwing is still desired.
+        //
+        // This is a Dictionary only because there's no great concurrent Set type available. Just
+        // use the keys if checking for a type.
+        private readonly ConcurrentDictionary<Type, bool> _ignoredExceptionTypes = new ConcurrentDictionary<Type, bool>();
+        
         private IStats _stats = new IgnoringStats();
 
         private CommandContext() {}
@@ -82,6 +94,24 @@ namespace Hudl.Mjolnir.Command
                 }
                 Instance._stats = value;
             }
+        }
+
+        public static void IgnoreExceptions(HashSet<Type> types)
+        {
+            if (types == null || types.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var type in types)
+            {
+                Instance._ignoredExceptionTypes.TryAdd(type, true);
+            }
+        }
+
+        internal static bool IsExceptionIgnored(Type type)
+        {
+            return Instance._ignoredExceptionTypes.ContainsKey(type);
         }
 
         internal static ICircuitBreaker GetCircuitBreaker(GroupKey key)
