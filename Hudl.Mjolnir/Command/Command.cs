@@ -380,9 +380,17 @@ namespace Hudl.Mjolnir.Command
                 CircuitBreaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
                 CircuitBreaker.Metrics.MarkCommandSuccess();
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                CircuitBreaker.Metrics.MarkCommandFailure();
+                if (CommandContext.IsExceptionIgnored(e.GetType()))
+                {
+                    CircuitBreaker.Metrics.MarkCommandSuccess();
+                }
+                else
+                {
+                    CircuitBreaker.Metrics.MarkCommandFailure();
+                }
+                
                 throw;
             }
 
