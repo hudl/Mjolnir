@@ -1,5 +1,6 @@
 Mjolnir
 =======
+[![](https://img.shields.io/badge/hudl-OSS-orange.svg)](http://hudl.github.io/)
 
 When bad things like network partition or resource exhaustion happen, Mjolnir helps you
 - isolate them from the rest of the application/system.
