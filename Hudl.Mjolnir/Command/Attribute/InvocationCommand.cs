@@ -38,8 +38,8 @@ namespace Hudl.Mjolnir.Command.Attribute
             // Do we have a CancellationToken property? If so, where is it? Will be -1 if not found.
             var cancellationTokenIndex = new List<ParameterInfo>(_invocation.Method.GetParameters()).FindLastIndex(IsCancellationToken);
 
-            // If we have one that doesn't already have a value, lets give it ours.
-            if (cancellationTokenIndex >= 0 && IsReplaceableToken(_invocation.Arguments[cancellationTokenIndex]))
+            // If we have one that doesn't already have a value, lets give it ours. Provided that we haven't got a fully disabled timeouts override
+            if (cancellationTokenIndex >= 0 && IsReplaceableToken(_invocation.Arguments[cancellationTokenIndex]) && !TimeoutsFullyDisabled)
             {
                 _invocation.SetArgumentValue(cancellationTokenIndex, cancellationToken);
             }
@@ -55,11 +55,15 @@ namespace Hudl.Mjolnir.Command.Attribute
                 throw new NotSupportedException("Cannot invoke interceptor command for non-generic Task");
             }
 
-            return Task.Run(() =>
+            Func<TResult> invocationFunc = () =>
             {
                 _invocation.Proceed();
-                return (TResult) _invocation.ReturnValue;
-            }, cancellationToken);
+                return (TResult)_invocation.ReturnValue;
+            };
+
+            return TimeoutsFullyDisabled ? 
+                Task.Run(invocationFunc, cancellationToken) :
+                Task.Run(invocationFunc);
         }
 
         private static bool IsCancellationToken(ParameterInfo parameter)

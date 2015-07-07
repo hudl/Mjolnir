@@ -77,7 +77,9 @@ namespace Hudl.Mjolnir.Command
         private readonly string _name;
         private readonly GroupKey _breakerKey;
         private readonly GroupKey _poolKey;
-
+        private const string _timeoutsFullyDisabledKey = "mjolnir.command.disableAllTimeouts";
+        protected readonly bool TimeoutsFullyDisabled;
+        
         // Setters should be used for testing only.
 
         private IStats _stats;
@@ -169,7 +171,8 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("poolKey");
             }
 
-            if (defaultTimeout.TotalMilliseconds <= 0)
+            TimeoutsFullyDisabled = new ConfigurableValue<bool>(_timeoutsFullyDisabledKey,false).Value;
+            if (!TimeoutsFullyDisabled && defaultTimeout.TotalMilliseconds <= 0)
             {
                 throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
             }
@@ -181,12 +184,23 @@ namespace Hudl.Mjolnir.Command
 
             _log = LogManager.GetLogger("Hudl.Mjolnir.Command." + _name);
 
+            if (TimeoutsFullyDisabled)
+            {
+                _log.Debug("Creating command with timeout disabled.");
+            }
+
             var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
             {
-                timeout = (long)defaultTimeout.TotalMilliseconds;
+                timeout = (long) defaultTimeout.TotalMilliseconds;
             }
-
+            else
+            {
+                _log.DebugFormat("Timeout configuration override for this command of {0}",timeout);
+                //I think it is sensible to apply this timeout to the command if it has been explicitly set in configuration. 
+                //Therefore setting TimeoutsFullyDisabled to false regardless
+                TimeoutsFullyDisabled = false;
+            }
             Timeout = TimeSpan.FromMilliseconds(timeout);
         }
 
