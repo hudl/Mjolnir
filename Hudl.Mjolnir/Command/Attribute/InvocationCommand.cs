@@ -39,7 +39,7 @@ namespace Hudl.Mjolnir.Command.Attribute
             var cancellationTokenIndex = new List<ParameterInfo>(_invocation.Method.GetParameters()).FindLastIndex(IsCancellationToken);
 
             // If we have one that doesn't already have a value, lets give it ours. Provided that we haven't got a fully disabled timeouts override
-            if (cancellationTokenIndex >= 0 && IsReplaceableToken(_invocation.Arguments[cancellationTokenIndex]) && !TimeoutsFullyDisabled)
+            if (cancellationTokenIndex >= 0 && IsReplaceableToken(_invocation.Arguments[cancellationTokenIndex]) && !TimeoutsIgnored)
             {
                 _invocation.SetArgumentValue(cancellationTokenIndex, cancellationToken);
             }
@@ -61,7 +61,7 @@ namespace Hudl.Mjolnir.Command.Attribute
                 return (TResult)_invocation.ReturnValue;
             };
 
-            return TimeoutsFullyDisabled ? 
+            return TimeoutsIgnored ? 
                 Task.Run(invocationFunc, cancellationToken) :
                 Task.Run(invocationFunc);
         }
