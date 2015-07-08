@@ -36,7 +36,7 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public async Task InvokeAsync_WithTimeoutsIgnored_TimeoutShoulElapseButWithoutAnException()
+        public async Task InvokeAsync_WithTimeoutsIgnored_TimeoutShouldElapseButWithoutAnException()
         {
             var command = new IgnoredTimeoutsCommand();
             await command.InvokeAsync(); //shouln't get an exception here
