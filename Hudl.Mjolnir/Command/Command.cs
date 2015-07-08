@@ -38,6 +38,11 @@ namespace Hudl.Mjolnir.Command
         protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
 
         /// <summary>
+        /// If this is set to true then all calls wrapped in a Mjonir command will ignore the default timeout.
+        /// </summary>
+        protected static readonly ConfigurableValue<bool> IgnoreCommandTimeouts = new ConfigurableValue<bool>("mjolnir.command.ignoreTimeouts",false);
+
+        /// <summary>
         /// Cache of known command names, keyed by Type and group key. Helps
         /// avoid repeatedly generating the same Name for every distinct command
         /// instance.
@@ -77,8 +82,7 @@ namespace Hudl.Mjolnir.Command
         private readonly string _name;
         private readonly GroupKey _breakerKey;
         private readonly GroupKey _poolKey;
-        private const string _timeoutsFullyDisabledKey = "mjolnir.command.disableAllTimeouts";
-        protected readonly bool TimeoutsFullyDisabled;
+        protected readonly bool TimeoutsIgnored;
         
         // Setters should be used for testing only.
 
@@ -132,8 +136,12 @@ namespace Hudl.Mjolnir.Command
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="isolationKey">Breaker and pool key to use.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected Command(string group, string isolationKey, TimeSpan defaultTimeout)
-            : this(group, null, isolationKey, isolationKey, defaultTimeout) {}
+        /// <param name="ignoreTimeouts">If this is set to true then this command can timeout without throwing an exception. 
+        /// The exception to this rule will be if a specific command name is configured with a timeout. i.e. with a <code>mjolnir.[Command.Name].Timeout</code> key.
+        /// The same behaviour can be configured using the <code>mjolnir.command.ignoreTimeouts</code> configuration key.
+        /// </param>
+        protected Command(string group, string isolationKey, TimeSpan defaultTimeout, bool ignoreTimeouts=false)
+            : this(group, null, isolationKey, isolationKey, defaultTimeout,ignoreTimeouts) {}
 
         /// <summary>
         /// Constructs the Command.
@@ -151,10 +159,14 @@ namespace Hudl.Mjolnir.Command
         /// <param name="breakerKey">Breaker to use for this command.</param>
         /// <param name="poolKey">Pool to use for this command.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)
-            : this(group, null, breakerKey, poolKey, defaultTimeout) {}
+        /// <param name="ignoreTimeouts">If this is set to true then this command can timeout without throwing an exception. 
+        /// The exception to this rule will be if a specific command name is configured with a timeout. i.e. with a <code>mjolnir.[Command.Name].Timeout</code> key
+        /// The same behaviour can be configured using the <code>mjolnir.command.ignoreTimeouts</code> configuration key.
+        /// </param>
+        protected Command(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout, bool ignoreTimeouts = false)
+            : this(group, null, breakerKey, poolKey, defaultTimeout, ignoreTimeouts) {}
 
-        internal Command(string group, string name, string breakerKey, string poolKey, TimeSpan defaultTimeout)
+        internal Command(string group, string name, string breakerKey, string poolKey, TimeSpan defaultTimeout,bool ignoreTimeouts=false)
         {
             if (string.IsNullOrWhiteSpace(group))
             {
@@ -171,8 +183,8 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("poolKey");
             }
 
-            TimeoutsFullyDisabled = new ConfigurableValue<bool>(_timeoutsFullyDisabledKey,false).Value;
-            if (!TimeoutsFullyDisabled && defaultTimeout.TotalMilliseconds <= 0)
+            TimeoutsIgnored = ignoreTimeouts || IgnoreCommandTimeouts.Value;
+            if (!TimeoutsIgnored && defaultTimeout.TotalMilliseconds <= 0)
             {
                 throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
             }
@@ -184,11 +196,10 @@ namespace Hudl.Mjolnir.Command
 
             _log = LogManager.GetLogger("Hudl.Mjolnir.Command." + _name);
 
-            if (TimeoutsFullyDisabled)
+            if (TimeoutsIgnored)
             {
                 _log.Debug("Creating command with timeout disabled.");
             }
-
             var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
             {
@@ -199,7 +210,7 @@ namespace Hudl.Mjolnir.Command
                 _log.DebugFormat("Timeout configuration override for this command of {0}",timeout);
                 //I think it is sensible to apply this timeout to the command if it has been explicitly set in configuration. 
                 //Therefore setting TimeoutsFullyDisabled to false regardless
-                TimeoutsFullyDisabled = false;
+                TimeoutsIgnored = false;
             }
             Timeout = TimeSpan.FromMilliseconds(timeout);
         }
@@ -410,6 +421,7 @@ namespace Hudl.Mjolnir.Command
 
             return result;
         }
+
 
         private static CommandCompletionStatus StatusFromException(Exception e)
         {
