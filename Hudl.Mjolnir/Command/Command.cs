@@ -370,8 +370,13 @@ namespace Hudl.Mjolnir.Command
             {
                 // Since we may have been on the thread pool queue for a bit, see if we
                 // should have canceled by now.
+                if (TimeoutsIgnored)
+                {
+                    return UseCircuitBreakers.Value
+                        ? ExecuteWithBreaker(CancellationToken.None)
+                        : ExecuteAsync(cancellationToken);
+                }
                 cancellationToken.ThrowIfCancellationRequested();
-
                 return UseCircuitBreakers.Value
                     ? ExecuteWithBreaker(cancellationToken)
                     : ExecuteAsync(cancellationToken);
@@ -382,7 +387,7 @@ namespace Hudl.Mjolnir.Command
             // B. The CancellationToken provided an accessor for its Timeout.
             // C. We wrapped CancellationToken and Timeout in another class and passed it.
             // For now, this works, if a little janky.
-            return workItem.Get(cancellationToken, Timeout);
+            return TimeoutsIgnored?workItem.Get(CancellationToken.None, TimeSpan.MaxValue):workItem.Get(cancellationToken,Timeout);
         }
 
         private async Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)
