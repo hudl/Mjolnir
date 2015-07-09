@@ -73,6 +73,7 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Breaker\FailurePercentageCircuitBreakerTests.cs" />
+    <Compile Include="Command\Attribute\NewCommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\CommandCircuitBreakerTests.cs" />
     <Compile Include="Command\Attribute\CommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\CommandFallbackTests.cs" />
@@ -121,6 +122,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Hudl.Mjolnir.Attributes\Hudl.Mjolnir.Attributes.csproj">
+      <Project>{35789458-34e2-42d2-9fc2-043c56c3d011}</Project>
+      <Name>Hudl.Mjolnir.Attributes</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Hudl.Mjolnir\Hudl.Mjolnir.csproj">
       <Project>{9bd60f73-17fb-404e-83cc-61982b393e01}</Project>
       <Name>Hudl.Mjolnir</Name>
