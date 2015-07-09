@@ -74,10 +74,12 @@
   <ItemGroup>
     <Compile Include="Breaker\FailurePercentageCircuitBreakerTests.cs" />
     <Compile Include="Command\Attribute\NewCommandAttributeAndProxyTests.cs" />
+    <Compile Include="Command\Attribute\NewCommandAttributeAndProxyTestsIgnoringTimeouts.cs" />
     <Compile Include="Command\CommandCircuitBreakerTests.cs" />
     <Compile Include="Command\Attribute\CommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\CommandFallbackTests.cs" />
     <Compile Include="Command\CommandGroupKeyTests.cs" />
+    <Compile Include="Command\CommandIgnoredTimeoutTests.cs" />
     <Compile Include="Command\CommandTests.cs" />
     <Compile Include="Command\CommandThreadPoolTests.cs" />
     <Compile Include="Command\CommandTimeoutTests.cs" />
@@ -87,6 +89,7 @@
     <Compile Include="Helper\AssertX.cs" />
     <Compile Include="Helper\ExpectedTestException.cs" />
     <Compile Include="Helper\TestFixture.cs" />
+    <Compile Include="Helper\TestFixtureIgnoreTimeouts.cs" />
     <Compile Include="Key\GroupKeyTests.cs" />
     <Compile Include="Metrics\InterlockingLongCounterTests.cs" />
     <Compile Include="Metrics\ResettingNumbersBucketTests.cs" />

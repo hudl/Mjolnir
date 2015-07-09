@@ -15,22 +15,9 @@ namespace Hudl.Mjolnir.Attributes
         private readonly string _breakerKey;
         private readonly string _poolKey;
         private readonly int _timeout;
-        private readonly bool _ignoreTimeout;
 
         // See Mjolnir's Command constructors.
         public CommandAttribute(string group, string isolationKey, int timeout = DefaultTimeout) : this(group, isolationKey, isolationKey, timeout) { }
-
-        public CommandAttribute(string group, string isolationKey, bool ignoreTimeout)
-            : this(group, isolationKey, isolationKey)
-        {
-            _ignoreTimeout = ignoreTimeout;
-        }
-
-        public CommandAttribute(string group, string breakerKey, string poolKey, bool ignoreTimeout)
-            : this(group, breakerKey, poolKey)
-        {
-            _ignoreTimeout = ignoreTimeout;
-        }
 
         // See Mjolnir's Command constructors.
         public CommandAttribute(string group, string breakerKey, string poolKey, int timeout = DefaultTimeout)
@@ -79,11 +66,6 @@ namespace Hudl.Mjolnir.Attributes
         public int Timeout
         {
             get { return _timeout; }
-        }
-
-        public bool IgnoreTimeout
-        {
-            get { return _ignoreTimeout;}
         }
     }
 }

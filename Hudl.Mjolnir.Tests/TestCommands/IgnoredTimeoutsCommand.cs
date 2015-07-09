@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,7 +6,7 @@ namespace Hudl.Mjolnir.Tests.TestCommands
 {
     internal class IgnoredTimeoutsCommand : BaseTestCommand<object>
     {
-        public IgnoredTimeoutsCommand() : base(TimeSpan.FromMilliseconds(1000),true){}
+        public IgnoredTimeoutsCommand() : base(TimeSpan.FromMilliseconds(1000)){}
 
         protected override async Task<object> ExecuteAsync(CancellationToken cancellationToken)
         {

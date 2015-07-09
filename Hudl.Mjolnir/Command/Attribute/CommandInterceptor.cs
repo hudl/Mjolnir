@@ -152,16 +152,6 @@ namespace Hudl.Mjolnir.Command.Attribute
                 throw new InvalidOperationException("Interface does not have [CommandAttribute]");
             }
 
-            if (newAttribute != null && newAttribute.IgnoreTimeout)
-            {
-                return new InvocationCommand<TResult>(
-                    (newAttribute != null ? newAttribute.Group : oldAttribute.Group),
-                    classType.Name + "-" + invocation.Method.Name,
-                    (newAttribute != null ? newAttribute.BreakerKey : oldAttribute.BreakerKey),
-                    (newAttribute != null ? newAttribute.PoolKey : oldAttribute.PoolKey),
-                    invocation);
-            }
-
             var oldTimeoutAttribute = invocation.Method.GetCustomAttribute<CommandTimeoutAttribute>();
             var newTimeoutAttribute = invocation.Method.GetCustomAttribute<Attributes.CommandTimeoutAttribute>();
 

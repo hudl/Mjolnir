@@ -1,25 +1,21 @@
-﻿using Hudl.Config;
+﻿using System;
+using Hudl.Config;
 using Hudl.Mjolnir.Tests.Util;
 
 namespace Hudl.Mjolnir.Tests.Helper
 {
-    public class TestFixture
+    public class TestFixtureIgnoreTimeouts
     {
-        public TestFixture()
+        public TestFixtureIgnoreTimeouts()
         {
             UseTempConfig();
         }
-
-        protected void SetUpConfig()
-        {
-            
-        }
-
 
         private static void UseTempConfig()
         {
             var provider = new TestConfigProvider();
             provider.Set("mjolnir.useCircuitBreakers", true);
+            provider.Set("mjolnir.ignoreTimeouts", true);
 
             ConfigProvider.UseProvider(new TestConfigProvider());
         }

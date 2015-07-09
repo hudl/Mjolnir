@@ -35,12 +35,7 @@ namespace Hudl.Mjolnir.Tests.Command
             AssertX.FailExpectedException();
         }
 
-        [Fact]
-        public async Task InvokeAsync_WithTimeoutsIgnored_TimeoutShouldElapseButWithoutAnException()
-        {
-            var command = new IgnoredTimeoutsCommand();
-            await command.InvokeAsync(); //shouln't get an exception here
-        }
+        
 
         [Fact]
         public async Task InvokeAsync_UnderTimeout_DoesntTimeoutOrThrowException()
