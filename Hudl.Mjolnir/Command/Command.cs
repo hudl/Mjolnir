@@ -388,8 +388,8 @@ namespace Hudl.Mjolnir.Command
             // B. The CancellationToken provided an accessor for its Timeout.
             // C. We wrapped CancellationToken and Timeout in another class and passed it.
             // For now, this works, if a little janky.
-            //using maxvalue and no cancellation token when timeouts are ignored, best thing to do without changing the IWorkItem interface
-            return TimeoutsIgnored?workItem.Get(CancellationToken.None, TimeSpan.MaxValue):workItem.Get(cancellationToken,Timeout);
+            //using high timeout (can't use Timespan.MaxValue since this overflows) and no cancellation token when timeouts are ignored, best thing to do without changing the IWorkItem interface
+            return TimeoutsIgnored?workItem.Get(CancellationToken.None,TimeSpan.FromMilliseconds(int.MaxValue)):workItem.Get(cancellationToken,Timeout);
         }
 
         private async Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)

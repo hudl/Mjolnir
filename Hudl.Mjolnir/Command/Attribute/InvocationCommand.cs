@@ -22,6 +22,14 @@ namespace Hudl.Mjolnir.Command.Attribute
             _invocation = invocation;
         }
 
+        //a version of the InvocationCommand where timeouts are ignored.
+        internal InvocationCommand(string group, string name, string breakerKey, string poolKey,
+            IInvocation invocation)
+            : base(group, name, breakerKey, poolKey,TimeSpan.FromMilliseconds(int.MaxValue),true)
+        {
+            _invocation = invocation;
+        }
+
         protected override Task<TResult> ExecuteAsync(CancellationToken cancellationToken)
         {
             var returnType = _invocation.Method.ReturnType;
