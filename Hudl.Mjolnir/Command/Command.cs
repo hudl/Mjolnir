@@ -193,6 +193,7 @@ namespace Hudl.Mjolnir.Command
             if (TimeoutsIgnored)
             {
                 _log.Debug("Creating command with timeout disabled.");
+                return;
             }
             var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
@@ -202,9 +203,6 @@ namespace Hudl.Mjolnir.Command
             else
             {
                 _log.DebugFormat("Timeout configuration override for this command of {0}",timeout);
-                //I think it is sensible to apply this timeout to the command if it has been explicitly set in configuration. 
-                //Therefore setting TimeoutsFullyDisabled to false regardless
-                TimeoutsIgnored = false;
             }
             Timeout = TimeSpan.FromMilliseconds(timeout);
         }
