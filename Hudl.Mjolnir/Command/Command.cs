@@ -40,7 +40,7 @@ namespace Hudl.Mjolnir.Command
         /// <summary>
         /// If this is set to true then all calls wrapped in a Mjonir command will ignore the default timeout.
         /// </summary>
-        protected static readonly ConfigurableValue<bool> IgnoreCommandTimeouts = new ConfigurableValue<bool>("mjolnir.ignoreTimeouts",false);
+        protected static readonly ConfigurableValue<bool> IgnoreCommandTimeouts = new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
 
         /// <summary>
         /// Cache of known command names, keyed by Type and group key. Helps
@@ -175,7 +175,7 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("poolKey");
             }
 
-            TimeoutsIgnored =IgnoreCommandTimeouts.Value;
+            TimeoutsIgnored = IgnoreCommandTimeouts.Value;
             if (!TimeoutsIgnored && defaultTimeout.TotalMilliseconds <= 0)
             {
                 throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
@@ -381,7 +381,9 @@ namespace Hudl.Mjolnir.Command
             // C. We wrapped CancellationToken and Timeout in another class and passed it.
             // For now, this works, if a little janky.
             //using high timeout (can't use Timespan.MaxValue since this overflows) and no cancellation token when timeouts are ignored, best thing to do without changing the IWorkItem interface
-            return TimeoutsIgnored?workItem.Get(CancellationToken.None,TimeSpan.FromMilliseconds(int.MaxValue)):workItem.Get(cancellationToken,Timeout);
+            return TimeoutsIgnored 
+                ? workItem.Get(CancellationToken.None, TimeSpan.FromMilliseconds(int.MaxValue))
+                : workItem.Get(cancellationToken, Timeout);
         }
 
         private async Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)

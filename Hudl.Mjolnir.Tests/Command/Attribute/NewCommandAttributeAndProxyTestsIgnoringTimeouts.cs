@@ -52,8 +52,9 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             // If we pass CancellationToken.None to the proxy then it should pass this along to the method call, rather than a CancellationToken with a timeout. This should
             // be the case because we've set the Command to ignore timeouts
             var result = proxy.CancellableMethod(CancellationToken.None);
-            Assert.True(classToProxy.CallMade && classToProxy.TokenRecievedFromProxy==CancellationToken.None);
-            Assert.Equal(expectedResult,result);
+            Assert.True(classToProxy.CallMade);
+            Assert.Equal(classToProxy.TokenRecievedFromProxy, CancellationToken.None);
+            Assert.Equal(expectedResult, result);
         }
 
         // The behaviour should be the same regardless of whether we're ignoring timeouts or not. We still should be able to pass custom tokens

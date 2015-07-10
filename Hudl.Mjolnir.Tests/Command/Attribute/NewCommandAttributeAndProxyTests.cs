@@ -53,9 +53,10 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             // If we pass CancellationToken.None to the proxy then it should pass a timeout tokem to the method call.
             var result = proxy.CancellableMethod(CancellationToken.None);
             Assert.True(classToProxy.CallMade && classToProxy.TokenRecievedFromProxy != CancellationToken.None);
-            // shouldn't be cancelled yet
+            // This shouldn't be cancelled yet.
             Assert.False(classToProxy.TokenRecievedFromProxy.IsCancellationRequested);
-            Thread.Sleep(CancellableWithTimeoutPreserved.Timeout + 50); // sleep past the timeout 
+            // Now sleep past the timeout.
+            Thread.Sleep(CancellableWithTimeoutPreserved.Timeout + 50); 
             Assert.True(classToProxy.TokenRecievedFromProxy.IsCancellationRequested);
             Assert.Equal(expectedResult, result);
         }
