@@ -39,6 +39,8 @@ namespace Hudl.Mjolnir.Command
 
         /// <summary>
         /// If this is set to true then all calls wrapped in a Mjonir command will ignore the default timeout.
+        /// This is likely to be useful when debugging Command decorated methods, however it is not advisable to use in a production environment since it disables 
+        /// some of Mjolnir's key features. 
         /// </summary>
         protected static readonly ConfigurableValue<bool> IgnoreCommandTimeouts = new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
 
