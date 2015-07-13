@@ -1,11 +1,12 @@
 ﻿using System.Threading;
+using Hudl.Config;
 using Hudl.Mjolnir.Command.Attribute;
 using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command.Attribute
 {
-    public sealed class NewCommandAttributeAndProxyTestsIgnoringTimeouts : TestFixtureIgnoreTimeouts
+    public sealed class NewCommandAttributeAndProxyTestsIgnoringTimeouts : TestFixture
     {
         [Attributes.Command("foo", "bar", CancellableWithIgnoredTimeout.Timeout)]
         public interface ICancellableIgnoredTimeout
@@ -46,6 +47,7 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         [Fact]
         public void ProxyPassesNoneToMethod_WhenTimeoutsIgnored()
         {
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey,true);
             var expectedResult = "test";
             var classToProxy = new CancellableWithIgnoredTimeout(expectedResult);
             var proxy = CommandInterceptor.CreateProxy<ICancellableIgnoredTimeout>(classToProxy);
@@ -55,12 +57,14 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             Assert.True(classToProxy.CallMade);
             Assert.Equal(classToProxy.TokenRecievedFromProxy, CancellationToken.None);
             Assert.Equal(expectedResult, result);
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
         }
 
         // The behaviour should be the same regardless of whether we're ignoring timeouts or not. We still should be able to pass custom tokens
         [Fact]
         public void ProxyStillPassesOnTokenToMethod_WhenTimeoutsAreIgnored()
         {
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, true);
             var expectedResult = "test";
             var classToProxy = new CancellableWithIgnoredTimeout(expectedResult);
             var proxy = CommandInterceptor.CreateProxy<ICancellableIgnoredTimeout>(classToProxy);
@@ -70,14 +74,17 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             Assert.True(classToProxy.CallMade);
             Assert.Equal(classToProxy.TokenRecievedFromProxy,token);
             Assert.Equal(expectedResult, result);
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
         }
 
         [Fact]
         public void MethodShouldNotTimeout_WhenTimeoutsAreIgnored()
         {
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, true);
             var classToProxy = new CancellableWithOverrunnningMethodTimeoutsIgnored();
             var proxy = CommandInterceptor.CreateProxy<ICancellableIgnoredTimeout>(classToProxy);
             Assert.DoesNotThrow(() => proxy.CancellableMethod(CancellationToken.None));
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
         }
     }
 }

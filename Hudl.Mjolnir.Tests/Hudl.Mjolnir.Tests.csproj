@@ -87,10 +87,8 @@
     <Compile Include="Helper\AlwaysSuccessfulIsolationSemaphore.cs" />
     <Compile Include="Helper\AlwaysSuccessfulIsolationThreadPool.cs" />
     <Compile Include="Helper\AssertX.cs" />
-    <Compile Include="Helper\ConfigProviderContext.cs" />
     <Compile Include="Helper\ExpectedTestException.cs" />
     <Compile Include="Helper\TestFixture.cs" />
-    <Compile Include="Helper\TestFixtureIgnoreTimeouts.cs" />
     <Compile Include="Key\GroupKeyTests.cs" />
     <Compile Include="Metrics\InterlockingLongCounterTests.cs" />
     <Compile Include="Metrics\ResettingNumbersBucketTests.cs" />
