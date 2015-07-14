@@ -176,9 +176,8 @@ namespace Hudl.Mjolnir.Command
             {
                 throw new ArgumentNullException("poolKey");
             }
-
-            TimeoutsIgnored = IgnoreCommandTimeouts.Value;
-            if (!TimeoutsIgnored && defaultTimeout.TotalMilliseconds <= 0)
+           
+            if (defaultTimeout.TotalMilliseconds <= 0)
             {
                 throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
             }
@@ -190,6 +189,7 @@ namespace Hudl.Mjolnir.Command
 
             _log = LogManager.GetLogger("Hudl.Mjolnir.Command." + _name);
 
+            TimeoutsIgnored = IgnoreCommandTimeouts.Value;
             if (TimeoutsIgnored)
             {
                 _log.Debug("Creating command with timeout disabled.");
@@ -360,19 +360,15 @@ namespace Hudl.Mjolnir.Command
 
             var workItem = ThreadPool.Enqueue(() =>
             {
-               
-                if (TimeoutsIgnored)
-                {
-                    return UseCircuitBreakers.Value
-                        ? ExecuteWithBreaker(CancellationToken.None)
-                        : ExecuteAsync(CancellationToken.None);
-                }
+                var token = TimeoutsIgnored
+                    ? CancellationToken.None
+                    : cancellationToken;
                 // Since we may have been on the thread pool queue for a bit, see if we
                 // should have canceled by now.
-                cancellationToken.ThrowIfCancellationRequested();
+                token.ThrowIfCancellationRequested();
                 return UseCircuitBreakers.Value
-                    ? ExecuteWithBreaker(cancellationToken)
-                    : ExecuteAsync(cancellationToken);
+                    ? ExecuteWithBreaker(token)
+                    : ExecuteAsync(token);
             });
 
             // We could avoid passing both the token and timeout if either:
