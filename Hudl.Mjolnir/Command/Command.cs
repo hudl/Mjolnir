@@ -38,6 +38,13 @@ namespace Hudl.Mjolnir.Command
         protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
 
         /// <summary>
+        /// If this is set to true then all calls wrapped in a Mjonir command will ignore the default timeout.
+        /// This is likely to be useful when debugging Command decorated methods, however it is not advisable to use in a production environment since it disables 
+        /// some of Mjolnir's key features. 
+        /// </summary>
+        protected static readonly ConfigurableValue<bool> IgnoreCommandTimeouts = new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
+
+        /// <summary>
         /// Cache of known command names, keyed by Type and group key. Helps
         /// avoid repeatedly generating the same Name for every distinct command
         /// instance.
@@ -77,7 +84,8 @@ namespace Hudl.Mjolnir.Command
         private readonly string _name;
         private readonly GroupKey _breakerKey;
         private readonly GroupKey _poolKey;
-
+        protected readonly bool TimeoutsIgnored;
+        
         // Setters should be used for testing only.
 
         private IStats _stats;
@@ -168,7 +176,7 @@ namespace Hudl.Mjolnir.Command
             {
                 throw new ArgumentNullException("poolKey");
             }
-
+           
             if (defaultTimeout.TotalMilliseconds <= 0)
             {
                 throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
@@ -181,12 +189,21 @@ namespace Hudl.Mjolnir.Command
 
             _log = LogManager.GetLogger("Hudl.Mjolnir.Command." + _name);
 
+            TimeoutsIgnored = IgnoreCommandTimeouts.Value;
+            if (TimeoutsIgnored)
+            {
+                _log.Debug("Creating command with timeout disabled.");
+                return;
+            }
             var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
             {
-                timeout = (long)defaultTimeout.TotalMilliseconds;
+                timeout = (long) defaultTimeout.TotalMilliseconds;
             }
-
+            else
+            {
+                _log.DebugFormat("Timeout configuration override for this command of {0}",timeout);
+            }
             Timeout = TimeSpan.FromMilliseconds(timeout);
         }
 
@@ -343,13 +360,15 @@ namespace Hudl.Mjolnir.Command
 
             var workItem = ThreadPool.Enqueue(() =>
             {
+                var token = TimeoutsIgnored
+                    ? CancellationToken.None
+                    : cancellationToken;
                 // Since we may have been on the thread pool queue for a bit, see if we
                 // should have canceled by now.
-                cancellationToken.ThrowIfCancellationRequested();
-
+                token.ThrowIfCancellationRequested();
                 return UseCircuitBreakers.Value
-                    ? ExecuteWithBreaker(cancellationToken)
-                    : ExecuteAsync(cancellationToken);
+                    ? ExecuteWithBreaker(token)
+                    : ExecuteAsync(token);
             });
 
             // We could avoid passing both the token and timeout if either:
@@ -357,7 +376,10 @@ namespace Hudl.Mjolnir.Command
             // B. The CancellationToken provided an accessor for its Timeout.
             // C. We wrapped CancellationToken and Timeout in another class and passed it.
             // For now, this works, if a little janky.
-            return workItem.Get(cancellationToken, Timeout);
+            //using high timeout (can't use Timespan.MaxValue since this overflows) and no cancellation token when timeouts are ignored, best thing to do without changing the IWorkItem interface
+            return TimeoutsIgnored 
+                ? workItem.Get(CancellationToken.None, TimeSpan.FromMilliseconds(int.MaxValue))
+                : workItem.Get(cancellationToken, Timeout);
         }
 
         private async Task<TResult> ExecuteWithBreaker(CancellationToken cancellationToken)
@@ -396,6 +418,7 @@ namespace Hudl.Mjolnir.Command
 
             return result;
         }
+
 
         private static CommandCompletionStatus StatusFromException(Exception e)
         {

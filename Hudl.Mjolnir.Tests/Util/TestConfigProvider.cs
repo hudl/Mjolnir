@@ -22,6 +22,9 @@ namespace Hudl.Mjolnir.Tests.Util
         public void Set(string configKey, object value)
         {
             Values[configKey] = value;
+            if (ConfigurationChanged == null) return;
+            var configChanged = ConfigurationChanged;
+            configChanged(configKey, value);
         }
 
         public void Delete(string configKey)

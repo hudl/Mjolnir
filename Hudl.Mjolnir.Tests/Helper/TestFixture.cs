@@ -5,17 +5,17 @@ namespace Hudl.Mjolnir.Tests.Helper
 {
     public class TestFixture
     {
+        private static readonly TestConfigProvider _configProvider = new TestConfigProvider();
+        private static bool _configured = false;
+
+        internal const string UseCircuitBreakersKey = "mjolnir.useCircuitBreakers";
+        internal const string IgnoreTimeoutsKey = "mjolnir.ignoreTimeouts"; 
+        
         public TestFixture()
         {
-            UseTempConfig();
-        }
-
-        private static void UseTempConfig()
-        {
-            var provider = new TestConfigProvider();
-            provider.Set("mjolnir.useCircuitBreakers", true);
-
-            ConfigProvider.UseProvider(new TestConfigProvider());
+            if (_configured)return;
+            ConfigProvider.UseProvider(_configProvider);
+            _configured = true;
         }
     }
 }

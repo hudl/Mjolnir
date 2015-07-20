@@ -35,6 +35,8 @@ namespace Hudl.Mjolnir.Tests.Command
             AssertX.FailExpectedException();
         }
 
+        
+
         [Fact]
         public async Task InvokeAsync_UnderTimeout_DoesntTimeoutOrThrowException()
         {

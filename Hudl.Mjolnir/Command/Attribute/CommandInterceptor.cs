@@ -144,7 +144,7 @@ namespace Hudl.Mjolnir.Command.Attribute
         internal Command<TResult> CreateCommand<TResult>(IInvocation invocation)
         {
             var classType = invocation.Method.DeclaringType;
-
+            
             var oldAttribute = classType.GetCustomAttribute<CommandAttribute>();
             var newAttribute = classType.GetCustomAttribute<Attributes.CommandAttribute>();
             if (oldAttribute == null && newAttribute == null)

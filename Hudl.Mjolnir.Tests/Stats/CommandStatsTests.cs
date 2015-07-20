@@ -106,9 +106,6 @@ namespace Hudl.Mjolnir.Tests.Stats
             var mockBreaker = new Mock<ICircuitBreaker>();
             mockBreaker.Setup(m => m.IsAllowing()).Returns(false);
 
-            // Will have been set by TestFixture constructor.
-            Assert.True(new ConfigurableValue<bool>("mjolnir.useCircuitBreakers").Value);
-
             var command = new SuccessfulEchoCommandWithoutFallback("Test")
             {
                 Stats = mockStats.Object,
