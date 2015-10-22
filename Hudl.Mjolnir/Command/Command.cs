@@ -301,11 +301,11 @@ namespace Hudl.Mjolnir.Command
             var invokeStopwatch = Stopwatch.StartNew();
             var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
+            var cancellationTokenSource = new CancellationTokenSource(Timeout);
             try
             {
                 _log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
-                var cancellationTokenSource = new CancellationTokenSource(Timeout);
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
                 var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
@@ -313,18 +313,30 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
+                var tokenSourceCancelled = cancellationTokenSource.IsCancellationRequested;
                 executeStopwatch.Stop();
                 status = StatusFromException(e);
-
-                var instigator = new CommandFailedException(e, status).WithData(new
-                {
-                    Command = Name,
-                    Timeout = Timeout.TotalMilliseconds,
-                    Status = status,
-                    Breaker = BreakerKey,
-                    Pool = PoolKey,
-                });
-
+                // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
+                // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
+                // cancelled from the client side.
+                var instigator = status == CommandCompletionStatus.Canceled
+                    ? new CommandFailedException(e, status).WithData(new
+                    {
+                        Command = Name,
+                        Timeout = Timeout.TotalMilliseconds,
+                        Status = status,
+                        CommandCancellationReason = tokenSourceCancelled ? CommandCancellationReason.TimeoutCancellation : CommandCancellationReason.CallerTokenCancellation,
+                        Breaker = BreakerKey,
+                        Pool = PoolKey,
+                    })
+                    : new CommandFailedException(e, status).WithData(new
+                    {
+                        Command = Name,
+                        Timeout = Timeout.TotalMilliseconds,
+                        Status = status,
+                        Breaker = BreakerKey,
+                        Pool = PoolKey,
+                    });
                 // We don't log the exception here - that's intentional.
                 
                 // If a fallback is not implemented, the exception will get re-thrown and (hopefully) caught

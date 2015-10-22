@@ -74,6 +74,7 @@
     <Compile Include="Command\Attribute\FireAndForgetAttribute.cs" />
     <Compile Include="Command\Attribute\InvocationCommand.cs" />
     <Compile Include="Command\Command.cs" />
+    <Compile Include="Command\CommandCancellationReason.cs" />
     <Compile Include="Command\CommandContext.cs" />
     <Compile Include="Command\CommandFailedException.cs" />
     <Compile Include="Command\VoidResult.cs" />
