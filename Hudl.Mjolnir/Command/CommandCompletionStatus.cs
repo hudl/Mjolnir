@@ -13,7 +13,7 @@
         Faulted,
 
         /// <summary>
-        /// Canceled (timed out).
+        /// Canceled.
         /// </summary>
         Canceled,
 
@@ -21,5 +21,10 @@
         /// Rejected by the circuit breaker.
         /// </summary>
         Rejected,
+
+        /// <summary>
+        /// Timed out
+        /// </summary>
+        TimedOut,
     }
 }

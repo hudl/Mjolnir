@@ -315,28 +315,15 @@ namespace Hudl.Mjolnir.Command
             {
                 var tokenSourceCancelled = cancellationTokenSource.IsCancellationRequested;
                 executeStopwatch.Stop();
-                status = StatusFromException(e);
-                // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
-                // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
-                // cancelled from the client side.
-                var instigator = status == CommandCompletionStatus.Canceled
-                    ? new CommandFailedException(e, status).WithData(new
-                    {
-                        Command = Name,
-                        Timeout = Timeout.TotalMilliseconds,
-                        Status = status,
-                        CommandCancellationReason = tokenSourceCancelled ? CommandCancellationReason.TimeoutCancellation : CommandCancellationReason.CallerTokenCancellation,
-                        Breaker = BreakerKey,
-                        Pool = PoolKey,
-                    })
-                    : new CommandFailedException(e, status).WithData(new
-                    {
-                        Command = Name,
-                        Timeout = Timeout.TotalMilliseconds,
-                        Status = status,
-                        Breaker = BreakerKey,
-                        Pool = PoolKey,
-                    });
+                var instigator = GetCommandFailedException(e,tokenSourceCancelled, out status).WithData(new
+                {
+                    Command = Name,
+                    Timeout = Timeout.TotalMilliseconds,
+                    Status = status,
+                    Breaker = BreakerKey,
+                    Pool = PoolKey,
+                });
+
                 // We don't log the exception here - that's intentional.
                 
                 // If a fallback is not implemented, the exception will get re-thrown and (hopefully) caught
@@ -431,20 +418,30 @@ namespace Hudl.Mjolnir.Command
             return result;
         }
 
-
-        private static CommandCompletionStatus StatusFromException(Exception e)
+        private static CommandFailedException GetCommandFailedException(Exception e, bool timeoutTokenTriggered, out CommandCompletionStatus status)
         {
+            status = CommandCompletionStatus.Faulted;
             if (IsCancellationException(e))
             {
-                return CommandCompletionStatus.Canceled;
+                // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
+                // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
+                // cancelled from the client side.
+                if (timeoutTokenTriggered)
+                {
+                    status = CommandCompletionStatus.TimedOut;
+                    return new CommandTimeoutException(e);
+                }
+                status = CommandCompletionStatus.Canceled;
+                return new CommandCancelledException(e);
             }
 
             if (e is CircuitBreakerRejectedException || e is IsolationThreadPoolRejectedException)
             {
-                return CommandCompletionStatus.Rejected;
+                status = CommandCompletionStatus.Rejected;
+                return new CommandRejectedException(e);
             }
 
-            return CommandCompletionStatus.Faulted;
+            return new CommandFailedException(e);
         }
 
         private static bool IsCancellationException(Exception e)
