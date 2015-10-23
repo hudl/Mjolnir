@@ -301,11 +301,11 @@ namespace Hudl.Mjolnir.Command
             var invokeStopwatch = Stopwatch.StartNew();
             var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
+            var cancellationTokenSource = new CancellationTokenSource(Timeout);
             try
             {
                 _log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
-                var cancellationTokenSource = new CancellationTokenSource(Timeout);
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
                 var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
@@ -313,10 +313,9 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
+                var tokenSourceCancelled = cancellationTokenSource.IsCancellationRequested;
                 executeStopwatch.Stop();
-                status = StatusFromException(e);
-
-                var instigator = new CommandFailedException(e, status).WithData(new
+                var instigator = GetCommandFailedException(e,tokenSourceCancelled, out status).WithData(new
                 {
                     Command = Name,
                     Timeout = Timeout.TotalMilliseconds,
@@ -419,20 +418,30 @@ namespace Hudl.Mjolnir.Command
             return result;
         }
 
-
-        private static CommandCompletionStatus StatusFromException(Exception e)
+        private static CommandFailedException GetCommandFailedException(Exception e, bool timeoutTokenTriggered, out CommandCompletionStatus status)
         {
+            status = CommandCompletionStatus.Faulted;
             if (IsCancellationException(e))
             {
-                return CommandCompletionStatus.Canceled;
+                // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
+                // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
+                // cancelled from the client side.
+                if (timeoutTokenTriggered)
+                {
+                    status = CommandCompletionStatus.TimedOut;
+                    return new CommandTimeoutException(e);
+                }
+                status = CommandCompletionStatus.Canceled;
+                return new CommandCancelledException(e);
             }
 
             if (e is CircuitBreakerRejectedException || e is IsolationThreadPoolRejectedException)
             {
-                return CommandCompletionStatus.Rejected;
+                status = CommandCompletionStatus.Rejected;
+                return new CommandRejectedException(e);
             }
 
-            return CommandCompletionStatus.Faulted;
+            return new CommandFailedException(e);
         }
 
         private static bool IsCancellationException(Exception e)

@@ -90,8 +90,8 @@ namespace Hudl.Mjolnir.Tests.Stats
             catch (CommandFailedException e)
             {
                 Assert.True(e.GetBaseException() is OperationCanceledException);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback total", "Canceled", It.IsAny<TimeSpan>()), Times.Once);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback execute", "Canceled", It.IsAny<TimeSpan>()), Times.Once);
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback total", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback execute", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
                 return; // Expected.
             }
 

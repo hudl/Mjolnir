@@ -74,8 +74,11 @@
     <Compile Include="Command\Attribute\FireAndForgetAttribute.cs" />
     <Compile Include="Command\Attribute\InvocationCommand.cs" />
     <Compile Include="Command\Command.cs" />
+    <Compile Include="Command\CommandCancelledException.cs" />
     <Compile Include="Command\CommandContext.cs" />
     <Compile Include="Command\CommandFailedException.cs" />
+    <Compile Include="Command\CommandRejectedException.cs" />
+    <Compile Include="Command\CommandTimeoutException.cs" />
     <Compile Include="Command\VoidResult.cs" />
     <Compile Include="External\IgnoringStats.cs" />
     <Compile Include="External\IStats.cs" />
