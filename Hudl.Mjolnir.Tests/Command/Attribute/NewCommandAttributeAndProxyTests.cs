@@ -80,7 +80,7 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         {
             var classToProxy = new CancellableWithOverrunnningMethod();
             var proxy = CommandInterceptor.CreateProxy<ICancellableTimeoutPreserved>(classToProxy);
-            Assert.Throws<CommandFailedException>(() => proxy.CancellableMethod(CancellationToken.None));
+            Assert.Throws<CommandTimeoutException>(() => proxy.CancellableMethod(CancellationToken.None));
         }
     }
 }
