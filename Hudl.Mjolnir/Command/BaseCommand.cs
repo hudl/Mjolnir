@@ -169,12 +169,6 @@ namespace Hudl.Mjolnir.Command
         {
             get { return "mjolnir command " + Name; }
         }
-
-        //protected internal virtual TResult Fallback(CommandFailedException instigator)
-        //{
-        //    instigator.IsFallbackImplemented = false;
-        //    throw instigator;
-        //}
     }
     
     public abstract class AsyncCommand<TResult> : BaseCommand
@@ -197,13 +191,6 @@ namespace Hudl.Mjolnir.Command
     //{
     //    public SyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
     //    { }
-
     //    protected internal abstract void Execute(CancellationToken cancellationToken);
-
-    //    protected virtual void Fallback(CommandFailedException instigator)
-    //    {
-    //        instigator.IsFallbackImplemented = false;
-    //        throw instigator;
-    //    }
     //}
 }

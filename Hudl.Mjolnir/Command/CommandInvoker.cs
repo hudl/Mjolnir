@@ -16,10 +16,6 @@ namespace Hudl.Mjolnir.Command
     // Invoker could let the caller specify different behavior on failure
     // - Default fault behavior = throw? FaultMode.Throw / FaultMode.ReturnNull
     // - Is FaultMode different from TimeoutMode?
-    // - How do Fallback()s complicate the wrapped result?
-    // - Is this the responsibility of fallback? Maybe not. Take the S3 example. We'd have
-    //   a single "library" for S3 interactions, but individual calls probably desire
-    //   different behavior. Some might even prefer a different fallback.
     // 
     // A deeper question here - do we expect every specific interaction to have its
     // own Command? e.g. an S3 GET for annotations would have a completely separate command
@@ -219,55 +215,6 @@ namespace Hudl.Mjolnir.Command
         {
             return (e is TaskCanceledException || e is OperationCanceledException);
         }
-
-        //private TResult TryFallback<TResult>(BaseCommand<TResult> command, CommandFailedException instigator)
-        //{
-        //    var semaphore = CommandContext.GetFallbackSemaphore(command.PoolKey);
-
-        //    var stopwatch = Stopwatch.StartNew();
-        //    var fallbackStatus = FallbackStatus.Success;
-
-        //    if (!semaphore.TryEnter())
-        //    {
-        //        _stats.Elapsed(command.StatsPrefix + " fallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
-
-        //        instigator.FallbackStatus = FallbackStatus.Rejected;
-        //        throw instigator;
-        //    }
-
-        //    try
-        //    {
-        //        return command.Fallback(instigator);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        var cfe = e as CommandFailedException;
-
-        //        if (cfe != null && !cfe.IsFallbackImplemented)
-        //        {
-        //            // This was rethrown from the default Fallback() implementation (here in the Command class).
-        //            fallbackStatus = FallbackStatus.NotImplemented;
-        //        }
-        //        else
-        //        {
-        //            fallbackStatus = FallbackStatus.Failure;
-        //        }
-
-        //        if (cfe != null)
-        //        {
-        //            cfe.FallbackStatus = fallbackStatus;
-        //        }
-
-        //        throw;
-        //    }
-        //    finally
-        //    {
-        //        semaphore.Release();
-
-        //        stopwatch.Stop();
-        //        _stats.Elapsed(command.StatsPrefix + " fallback", fallbackStatus.ToString(), stopwatch.Elapsed);
-        //    }
-        //}
     }
 
     // Failure is any of [Fault || Timeout || Reject]
