@@ -41,6 +41,9 @@ namespace Hudl.Mjolnir.Command
     // TODO can breaker/pool/etc. be moved off of the Command object and into the invoker methods?
     // - yes, but what are the implications to unit testing?
 
+    // TODO wire in the timeout argument
+    // TODO what do timeouts/cancellations look like in exceptions now? make sure we didn't revert that logging change
+
     public class CommandInvoker : ICommandInvoker
     {
         private readonly IStats _stats;
@@ -49,6 +52,7 @@ namespace Hudl.Mjolnir.Command
         public CommandInvoker()
         {
             _stats = CommandContext.Stats; // TODO any risk here? should we just DI this? possibly not.
+            _bulkheadInvoker = new BulkheadInvoker(new BreakerInvoker()); // TODO clean this up
         }
 
         internal CommandInvoker(IStats stats)
@@ -59,6 +63,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             _stats = stats ?? CommandContext.Stats; // TODO any init risk here?
+            _bulkheadInvoker = new BulkheadInvoker(new BreakerInvoker()); // TODO clean this up
         }
 
         public async Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null)

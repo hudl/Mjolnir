@@ -14,7 +14,7 @@ namespace Hudl.Mjolnir.Command
         TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct);
     }
 
-    internal class BulkheadInvoker
+    internal class BulkheadInvoker : IBulkheadInvoker
     {
         protected static readonly IConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
 
@@ -30,7 +30,7 @@ namespace Hudl.Mjolnir.Command
             _breakerInvoker = breakerInvoker;
         }
 
-        private async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
+        public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             // REWRITE:
             // - Get the semaphore bulkhead for the command group
@@ -85,7 +85,7 @@ namespace Hudl.Mjolnir.Command
             //    : workItem.Get(cancellationToken, Timeout);
         }
 
-        private TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
             // REWRITE:
             // - Get the semaphore bulkhead for the command group

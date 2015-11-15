@@ -1,10 +1,6 @@
 ﻿using Hudl.Mjolnir.Breaker;
-using Hudl.Mjolnir.Command;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,9 +12,9 @@ namespace Hudl.Mjolnir.Command
         TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct);
     }
 
-    internal class BreakerInvoker
+    internal class BreakerInvoker : IBreakerInvoker
     {
-        private async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
+        public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
 
@@ -57,7 +53,7 @@ namespace Hudl.Mjolnir.Command
             return result;
         }
 
-        private TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        public TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
             var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
 
