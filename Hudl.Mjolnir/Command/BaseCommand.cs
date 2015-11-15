@@ -247,9 +247,8 @@ namespace Hudl.Mjolnir.Command
 
     public class CommandInvoker : ICommandInvoker
     {
-        protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
-
         private readonly IStats _stats;
+        private readonly IBulkheadInvoker _bulkheadInvoker;
 
         public CommandInvoker()
         {
@@ -294,7 +293,7 @@ namespace Hudl.Mjolnir.Command
 
                 // TODO soon, this comment may not be true
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
-                var result = await ExecuteWithBulkheadAsync(command, cts.Token).ConfigureAwait(false);
+                var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, cts.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
                 return result;
             }
@@ -362,7 +361,7 @@ namespace Hudl.Mjolnir.Command
 
                 // TODO soon, this comment may not be true
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
-                var result = ExecuteWithBulkhead(command, cts.Token);
+                var result = _bulkheadInvoker.ExecuteWithBulkhead(command, cts.Token);
                 executeStopwatch.Stop();
                 return result;
             }
@@ -402,157 +401,7 @@ namespace Hudl.Mjolnir.Command
             }
         }
         
-        private async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
-        {
-            // REWRITE:
-            // - Get the semaphore bulkhead for the command group
-            // - Reject or increment accordingly.
-
-            // TODO get bulkhead and check; reject if necessary
-            try
-            {
-                // TODO increment bulkhead
-                return UseCircuitBreakers.Value
-                    ? await ExecuteWithBreakerAsync(command, ct)
-                    : await command.ExecuteAsync(ct);
-            }
-            catch(Exception e)
-            {
-                // TODO decrement bulkhead
-                throw;
-            }
-            
-            // Note: Thread pool rejections shouldn't count as failures to the breaker.
-            // If a downstream dependency is slow, the pool will fill up, but the
-            // breaker + timeouts will already be providing protection against that.
-            // If the pool is filling up because of a surge of requests, the rejections
-            // will just be a way of shedding load - the breaker and downstream
-            // dependency may be just fine, and we want to keep them that way.
-
-            // We'll neither mark these as success *nor* failure, since they really didn't
-            // even execute as far as the breaker and downstream dependencies are
-            // concerned.
-
-            //var workItem = ThreadPool.Enqueue(() =>
-            //{
-            //    var token = TimeoutsIgnored
-            //        ? CancellationToken.None
-            //        : cancellationToken;
-            //    // Since we may have been on the thread pool queue for a bit, see if we
-            //    // should have canceled by now.
-            //    token.ThrowIfCancellationRequested();
-            //    return UseCircuitBreakers.Value
-            //        ? ExecuteWithBreaker(token)
-            //        : ExecuteAsync(token);
-            //});
-
-            // We could avoid passing both the token and timeout if either:
-            // A. SmartThreadPool.GetResult() took a CancellationToken.
-            // B. The CancellationToken provided an accessor for its Timeout.
-            // C. We wrapped CancellationToken and Timeout in another class and passed it.
-            // For now, this works, if a little janky.
-            //using high timeout (can't use Timespan.MaxValue since this overflows) and no cancellation token when timeouts are ignored, best thing to do without changing the IWorkItem interface
-            //return TimeoutsIgnored
-            //    ? workItem.Get(CancellationToken.None, TimeSpan.FromMilliseconds(int.MaxValue))
-            //    : workItem.Get(cancellationToken, Timeout);
-        }
-
-        private TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
-        {
-            // REWRITE:
-            // - Get the semaphore bulkhead for the command group
-            // - Reject or increment accordingly.
-
-            // TODO get bulkhead and check; reject if necessary
-            try
-            {
-                // TODO increment bulkhead
-                return UseCircuitBreakers.Value
-                    ? ExecuteWithBreaker(command, ct)
-                    : command.Execute(ct);
-            }
-            catch (Exception e)
-            {
-                // TODO decrement bulkhead
-                throw;
-            }
-        }
-
-        private async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
-        {
-            var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
-
-            if (!breaker.IsAllowing())
-            {
-                throw new CircuitBreakerRejectedException();
-            }
-
-            TResult result;
-
-            try
-            {
-                var stopwatch = Stopwatch.StartNew();
-
-                // Await here so we can catch the Exception and track the state.
-                // I suppose we could do this with a continuation, too. Await's easier.
-                result = await command.ExecuteAsync(ct);
-
-                breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
-                breaker.Metrics.MarkCommandSuccess();
-            }
-            catch (Exception e)
-            {
-                if (CommandContext.IsExceptionIgnored(e.GetType()))
-                {
-                    breaker.Metrics.MarkCommandSuccess();
-                }
-                else
-                {
-                    breaker.Metrics.MarkCommandFailure();
-                }
-
-                throw;
-            }
-
-            return result;
-        }
-
-        private TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct)
-        {
-            var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
-
-            if (!breaker.IsAllowing())
-            {
-                throw new CircuitBreakerRejectedException();
-            }
-
-            TResult result;
-
-            try
-            {
-                var stopwatch = Stopwatch.StartNew();
-
-                result = command.Execute(ct);
-
-                breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
-                breaker.Metrics.MarkCommandSuccess();
-            }
-            catch (Exception e)
-            {
-                if (CommandContext.IsExceptionIgnored(e.GetType()))
-                {
-                    breaker.Metrics.MarkCommandSuccess();
-                }
-                else
-                {
-                    breaker.Metrics.MarkCommandFailure();
-                }
-
-                throw;
-            }
-
-            return result;
-        }
+        
         
         private static CommandFailedException GetCommandFailedException(Exception e, bool timeoutTokenTriggered, out CommandCompletionStatus status)
         {

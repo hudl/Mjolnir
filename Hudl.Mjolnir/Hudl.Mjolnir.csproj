@@ -65,7 +65,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Breaker\BreakerInvoker.cs" />
+    <Compile Include="Command\BreakerInvoker.cs" />
     <Compile Include="Breaker\CircuitBreakerRejectedException.cs" />
     <Compile Include="Breaker\FailurePercentageCircuitBreaker.cs" />
     <Compile Include="Breaker\ICircuitBreaker.cs" />
@@ -75,6 +75,7 @@
     <Compile Include="Command\Attribute\FireAndForgetAttribute.cs" />
     <Compile Include="Command\Attribute\InvocationCommand.cs" />
     <Compile Include="Command\BaseCommand.cs" />
+    <Compile Include="Command\BulkheadInvoker.cs" />
     <Compile Include="Command\Command.cs" />
     <Compile Include="Command\CommandCancelledException.cs" />
     <Compile Include="Command\CommandContext.cs" />
