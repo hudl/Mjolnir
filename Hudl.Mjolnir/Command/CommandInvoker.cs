@@ -22,8 +22,6 @@ namespace Hudl.Mjolnir.Command
     }
 
     // TODO add ConfigureAwait(false) where necessary
-
-    // TODO wire in the timeout argument for the invoke methods here
     // TODO what do timeouts/cancellations look like in exceptions now? make sure we didn't revert that logging change
 
     public class CommandInvoker : ICommandInvoker
@@ -55,13 +53,14 @@ namespace Hudl.Mjolnir.Command
             EnsureSingleInvoke(command);
             
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
+            var timeout = command.GetActualTimeout(timeoutMillis);
 
             var invokeStopwatch = Stopwatch.StartNew();
             var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
-
-            var cts = command.Timeout.HasValue
-                ? new CancellationTokenSource(command.Timeout.Value)
+            
+            var cts = timeout.HasValue
+                ? new CancellationTokenSource(timeout.Value)
                 : new CancellationTokenSource();
 
             try
@@ -71,7 +70,7 @@ namespace Hudl.Mjolnir.Command
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
+                    GetTimeoutForLog(timeout));
 
                 var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, cts.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
@@ -83,7 +82,7 @@ namespace Hudl.Mjolnir.Command
 
                 // TODO document new behavior here - exceptions aren't wrapped anymore. fallbacks removed.
                 status = GetCompletionStatus(e, cts);
-                AttachCommandExceptionData(command, e, status);
+                AttachCommandExceptionData(command, e, status, timeout);
 
                 if (failureAction == OnFailure.Throw)
                 {
@@ -108,13 +107,14 @@ namespace Hudl.Mjolnir.Command
             EnsureSingleInvoke(command);
             
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
+            var timeout = command.GetActualTimeout(timeoutMillis);
 
             var invokeStopwatch = Stopwatch.StartNew();
             var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
 
-            var cts = command.Timeout.HasValue
-                ? new CancellationTokenSource(command.Timeout.Value)
+            var cts = timeout.HasValue
+                ? new CancellationTokenSource(timeout.Value)
                 : new CancellationTokenSource();
 
             try
@@ -123,7 +123,7 @@ namespace Hudl.Mjolnir.Command
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
+                    GetTimeoutForLog(timeout));
 
                 var result = _bulkheadInvoker.ExecuteWithBulkhead(command, cts.Token);
                 executeStopwatch.Stop();
@@ -135,7 +135,7 @@ namespace Hudl.Mjolnir.Command
 
                 // TODO document new behavior here - exceptions aren't wrapped anymore. fallbacks removed.
                 status = GetCompletionStatus(e, cts);
-                AttachCommandExceptionData(command, e, status);
+                AttachCommandExceptionData(command, e, status, timeout);
 
                 if (failureAction == OnFailure.Throw)
                 {
@@ -184,14 +184,14 @@ namespace Hudl.Mjolnir.Command
             return CommandCompletionStatus.Faulted;
         }
 
-        private void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status)
+        private void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status, TimeSpan? timeout)
         {
             // TODO document that "Pool" changed to "Bulkhead"
 
             exception.WithData(new
             {
                 Command = command.Name,
-                Timeout = (command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled"),
+                Timeout = GetTimeoutForLog(timeout),
                 Status = status,
                 Breaker = command.BreakerKey,
                 Bulkhead = command.BulkheadKey,
@@ -201,6 +201,11 @@ namespace Hudl.Mjolnir.Command
         private static bool IsCancellationException(Exception e)
         {
             return (e is TaskCanceledException || e is OperationCanceledException);
+        }
+
+        private static string GetTimeoutForLog(TimeSpan? timeout)
+        {
+            return (timeout.HasValue ? timeout.Value.ToString() : "Disabled");
         }
     }
 

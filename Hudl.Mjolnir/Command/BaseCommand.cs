@@ -8,14 +8,14 @@ namespace Hudl.Mjolnir.Command
 {
     public abstract class BaseCommand : Command
     {
-        internal readonly TimeSpan? Timeout;
-        
-        internal readonly bool TimeoutsIgnored;
+        //internal readonly TimeSpan? Timeout;
+        //internal readonly bool TimeoutsIgnored;
 
         private readonly GroupKey _group;
         private readonly string _name;
         private readonly GroupKey _breakerKey;
         private readonly GroupKey _bulkheadKey;
+        private readonly TimeSpan _constructorTimeout;
         
         // 0 == not yet invoked, > 0 == invoked
         internal int _hasInvoked = 0;
@@ -37,7 +37,7 @@ namespace Hudl.Mjolnir.Command
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="isolationKey">Breaker and bulkhead key to use.</param>
-        /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
+        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided.</param>
         protected BaseCommand(string group, string isolationKey, TimeSpan defaultTimeout)
             : this(group, null, isolationKey, isolationKey, defaultTimeout)
         { }
@@ -57,7 +57,7 @@ namespace Hudl.Mjolnir.Command
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="breakerKey">Breaker to use for this command.</param>
         /// <param name="bulkheadKey">Bulkhead to use for this command.</param>
-        /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
+        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided.</param>
         protected BaseCommand(string group, string breakerKey, string bulkheadKey, TimeSpan defaultTimeout)
             : this(group, null, breakerKey, bulkheadKey, defaultTimeout)
         { }
@@ -88,11 +88,13 @@ namespace Hudl.Mjolnir.Command
             _name = string.IsNullOrWhiteSpace(name) ? GenerateAndCacheName(Group) : CacheProvidedName(Group, name);
             _breakerKey = GroupKey.Named(breakerKey);
             _bulkheadKey = GroupKey.Named(bulkheadKey);
-            
-            Timeout = GetCommandTimeout(defaultTimeout);
+            _constructorTimeout = defaultTimeout;
         }
 
-        private TimeSpan? GetCommandTimeout(TimeSpan defaultTimeout)
+        // Constructor Timeout: Value defined in the Command constructor.
+        // Configured Timeout: Value provided by config.
+        // Invocation Timeout: Value passed into the Invoke() / InvokeAsync() call.
+        internal TimeSpan? GetActualTimeout(long? invocationTimeoutMillis)
         {
             if (IgnoreCommandTimeouts.Value)
             {
@@ -102,18 +104,25 @@ namespace Hudl.Mjolnir.Command
                 return null;
             }
 
-            var timeout = GetTimeoutConfigurableValue(_name).Value;
-            if (timeout <= 0)
+            // Prefer the invocation timeout first. It's more specific than the Constructor
+            // Timeout (which is defined by the command author and is treated as a "catch-all"),
+            // It's also more specific than the Configured Timeout, which is a way to tune
+            // the Constructor Timeout more specifically (i.e. still "catch-all" behavior).
+            if (invocationTimeoutMillis.HasValue && invocationTimeoutMillis.Value > 0)
             {
-                timeout = (long) defaultTimeout.TotalMilliseconds;
-            }
-            else
-            {
-                // TODO log?
-                //_log.DebugFormat("Timeout configuration override for this command of {0}", timeout);
+                // TODO anything if the passed-in value is <= 0? log a warn? probably don't
+                // want to kill the call.
+                return TimeSpan.FromMilliseconds(invocationTimeoutMillis.Value);
             }
 
-            return TimeSpan.FromMilliseconds(timeout);
+            var configured = GetTimeoutConfigurableValue(_name).Value;
+            if (configured > 0)
+            {
+                // TODO anything if the configured value is <= 0? log? probably don't kill the call.
+                return TimeSpan.FromMilliseconds(configured);
+            }
+
+            return _constructorTimeout;
         }
 
         private string CacheProvidedName(GroupKey group, string name)
