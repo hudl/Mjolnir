@@ -53,7 +53,7 @@ namespace ExampleConsole
             var executor = new CommandInvoker();
 
             var fileExistsAsyncCommand = new S3FileExistsAsyncCommand(asyncClient, "static-content", "foo.txt");
-            var r1 = await executor.Invoke(fileExistsAsyncCommand);
+            var r1 = await executor.InvokeAsync(fileExistsAsyncCommand);
             //var r1 = await fileExistsAsyncCommand.InvokeAsync();
 
             var fileExistsSyncCommand = new S3FileExistsCommand(syncClient, "static-content", "foo.txt");

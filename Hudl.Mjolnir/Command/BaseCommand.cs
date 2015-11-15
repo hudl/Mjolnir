@@ -1,4 +1,5 @@
-﻿using Hudl.Config;
+﻿using Hudl.Common.Extensions;
+using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
@@ -13,46 +14,45 @@ namespace Hudl.Mjolnir.Command
 {
     public abstract class BaseCommand : Command
     {
-        internal readonly TimeSpan Timeout;
-
-        //private readonly ILog _log;
+        internal readonly TimeSpan? Timeout;
+        
+        internal readonly bool TimeoutsIgnored;
 
         private readonly GroupKey _group;
         private readonly string _name;
         private readonly GroupKey _breakerKey;
         private readonly GroupKey _poolKey;
-        protected readonly bool TimeoutsIgnored;
-
+        
         // Setters should be used for testing only.
 
-        private IStats _stats;
-        internal IStats Stats
-        {
-            private get { return _stats ?? CommandContext.Stats; }
-            set { _stats = value; }
-        }
+        //private IStats _stats;
+        //internal IStats Stats
+        //{
+        //    internal get { return _stats ?? CommandContext.Stats; }
+        //    set { _stats = value; }
+        //}
 
-        private ICircuitBreaker _breaker;
-        internal ICircuitBreaker CircuitBreaker
-        {
-            private get { return _breaker ?? CommandContext.GetCircuitBreaker(_breakerKey); }
-            set { _breaker = value; }
-        }
+        //private ICircuitBreaker _breaker;
+        //internal ICircuitBreaker CircuitBreaker
+        //{
+        //    internal get { return _breaker ?? CommandContext.GetCircuitBreaker(_breakerKey); }
+        //    set { _breaker = value; }
+        //}
 
-        private IIsolationThreadPool _pool;
-        internal IIsolationThreadPool ThreadPool
-        {
-            private get { return _pool ?? CommandContext.GetThreadPool(_poolKey); }
-            set { _pool = value; }
-        }
+        //private IIsolationThreadPool _pool;
+        //internal IIsolationThreadPool ThreadPool
+        //{
+        //    internal get { return _pool ?? CommandContext.GetThreadPool(_poolKey); }
+        //    set { _pool = value; }
+        //}
 
-        private IIsolationSemaphore _fallbackSemaphore;
-        internal IIsolationSemaphore FallbackSemaphore
-        {
-            // TODO Consider isolating these per-command instead of per-pool.
-            private get { return _fallbackSemaphore ?? CommandContext.GetFallbackSemaphore(_poolKey); }
-            set { _fallbackSemaphore = value; }
-        }
+        //private IIsolationSemaphore _fallbackSemaphore;
+        //internal IIsolationSemaphore FallbackSemaphore
+        //{
+        //    // TODO Consider isolating these per-command instead of per-pool.
+        //    internal get { return _fallbackSemaphore ?? CommandContext.GetFallbackSemaphore(_poolKey); }
+        //    set { _fallbackSemaphore = value; }
+        //}
 
         // 0 == not yet invoked, > 0 == invoked
         internal int _hasInvoked = 0;
@@ -125,25 +125,30 @@ namespace Hudl.Mjolnir.Command
             _name = string.IsNullOrWhiteSpace(name) ? GenerateAndCacheName(Group) : CacheProvidedName(Group, name);
             _breakerKey = GroupKey.Named(breakerKey);
             _poolKey = GroupKey.Named(poolKey);
+            
+            Timeout = GetCommandTimeout(defaultTimeout);
+        }
 
-            //_log = LogManager.GetLogger("Hudl.Mjolnir.Command." + _name);
-
-            TimeoutsIgnored = IgnoreCommandTimeouts.Value;
-            if (TimeoutsIgnored)
+        private TimeSpan? GetCommandTimeout(TimeSpan defaultTimeout)
+        {
+            if (IgnoreCommandTimeouts.Value)
             {
-                //_log.Debug("Creating command with timeout disabled.");
-                return;
+                // TODO log?
+                return null;
             }
+
             var timeout = GetTimeoutConfigurableValue(_name).Value;
             if (timeout <= 0)
             {
-                timeout = (long)defaultTimeout.TotalMilliseconds;
+                timeout = (long) defaultTimeout.TotalMilliseconds;
             }
             else
             {
+                // TODO log?
                 //_log.DebugFormat("Timeout configuration override for this command of {0}", timeout);
             }
-            Timeout = TimeSpan.FromMilliseconds(timeout);
+
+            return TimeSpan.FromMilliseconds(timeout);
         }
 
         private string CacheProvidedName(GroupKey group, string name)
@@ -195,34 +200,31 @@ namespace Hudl.Mjolnir.Command
             get { return _poolKey; }
         }
 
-        private string StatsPrefix
+        internal string StatsPrefix
         {
             get { return "mjolnir command " + Name; }
         }
     }
     
+    public sealed class Void
+    {
+        
+    }
+
     public abstract class AsyncCommand<TResult> : BaseCommand
     {
         public AsyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
         { }
 
-        protected abstract Task<TResult> ExecuteAsync(CancellationToken cancellationToken);
+        protected internal abstract Task<TResult> ExecuteAsync(CancellationToken cancellationToken);
     }
-
-    public abstract class AsyncCommand : BaseCommand
-    {
-        public AsyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
-        { }
-
-        protected abstract Task ExecuteAsync(CancellationToken cancellationToken);
-    }
-
+    
     public abstract class SyncCommand<TResult> : BaseCommand
     {
         public SyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
         { }
 
-        protected abstract TResult Execute(CancellationToken cancellationToken);
+        protected internal abstract TResult Execute(CancellationToken cancellationToken);
     }
 
     public abstract class SyncCommand : BaseCommand
@@ -230,25 +232,41 @@ namespace Hudl.Mjolnir.Command
         public SyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
         { }
 
-        protected abstract void Execute(CancellationToken cancellationToken);
+        protected internal abstract void Execute(CancellationToken cancellationToken);
     }
 
     public interface ICommandInvoker
     {
-        Task Invoke(AsyncCommand command);
-        Task<TResult> Invoke<TResult>(AsyncCommand<TResult> command);
-        void Invoke(SyncCommand command);
+        Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command);
         TResult Invoke<TResult>(SyncCommand<TResult> command);
     }
     
+    // TODO add ConfigureAwait(false) where necessary
+    // TODO can breaker/pool/etc. be moved off of the Command object and into the invoker methods?
+    // - yes, but what are the implications to unit testing?
+
     public class CommandInvoker : ICommandInvoker
     {
-        public Task Invoke(AsyncCommand command)
+        protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
+
+        private readonly IStats _stats;
+
+        public CommandInvoker()
         {
-            // TODO
+            _stats = CommandContext.Stats; // TODO any risk here? should we just DI this? possibly not.
         }
 
-        public Task<TResult> Invoke<TResult>(AsyncCommand<TResult> command)
+        internal CommandInvoker(IStats stats)
+        {
+            if (stats == null)
+            {
+                throw new ArgumentNullException("stats");
+            }
+
+            _stats = stats ?? CommandContext.Stats; // TODO any init risk here?
+        }
+        
+        public async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command)
         {
             if (Interlocked.CompareExchange(ref command._hasInvoked, 1, 0) > 0)
             {
@@ -260,27 +278,37 @@ namespace Hudl.Mjolnir.Command
             var invokeStopwatch = Stopwatch.StartNew();
             var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
-            var cancellationTokenSource = new CancellationTokenSource(command.Timeout);
+
+            var cts = command.Timeout.HasValue
+                ? new CancellationTokenSource(command.Timeout.Value)
+                : new CancellationTokenSource();
+
             try
             {
-                log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", command.Name, command.BreakerKey, command.PoolKey, command.Timeout.TotalMilliseconds);
+                // TODO renamed "InvokeAsync" in the log here, should be documented.
+                log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
+                    command.Name,
+                    command.BreakerKey,
+                    command.PoolKey,
+                    command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
 
+                // TODO soon, this comment may not be true
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
-                var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
+                var result = await ExecuteWithBulkheadAsync(command, cts.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
                 return result;
             }
             catch (Exception e)
             {
-                var tokenSourceCancelled = cancellationTokenSource.IsCancellationRequested;
+                var tokenSourceCancelled = cts.IsCancellationRequested;
                 executeStopwatch.Stop();
                 var instigator = GetCommandFailedException(e, tokenSourceCancelled, out status).WithData(new
                 {
-                    Command = Name,
-                    Timeout = Timeout.TotalMilliseconds,
+                    Command = command.Name,
+                    Timeout = (command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled"),
                     Status = status,
-                    Breaker = BreakerKey,
-                    Pool = PoolKey,
+                    Breaker = command.BreakerKey,
+                    Pool = command.PoolKey,
                 });
 
                 // We don't log the exception here - that's intentional.
@@ -292,29 +320,108 @@ namespace Hudl.Mjolnir.Command
                 // If a fallback is implemented, the burden is on the implementation to log or rethrow the
                 // exception. Otherwise it'll be eaten. This is documented on the Fallback() method.
 
+                // TODO re-think fallbacks; what of async vs. sync support?
+                // - should fallbacks be interface-driven, e.g. AsyncFallback / SyncFallback?
+
                 return TryFallback(instigator);
             }
             finally
             {
                 invokeStopwatch.Stop();
 
-                Stats.Elapsed(StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
-                Stats.Elapsed(StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
+                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
+                _stats.Elapsed(command.StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
             }
         }
-
-        public void Invoke(SyncCommand command)
-        {
-            // TODO
-        }
-
+        
         public TResult Invoke<TResult>(SyncCommand<TResult> command)
         {
-            // TODO
-        }
+            if (Interlocked.CompareExchange(ref command._hasInvoked, 1, 0) > 0)
+            {
+                throw new InvalidOperationException("A command instance may only be invoked once");
+            }
 
-        private Task<TResult> ExecuteInIsolation(CancellationToken cancellationToken)
+            var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
+
+            var invokeStopwatch = Stopwatch.StartNew();
+            var executeStopwatch = Stopwatch.StartNew();
+            var status = CommandCompletionStatus.RanToCompletion;
+
+            var cts = command.Timeout.HasValue
+                ? new CancellationTokenSource(command.Timeout.Value)
+                : new CancellationTokenSource();
+
+            try
+            {
+                // TODO rename "InvokeAsync" in the log here?
+                log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
+                    command.Name,
+                    command.BreakerKey,
+                    command.PoolKey,
+                    command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
+
+                // TODO soon, this comment may not be true
+                // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
+                var result = ExecuteWithBulkhead(command, cts.Token);
+                executeStopwatch.Stop();
+                return result;
+            }
+            catch (Exception e)
+            {
+                var tokenSourceCancelled = cts.IsCancellationRequested;
+                executeStopwatch.Stop();
+                var instigator = GetCommandFailedException(e, tokenSourceCancelled, out status).WithData(new
+                {
+                    Command = command.Name,
+                    Timeout = (command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled"),
+                    Status = status,
+                    Breaker = command.BreakerKey,
+                    Pool = command.PoolKey,
+                });
+
+                // We don't log the exception here - that's intentional.
+
+                // If a fallback is not implemented, the exception will get re-thrown and (hopefully) caught
+                // and logged by an upstream container. This is the majority of cases, so logging here
+                // results in a lot of extra, unnecessary logs and stack traces.
+
+                // If a fallback is implemented, the burden is on the implementation to log or rethrow the
+                // exception. Otherwise it'll be eaten. This is documented on the Fallback() method.
+
+                // TODO re-think fallbacks; what of async vs. sync support?
+                // - should fallbacks be interface-driven, e.g. AsyncFallback / SyncFallback?
+
+                return TryFallback(instigator);
+            }
+            finally
+            {
+                invokeStopwatch.Stop();
+
+                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
+                _stats.Elapsed(command.StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
+            }
+        }
+        
+        private async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
+            // REWRITE:
+            // - Get the semaphore bulkhead for the command group
+            // - Reject or increment accordingly.
+
+            // TODO get bulkhead and check; reject if necessary
+            try
+            {
+                // TODO increment bulkhead
+                return UseCircuitBreakers.Value
+                    ? await ExecuteWithBreakerAsync(command, ct)
+                    : await command.ExecuteAsync(ct);
+            }
+            catch(Exception e)
+            {
+                // TODO decrement bulkhead
+                throw;
+            }
+            
             // Note: Thread pool rejections shouldn't count as failures to the breaker.
             // If a downstream dependency is slow, the pool will fill up, but the
             // breaker + timeouts will already be providing protection against that.
@@ -326,18 +433,18 @@ namespace Hudl.Mjolnir.Command
             // even execute as far as the breaker and downstream dependencies are
             // concerned.
 
-            var workItem = ThreadPool.Enqueue(() =>
-            {
-                var token = TimeoutsIgnored
-                    ? CancellationToken.None
-                    : cancellationToken;
-                // Since we may have been on the thread pool queue for a bit, see if we
-                // should have canceled by now.
-                token.ThrowIfCancellationRequested();
-                return UseCircuitBreakers.Value
-                    ? ExecuteWithBreaker(token)
-                    : ExecuteAsync(token);
-            });
+            //var workItem = ThreadPool.Enqueue(() =>
+            //{
+            //    var token = TimeoutsIgnored
+            //        ? CancellationToken.None
+            //        : cancellationToken;
+            //    // Since we may have been on the thread pool queue for a bit, see if we
+            //    // should have canceled by now.
+            //    token.ThrowIfCancellationRequested();
+            //    return UseCircuitBreakers.Value
+            //        ? ExecuteWithBreaker(token)
+            //        : ExecuteAsync(token);
+            //});
 
             // We could avoid passing both the token and timeout if either:
             // A. SmartThreadPool.GetResult() took a CancellationToken.
@@ -345,9 +452,137 @@ namespace Hudl.Mjolnir.Command
             // C. We wrapped CancellationToken and Timeout in another class and passed it.
             // For now, this works, if a little janky.
             //using high timeout (can't use Timespan.MaxValue since this overflows) and no cancellation token when timeouts are ignored, best thing to do without changing the IWorkItem interface
-            return TimeoutsIgnored
-                ? workItem.Get(CancellationToken.None, TimeSpan.FromMilliseconds(int.MaxValue))
-                : workItem.Get(cancellationToken, Timeout);
+            //return TimeoutsIgnored
+            //    ? workItem.Get(CancellationToken.None, TimeSpan.FromMilliseconds(int.MaxValue))
+            //    : workItem.Get(cancellationToken, Timeout);
+        }
+
+        private TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        {
+            // REWRITE:
+            // - Get the semaphore bulkhead for the command group
+            // - Reject or increment accordingly.
+
+            // TODO get bulkhead and check; reject if necessary
+            try
+            {
+                // TODO increment bulkhead
+                return UseCircuitBreakers.Value
+                    ? ExecuteWithBreaker(command, ct)
+                    : command.Execute(ct);
+            }
+            catch (Exception e)
+            {
+                // TODO decrement bulkhead
+                throw;
+            }
+        }
+
+        private async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
+        {
+            var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
+
+            if (!breaker.IsAllowing())
+            {
+                throw new CircuitBreakerRejectedException();
+            }
+
+            TResult result;
+
+            try
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                // Await here so we can catch the Exception and track the state.
+                // I suppose we could do this with a continuation, too. Await's easier.
+                result = await command.ExecuteAsync(ct);
+
+                breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
+                breaker.Metrics.MarkCommandSuccess();
+            }
+            catch (Exception e)
+            {
+                if (CommandContext.IsExceptionIgnored(e.GetType()))
+                {
+                    breaker.Metrics.MarkCommandSuccess();
+                }
+                else
+                {
+                    breaker.Metrics.MarkCommandFailure();
+                }
+
+                throw;
+            }
+
+            return result;
+        }
+
+        private TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        {
+            var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
+
+            if (!breaker.IsAllowing())
+            {
+                throw new CircuitBreakerRejectedException();
+            }
+
+            TResult result;
+
+            try
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                result = command.Execute(ct);
+
+                breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
+                breaker.Metrics.MarkCommandSuccess();
+            }
+            catch (Exception e)
+            {
+                if (CommandContext.IsExceptionIgnored(e.GetType()))
+                {
+                    breaker.Metrics.MarkCommandSuccess();
+                }
+                else
+                {
+                    breaker.Metrics.MarkCommandFailure();
+                }
+
+                throw;
+            }
+
+            return result;
+        }
+        
+        private static CommandFailedException GetCommandFailedException(Exception e, bool timeoutTokenTriggered, out CommandCompletionStatus status)
+        {
+            status = CommandCompletionStatus.Faulted;
+            if (IsCancellationException(e))
+            {
+                // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
+                // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
+                // cancelled from the client side.
+                if (timeoutTokenTriggered)
+                {
+                    status = CommandCompletionStatus.TimedOut;
+                    return new CommandTimeoutException(e);
+                }
+                status = CommandCompletionStatus.Canceled;
+                return new CommandCancelledException(e);
+            }
+
+            if (e is CircuitBreakerRejectedException || e is IsolationThreadPoolRejectedException)
+            {
+                status = CommandCompletionStatus.Rejected;
+                return new CommandRejectedException(e);
+            }
+
+            return new CommandFailedException(e);
+        }
+
+        private static bool IsCancellationException(Exception e)
+        {
+            return (e is TaskCanceledException || e is OperationCanceledException);
         }
     }
 }
