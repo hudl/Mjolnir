@@ -80,6 +80,7 @@
     <Compile Include="Command\CommandCancelledException.cs" />
     <Compile Include="Command\CommandContext.cs" />
     <Compile Include="Command\CommandFailedException.cs" />
+    <Compile Include="Command\CommandInvoker.cs" />
     <Compile Include="Command\CommandRejectedException.cs" />
     <Compile Include="Command\CommandTimeoutException.cs" />
     <Compile Include="Command\VoidResult.cs" />
