@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="Bulkhead\BulkheadRejectedException.cs" />
     <Compile Include="Bulkhead\SemaphoreBulkhead.cs" />
+    <Compile Include="Command\AsyncCommand.cs" />
     <Compile Include="Command\BreakerInvoker.cs" />
     <Compile Include="Breaker\CircuitBreakerRejectedException.cs" />
     <Compile Include="Breaker\FailurePercentageCircuitBreaker.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="Command\CommandInvoker.cs" />
     <Compile Include="Command\CommandRejectedException.cs" />
     <Compile Include="Command\CommandTimeoutException.cs" />
+    <Compile Include="Command\SyncCommand.cs" />
     <Compile Include="Command\VoidResult.cs" />
     <Compile Include="External\IgnoringStats.cs" />
     <Compile Include="External\IStats.cs" />

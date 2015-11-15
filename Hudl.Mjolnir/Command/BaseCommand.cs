@@ -1,16 +1,11 @@
 ﻿using Hudl.Config;
 using Hudl.Mjolnir.Key;
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Hudl.Mjolnir.Command
 {
     public abstract class BaseCommand : Command
     {
-        //internal readonly TimeSpan? Timeout;
-        //internal readonly bool TimeoutsIgnored;
-
         private readonly GroupKey _group;
         private readonly string _name;
         private readonly GroupKey _breakerKey;
@@ -18,6 +13,7 @@ namespace Hudl.Mjolnir.Command
         private readonly TimeSpan _constructorTimeout;
         
         // 0 == not yet invoked, > 0 == invoked
+        // This is modified by the invoker with concurrency protections.
         internal int _hasInvoked = 0;
 
         /// <summary>
@@ -179,27 +175,4 @@ namespace Hudl.Mjolnir.Command
             get { return "mjolnir command " + Name; }
         }
     }
-    
-    public abstract class AsyncCommand<TResult> : BaseCommand
-    {
-        public AsyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
-        { }
-
-        protected internal abstract Task<TResult> ExecuteAsync(CancellationToken cancellationToken);
-    }
-    
-    public abstract class SyncCommand<TResult> : BaseCommand
-    {
-        public SyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
-        { }
-
-        protected internal abstract TResult Execute(CancellationToken cancellationToken);
-    }
-
-    //public abstract class SyncCommand : BaseCommand<TResult>
-    //{
-    //    public SyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
-    //    { }
-    //    protected internal abstract void Execute(CancellationToken cancellationToken);
-    //}
 }
