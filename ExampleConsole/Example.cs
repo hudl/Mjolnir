@@ -50,16 +50,26 @@ namespace ExampleConsole
             var asyncClient = new S3AsyncClient();
             var syncClient = new S3Client();
 
-            var executor = new CommandInvoker();
+            // Instead of calling Invoke() / InvokeAsync() on the Command, callers use an
+            // Invoker and pass the command to it. This does a few things for us:
+            // - Injecting an ICommandInvoker for DI and unit testing is easy
+            // - It helps differentiate between sync and async code paths with separate methods
+            var invoker = new CommandInvoker();
 
+            // Async and sync commands inherit from different Base classes.
+
+            // Async example
             var fileExistsAsyncCommand = new S3FileExistsAsyncCommand(asyncClient, "static-content", "foo.txt");
-            var r1 = await executor.InvokeAsync(fileExistsAsyncCommand);
-            //var r1 = await fileExistsAsyncCommand.InvokeAsync();
+            var result1 = await invoker.InvokeAsync(fileExistsAsyncCommand, OnFailure.Throw);
+            var exists1 = result1.Value;
 
+
+            // Sync example
             var fileExistsSyncCommand = new S3FileExistsCommand(syncClient, "static-content", "foo.txt");
-            var r2 = executor.Invoke(fileExistsSyncCommand);
-            //var r2 = fileExistsSyncCommand.Invoke();
+            var result2 = invoker.Invoke(fileExistsSyncCommand, OnFailure.Throw, 1000);
+            var exists2 = result2.Value;
 
+            
             // TODO get some other (non-S3) real-world examples of commands in here
         }
     }
@@ -148,7 +158,7 @@ namespace ExampleConsole
         }
     }
 
-    class S3UploadFileCommand : SyncCommand
+    class S3UploadFileCommand : SyncCommand<VoidResult>
     {
         private readonly IS3Client _client;
         private readonly string _bucketName;
@@ -168,9 +178,10 @@ namespace ExampleConsole
             _statContentType = statContentType;
         }
 
-        protected override void Execute(CancellationToken cancellationToken)
+        protected override VoidResult Execute(CancellationToken cancellationToken)
         {
             _client.UploadFile(_bucketName, _localFile, _key, _contentType, _statContentType);
+            return new VoidResult();
         }
     }
 }

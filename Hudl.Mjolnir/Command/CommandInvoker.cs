@@ -10,10 +10,35 @@ using System.Threading.Tasks;
 
 namespace Hudl.Mjolnir.Command
 {
+    // TODO what if, instead of TResult, commands wrapped the desired result
+    //   e.g. CommandResult<TResult>
+    //
+    // Invoker could let the caller specify different behavior on failure
+    // - Default fault behavior = throw? FaultMode.Throw / FaultMode.ReturnNull
+    // - Is FaultMode different from TimeoutMode?
+    // - How do Fallback()s complicate the wrapped result?
+    // - Is this the responsibility of fallback? Maybe not. Take the S3 example. We'd have
+    //   a single "library" for S3 interactions, but individual calls probably desire
+    //   different behavior. Some might even prefer a different fallback.
+    // 
+    // A deeper question here - do we expect every specific interaction to have its
+    // own Command? e.g. an S3 GET for annotations would have a completely separate command
+    // than an S3 GET for an attachment?
+    //
+    // Attachments may have a tolerance for a higher timeout. Should/could the invoker
+    // allow for overriding the timeout on that call? Should that be configurable?
+    //
+    // What do people want 99% of the time on faults? timeouts?
+
     public interface ICommandInvoker
     {
-        Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command);
-        TResult Invoke<TResult>(SyncCommand<TResult> command);
+        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null);
+        CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null);
+
+        // TODO possible alternate signatures:
+        // 
+        // Could forego the CommandResult wrapper, which would enforce a OnFailure.Throw
+        //   TResult InvokeAndUnwrapOrThrow<TResult>(...)
     }
 
     // TODO add ConfigureAwait(false) where necessary
@@ -40,13 +65,12 @@ namespace Hudl.Mjolnir.Command
             _stats = stats ?? CommandContext.Stats; // TODO any init risk here?
         }
 
-        public async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command)
+        public async Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null)
         {
-            if (Interlocked.CompareExchange(ref command._hasInvoked, 1, 0) > 0)
-            {
-                throw new InvalidOperationException("A command instance may only be invoked once");
-            }
-
+            // This doesn't adhere to the OnFailure action because it's a bug in the code
+            // and should always throw so people see it and fix it.
+            EnsureSingleInvoke(command);
+            
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
 
             var invokeStopwatch = Stopwatch.StartNew();
@@ -66,38 +90,24 @@ namespace Hudl.Mjolnir.Command
                     command.PoolKey,
                     command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
 
-                // TODO soon, this comment may not be true
-                // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
                 var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, cts.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
-                return result;
+                return new CommandResult<TResult>(result, status);
             }
             catch (Exception e)
             {
-                var tokenSourceCancelled = cts.IsCancellationRequested;
                 executeStopwatch.Stop();
-                var instigator = GetCommandFailedException(e, tokenSourceCancelled, out status).WithData(new
+
+                // TODO document new behavior here - exceptions aren't wrapped anymore. fallbacks removed.
+                status = GetCompletionStatus(e, cts);
+                AttachCommandExceptionData(command, e, status);
+
+                if (failureAction == OnFailure.Throw)
                 {
-                    Command = command.Name,
-                    Timeout = (command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled"),
-                    Status = status,
-                    Breaker = command.BreakerKey,
-                    Pool = command.PoolKey,
-                });
+                    throw;
+                }
 
-                // We don't log the exception here - that's intentional.
-
-                // If a fallback is not implemented, the exception will get re-thrown and (hopefully) caught
-                // and logged by an upstream container. This is the majority of cases, so logging here
-                // results in a lot of extra, unnecessary logs and stack traces.
-
-                // If a fallback is implemented, the burden is on the implementation to log or rethrow the
-                // exception. Otherwise it'll be eaten. This is documented on the Fallback() method.
-
-                // TODO re-think fallbacks; what of async vs. sync support?
-                // - should fallbacks be interface-driven, e.g. AsyncFallback / SyncFallback?
-
-                return TryFallback(instigator);
+                return new CommandResult<TResult>(default(TResult), status, e);
             }
             finally
             {
@@ -108,13 +118,12 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        public TResult Invoke<TResult>(SyncCommand<TResult> command)
+        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null)
         {
-            if (Interlocked.CompareExchange(ref command._hasInvoked, 1, 0) > 0)
-            {
-                throw new InvalidOperationException("A command instance may only be invoked once");
-            }
-
+            // This doesn't adhere to the OnFailure action because it's a bug in the code
+            // and should always throw so people see it and fix it.
+            EnsureSingleInvoke(command);
+            
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
 
             var invokeStopwatch = Stopwatch.StartNew();
@@ -127,45 +136,30 @@ namespace Hudl.Mjolnir.Command
 
             try
             {
-                // TODO rename "InvokeAsync" in the log here?
                 log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
                     command.Name,
                     command.BreakerKey,
                     command.PoolKey,
                     command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
 
-                // TODO soon, this comment may not be true
-                // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
                 var result = _bulkheadInvoker.ExecuteWithBulkhead(command, cts.Token);
                 executeStopwatch.Stop();
-                return result;
+                return new CommandResult<TResult>(result, status);
             }
             catch (Exception e)
             {
-                var tokenSourceCancelled = cts.IsCancellationRequested;
                 executeStopwatch.Stop();
-                var instigator = GetCommandFailedException(e, tokenSourceCancelled, out status).WithData(new
+
+                // TODO document new behavior here - exceptions aren't wrapped anymore. fallbacks removed.
+                status = GetCompletionStatus(e, cts);
+                AttachCommandExceptionData(command, e, status);
+
+                if (failureAction == OnFailure.Throw)
                 {
-                    Command = command.Name,
-                    Timeout = (command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled"),
-                    Status = status,
-                    Breaker = command.BreakerKey,
-                    Pool = command.PoolKey,
-                });
+                    throw;
+                }
 
-                // We don't log the exception here - that's intentional.
-
-                // If a fallback is not implemented, the exception will get re-thrown and (hopefully) caught
-                // and logged by an upstream container. This is the majority of cases, so logging here
-                // results in a lot of extra, unnecessary logs and stack traces.
-
-                // If a fallback is implemented, the burden is on the implementation to log or rethrow the
-                // exception. Otherwise it'll be eaten. This is documented on the Fallback() method.
-
-                // TODO re-think fallbacks; what of async vs. sync support?
-                // - should fallbacks be interface-driven, e.g. AsyncFallback / SyncFallback?
-
-                return TryFallback(instigator);
+                return new CommandResult<TResult>(default(TResult), status, e);
             }
             finally
             {
@@ -176,37 +170,128 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-
-
-        private static CommandFailedException GetCommandFailedException(Exception e, bool timeoutTokenTriggered, out CommandCompletionStatus status)
+        private void EnsureSingleInvoke(BaseCommand command)
         {
-            status = CommandCompletionStatus.Faulted;
-            if (IsCancellationException(e))
+            if (Interlocked.CompareExchange(ref command._hasInvoked, 1, 0) > 0)
+            {
+                throw new InvalidOperationException("A command instance may only be invoked once");
+            }
+        }
+        
+        private static CommandCompletionStatus GetCompletionStatus(Exception exception, CancellationTokenSource cts)
+        {
+            if (IsCancellationException(exception))
             {
                 // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
                 // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
                 // cancelled from the client side.
-                if (timeoutTokenTriggered)
+                if (cts.IsCancellationRequested)
                 {
-                    status = CommandCompletionStatus.TimedOut;
-                    return new CommandTimeoutException(e);
+                    return CommandCompletionStatus.TimedOut;
                 }
-                status = CommandCompletionStatus.Canceled;
-                return new CommandCancelledException(e);
+
+                return CommandCompletionStatus.Canceled;
             }
 
-            if (e is CircuitBreakerRejectedException || e is IsolationThreadPoolRejectedException)
+            if (exception is CircuitBreakerRejectedException || exception is IsolationThreadPoolRejectedException)
             {
-                status = CommandCompletionStatus.Rejected;
-                return new CommandRejectedException(e);
+                return CommandCompletionStatus.Rejected;
             }
 
-            return new CommandFailedException(e);
+            return CommandCompletionStatus.Faulted;
+        }
+
+        private void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status)
+        {
+            // TODO document that "Pool" changed to "Bulkhead"
+
+            exception.WithData(new
+            {
+                Command = command.Name,
+                Timeout = (command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled"),
+                Status = status,
+                Breaker = command.BreakerKey,
+                Bulkhead = command.PoolKey,
+            });
         }
 
         private static bool IsCancellationException(Exception e)
         {
             return (e is TaskCanceledException || e is OperationCanceledException);
+        }
+
+        //private TResult TryFallback<TResult>(BaseCommand<TResult> command, CommandFailedException instigator)
+        //{
+        //    var semaphore = CommandContext.GetFallbackSemaphore(command.PoolKey);
+
+        //    var stopwatch = Stopwatch.StartNew();
+        //    var fallbackStatus = FallbackStatus.Success;
+
+        //    if (!semaphore.TryEnter())
+        //    {
+        //        _stats.Elapsed(command.StatsPrefix + " fallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
+
+        //        instigator.FallbackStatus = FallbackStatus.Rejected;
+        //        throw instigator;
+        //    }
+
+        //    try
+        //    {
+        //        return command.Fallback(instigator);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        var cfe = e as CommandFailedException;
+
+        //        if (cfe != null && !cfe.IsFallbackImplemented)
+        //        {
+        //            // This was rethrown from the default Fallback() implementation (here in the Command class).
+        //            fallbackStatus = FallbackStatus.NotImplemented;
+        //        }
+        //        else
+        //        {
+        //            fallbackStatus = FallbackStatus.Failure;
+        //        }
+
+        //        if (cfe != null)
+        //        {
+        //            cfe.FallbackStatus = fallbackStatus;
+        //        }
+
+        //        throw;
+        //    }
+        //    finally
+        //    {
+        //        semaphore.Release();
+
+        //        stopwatch.Stop();
+        //        _stats.Elapsed(command.StatsPrefix + " fallback", fallbackStatus.ToString(), stopwatch.Elapsed);
+        //    }
+        //}
+    }
+
+    // Failure is any of [Fault || Timeout || Reject]
+    public enum OnFailure
+    {
+        Throw,
+        Return,
+    }
+    
+    public sealed class CommandResult<TResult>
+    {
+        private readonly TResult _value;
+        private readonly CommandCompletionStatus _status;
+        private readonly Exception _exception;
+
+        public TResult Value { get { return _value; } }
+        public CommandCompletionStatus Status { get { return _status; } }
+        public Exception Exception { get { return _exception; } }
+
+        internal CommandResult(TResult value, CommandCompletionStatus status, Exception exception = null)
+        {
+            _value = value;
+            _status = status;
+            _exception = exception;
         }
     }
 }
