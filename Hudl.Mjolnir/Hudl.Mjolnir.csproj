@@ -73,6 +73,7 @@
     <Compile Include="Command\Attribute\CommandTimeoutAttribute.cs" />
     <Compile Include="Command\Attribute\FireAndForgetAttribute.cs" />
     <Compile Include="Command\Attribute\InvocationCommand.cs" />
+    <Compile Include="Command\BaseCommand.cs" />
     <Compile Include="Command\Command.cs" />
     <Compile Include="Command\CommandCancelledException.cs" />
     <Compile Include="Command\CommandContext.cs" />
