@@ -15,7 +15,7 @@ namespace Hudl.Mjolnir.Command
         private readonly GroupKey _group;
         private readonly string _name;
         private readonly GroupKey _breakerKey;
-        private readonly GroupKey _poolKey;
+        private readonly GroupKey _bulkheadKey;
         
         // 0 == not yet invoked, > 0 == invoked
         internal int _hasInvoked = 0;
@@ -27,7 +27,7 @@ namespace Hudl.Mjolnir.Command
         /// If the group contains dots, they'll be converted to dashes.
         /// 
         /// The provided <code>isolationKey</code> will be used as both the
-        /// breaker and pool keys.
+        /// breaker and bulkhead keys.
         /// 
         /// Command timeouts can be configured at runtime. Configuration keys
         /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
@@ -36,7 +36,7 @@ namespace Hudl.Mjolnir.Command
         /// 
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
-        /// <param name="isolationKey">Breaker and pool key to use.</param>
+        /// <param name="isolationKey">Breaker and bulkhead key to use.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
         protected BaseCommand(string group, string isolationKey, TimeSpan defaultTimeout)
             : this(group, null, isolationKey, isolationKey, defaultTimeout)
@@ -56,13 +56,13 @@ namespace Hudl.Mjolnir.Command
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="breakerKey">Breaker to use for this command.</param>
-        /// <param name="poolKey">Pool to use for this command.</param>
+        /// <param name="bulkheadKey">Bulkhead to use for this command.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise configured.</param>
-        protected BaseCommand(string group, string breakerKey, string poolKey, TimeSpan defaultTimeout)
-            : this(group, null, breakerKey, poolKey, defaultTimeout)
+        protected BaseCommand(string group, string breakerKey, string bulkheadKey, TimeSpan defaultTimeout)
+            : this(group, null, breakerKey, bulkheadKey, defaultTimeout)
         { }
 
-        internal BaseCommand(string group, string name, string breakerKey, string poolKey, TimeSpan defaultTimeout)
+        internal BaseCommand(string group, string name, string breakerKey, string bulkheadKey, TimeSpan defaultTimeout)
         {
             if (string.IsNullOrWhiteSpace(group))
             {
@@ -74,9 +74,9 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("breakerKey");
             }
 
-            if (string.IsNullOrWhiteSpace(poolKey))
+            if (string.IsNullOrWhiteSpace(bulkheadKey))
             {
-                throw new ArgumentNullException("poolKey");
+                throw new ArgumentNullException("bulkheadKey");
             }
 
             if (defaultTimeout.TotalMilliseconds <= 0)
@@ -87,7 +87,7 @@ namespace Hudl.Mjolnir.Command
             _group = GroupKey.Named(group);
             _name = string.IsNullOrWhiteSpace(name) ? GenerateAndCacheName(Group) : CacheProvidedName(Group, name);
             _breakerKey = GroupKey.Named(breakerKey);
-            _poolKey = GroupKey.Named(poolKey);
+            _bulkheadKey = GroupKey.Named(bulkheadKey);
             
             Timeout = GetCommandTimeout(defaultTimeout);
         }
@@ -160,9 +160,9 @@ namespace Hudl.Mjolnir.Command
             get { return _breakerKey; }
         }
 
-        internal GroupKey PoolKey
+        internal GroupKey BulkheadKey
         {
-            get { return _poolKey; }
+            get { return _bulkheadKey; }
         }
 
         internal string StatsPrefix

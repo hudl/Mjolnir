@@ -1,7 +1,7 @@
 ﻿using Hudl.Common.Extensions;
 using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.External;
-using Hudl.Mjolnir.ThreadPool;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -10,22 +10,6 @@ using System.Threading.Tasks;
 
 namespace Hudl.Mjolnir.Command
 {
-    // TODO what if, instead of TResult, commands wrapped the desired result
-    //   e.g. CommandResult<TResult>
-    //
-    // Invoker could let the caller specify different behavior on failure
-    // - Default fault behavior = throw? FaultMode.Throw / FaultMode.ReturnNull
-    // - Is FaultMode different from TimeoutMode?
-    // 
-    // A deeper question here - do we expect every specific interaction to have its
-    // own Command? e.g. an S3 GET for annotations would have a completely separate command
-    // than an S3 GET for an attachment?
-    //
-    // Attachments may have a tolerance for a higher timeout. Should/could the invoker
-    // allow for overriding the timeout on that call? Should that be configurable?
-    //
-    // What do people want 99% of the time on faults? timeouts?
-
     public interface ICommandInvoker
     {
         Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null);
@@ -38,10 +22,8 @@ namespace Hudl.Mjolnir.Command
     }
 
     // TODO add ConfigureAwait(false) where necessary
-    // TODO can breaker/pool/etc. be moved off of the Command object and into the invoker methods?
-    // - yes, but what are the implications to unit testing?
 
-    // TODO wire in the timeout argument
+    // TODO wire in the timeout argument for the invoke methods here
     // TODO what do timeouts/cancellations look like in exceptions now? make sure we didn't revert that logging change
 
     public class CommandInvoker : ICommandInvoker
@@ -88,7 +70,7 @@ namespace Hudl.Mjolnir.Command
                 log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
                     command.Name,
                     command.BreakerKey,
-                    command.PoolKey,
+                    command.BulkheadKey,
                     command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
 
                 var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, cts.Token).ConfigureAwait(false);
@@ -140,7 +122,7 @@ namespace Hudl.Mjolnir.Command
                 log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
                     command.Name,
                     command.BreakerKey,
-                    command.PoolKey,
+                    command.BulkheadKey,
                     command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled");
 
                 var result = _bulkheadInvoker.ExecuteWithBulkhead(command, cts.Token);
@@ -194,7 +176,7 @@ namespace Hudl.Mjolnir.Command
                 return CommandCompletionStatus.Canceled;
             }
 
-            if (exception is CircuitBreakerRejectedException || exception is IsolationThreadPoolRejectedException)
+            if (exception is CircuitBreakerRejectedException || exception is BulkheadRejectedException)
             {
                 return CommandCompletionStatus.Rejected;
             }
@@ -212,7 +194,7 @@ namespace Hudl.Mjolnir.Command
                 Timeout = (command.Timeout.HasValue ? command.Timeout.Value.TotalMilliseconds.ToString() : "Disabled"),
                 Status = status,
                 Breaker = command.BreakerKey,
-                Bulkhead = command.PoolKey,
+                Bulkhead = command.BulkheadKey,
             });
         }
 

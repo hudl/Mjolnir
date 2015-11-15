@@ -65,6 +65,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bulkhead\BulkheadRejectedException.cs" />
+    <Compile Include="Bulkhead\SemaphoreBulkhead.cs" />
     <Compile Include="Command\BreakerInvoker.cs" />
     <Compile Include="Breaker\CircuitBreakerRejectedException.cs" />
     <Compile Include="Breaker\FailurePercentageCircuitBreaker.cs" />
@@ -113,6 +115,7 @@
     <None Include="Hudl.Mjolnir.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
