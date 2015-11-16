@@ -96,12 +96,14 @@ namespace Hudl.Mjolnir.Command
             // Timeout (which is defined by the command author and is treated as a "catch-all"),
             // It's also more specific than the Configured Timeout, which is a way to tune
             // the Constructor Timeout more specifically (i.e. still "catch-all" behavior).
-            if (invocationTimeoutMillis.HasValue && invocationTimeoutMillis.Value > 0)
+            if (invocationTimeoutMillis.HasValue && invocationTimeoutMillis.Value >= 0)
             {
-                // TODO anything if the passed-in value is <= 0? log a warn? probably don't
+                // TODO anything if the passed-in value is < 0? log a warn? probably don't
                 // want to kill the call.
                 return TimeSpan.FromMilliseconds(invocationTimeoutMillis.Value);
             }
+
+            // TODO allow configured "0" values here to immediately time out calls?
 
             var configured = GetTimeoutConfigurableValue(_name).Value;
             if (configured > 0)

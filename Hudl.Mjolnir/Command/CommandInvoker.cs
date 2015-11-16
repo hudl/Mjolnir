@@ -84,6 +84,8 @@ namespace Hudl.Mjolnir.Command
             return InvokeAsync(command, failureAction, informative);
         }
 
+        // TODO have the command naming logic remove "AsyncCommand" suffixes as well
+
         private async Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
         {
             // This doesn't adhere to the OnFailure action because it's a bug in the code
@@ -101,7 +103,10 @@ namespace Hudl.Mjolnir.Command
                     command.BreakerKey,
                     command.BulkheadKey,
                     GetTimeoutForLog(ct.Timeout));
-                
+
+                // If we've already timed out or been canceled, skip execution altogether.
+                ct.Token.ThrowIfCancellationRequested();
+
                 var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
                 stopwatch.Stop();
 
@@ -164,6 +169,9 @@ namespace Hudl.Mjolnir.Command
                     command.BulkheadKey,
                     GetTimeoutForLog(ct.Timeout));
 
+                // If we've already timed out or been canceled, skip execution altogether.
+                ct.Token.ThrowIfCancellationRequested();
+
                 var result = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
                 stopwatch.Stop();
 
@@ -215,7 +223,7 @@ namespace Hudl.Mjolnir.Command
                 // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
                 // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
                 // cancelled from the client side.
-                if (ct.Token.IsCancellationRequested)
+                if (ct.IsTimeoutToken && ct.Token.IsCancellationRequested)
                 {
                     return CommandCompletionStatus.TimedOut;
                 }
@@ -239,7 +247,7 @@ namespace Hudl.Mjolnir.Command
                 Status = status,
                 Breaker = command.BreakerKey,
                 Bulkhead = command.BulkheadKey,
-                Timeout = GetTimeoutForLog(ct.Timeout),
+                TimeoutMillis = GetTimeoutForLog(ct.Timeout),
                 ElapsedMillis = invokeTimer.Elapsed.TotalMilliseconds,
             });
         }
@@ -249,9 +257,9 @@ namespace Hudl.Mjolnir.Command
             return (e is TaskCanceledException || e is OperationCanceledException);
         }
 
-        private static string GetTimeoutForLog(TimeSpan? timeout)
+        private static object GetTimeoutForLog(TimeSpan? timeout)
         {
-            return (timeout.HasValue ? timeout.Value.ToString() : "Disabled");
+            return (timeout.HasValue ? (int) timeout.Value.TotalMilliseconds : (object) "Disabled");
         }
     }
 

@@ -2,6 +2,7 @@
 using System;
 using System.Threading.Tasks;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Key;
 using Moq;
 using Xunit;
 using System.Threading;
@@ -62,9 +63,8 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 // Successful command execution should return a wrapped CommandResult.
 
-                var expectedTimeoutUsed = TimeSpan.FromSeconds(10);
                 const bool expectedResultValue = true;
-                var command = new NoOpAsyncCommand(expectedTimeoutUsed);
+                var command = new NoOpAsyncCommand();
                 
                 var mockStats = new Mock<IStats>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -87,9 +87,8 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 // Successful command execution should return a wrapped CommandResult.
 
-                var expectedTimeoutUsed = TimeSpan.FromSeconds(10);
                 const bool expectedResultValue = true;
-                var command = new NoOpAsyncCommand(expectedTimeoutUsed);
+                var command = new NoOpAsyncCommand();
 
                 var mockStats = new Mock<IStats>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -108,10 +107,155 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(true, result.Value);
             }
 
+            [Fact]
+            public async Task CanceledExecution_FailureModeThrow_Throws()
+            {
+                // When failure mode is Throw, cancellation should result in an exception. Note
+                // that cancellation is different from timeouts (tested below). Timeouts are a
+                // specific form of cancellation, and get logged/tracked as timeouts instead of
+                // general "cancellations".
 
+                var command = new NoOpAsyncCommand();
 
-            // cancel + throw failureaction
-            // cancel + return failureaction
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+                var expiredToken = new CancellationToken(true);
+
+                // We're testing the combination of OnFailure.Throw and the expired token here.
+                var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => invoker.InvokeAsync(command, OnFailure.Throw, expiredToken));
+
+                // We shouldn't have even attempted the execution since the token was expired upon
+                // entering the method.
+                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
+
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Canceled", It.IsAny<TimeSpan>()));
+                Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.Canceled, exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
+                Assert.Equal("Disabled", exception.Data["TimeoutMillis"]);
+                Assert.True((double) exception.Data["ElapsedMillis"] >= 0);
+            }
+
+            [Fact]
+            public async Task CanceledExecution_FailureModeReturn_Returns()
+            {
+                // When failure mode is Return, cancellation shouldn't throw, and should instead
+                // return a result object with error information. Note that cancellation is
+                // different from timeouts (tested below). Timeouts are a specific form of
+                // cancellation, and get logged/tracked as timeouts instead of general
+                // "cancellations".
+
+                // When a command fails and failure mode is Return, the value of the result will
+                // be default(Type). Our test Command uses a bool, so we should expect a false.
+                // Callers shouldn't be checking the result, anyway - if they're using the
+                // Return failure mode, they should be checking for success first.
+                const bool expectedResultValue = default(bool);
+                var command = new NoOpAsyncCommand();
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+
+                // We're testing the combination of OnFailure.Return and the expired token here.
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+                var expiredToken = new CancellationToken(true);
+                
+                // Shouldn't throw.
+                var result = await invoker.InvokeAsync(command, OnFailure.Return, expiredToken);
+
+                // We shouldn't have even attempted the execution since the token was expired upon
+                // entering the method.
+                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
+                
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Canceled", It.IsAny<TimeSpan>()));
+                
+                Assert.NotNull(result.Exception);
+                Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
+                Assert.Equal("test.NoOpAsync", result.Exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.Canceled, result.Exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Bulkhead"]);
+                Assert.Equal("Disabled", result.Exception.Data["TimeoutMillis"]);
+                Assert.True((double) result.Exception.Data["ElapsedMillis"] >= 0);
+
+                Assert.Equal(CommandCompletionStatus.Canceled, result.Status);
+                Assert.Equal(expectedResultValue, result.Value);
+            }
+
+            [Fact]
+            public async Task TimeoutExecution_FailureModeThrow_Throws()
+            {
+                // When failure mode is Throw, timeouts should result in an exception. Timeouts
+                // are a specific form of cancellation, and get logged/tracked as timeouts instead
+                // of general "cancellations".
+
+                var command = new DelayAsyncCommand(1);
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+                
+                // We're testing the combination of OnFailure.Throw and the timeout here.
+                var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => invoker.InvokeAsync(command, OnFailure.Throw, 0));
+
+                // We shouldn't have even attempted the execution since the timeout expired by the
+                // time we entered the method.
+                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
+
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.DelayAsync execute", "TimedOut", It.IsAny<TimeSpan>()));
+                Assert.Equal("test.DelayAsync", exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.TimedOut, exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
+                Assert.Equal(0, exception.Data["TimeoutMillis"]);
+                Assert.True((double)exception.Data["ElapsedMillis"] >= 0);
+            }
+
+            [Fact]
+            public async Task TimeoutExecution_FailureModeReturn_Returns()
+            {
+                // When failure mode is Return, cancellation shouldn't throw, and should instead
+                // return a result object with error information. Timeouts are a specific form of
+                // cancellation, and get logged/tracked as timeouts instead of general
+                // "cancellations".
+
+                // When a command fails and failure mode is Return, the value of the result will
+                // be default(Type). Our test Command uses a bool, so we should expect a false.
+                // Callers shouldn't be checking the result, anyway - if they're using the
+                // Return failure mode, they should be checking for success first.
+                const bool expectedResultValue = default(bool);
+                
+                var command = new DelayAsyncCommand(1);
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+
+                // We're testing the combination of OnFailure.Return and the timeout here.
+                var result = await invoker.InvokeAsync(command, OnFailure.Return, 0);
+
+                // We shouldn't have even attempted the execution since the timeout expired by the
+                // time we entered the method.
+                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
+
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.DelayAsync execute", "TimedOut", It.IsAny<TimeSpan>()));
+
+                Assert.NotNull(result.Exception);
+                Assert.Equal("test.DelayAsync", result.Exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.TimedOut, result.Exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Bulkhead"]);
+                Assert.Equal(0, result.Exception.Data["TimeoutMillis"]);
+                Assert.True((double) result.Exception.Data["ElapsedMillis"] >= 0);
+
+                Assert.Equal(CommandCompletionStatus.TimedOut, result.Status);
+                Assert.Equal(expectedResultValue, result.Value);
+            }
+
             // fault + throw failureaction
             // fault + return failureaction
             // reject + throw failureaction
@@ -121,10 +265,12 @@ namespace Hudl.Mjolnir.Tests.Command
             
             // for each test:
             // - assert "Invoke" log written
-            // - assert bulkhead called appropriately
+            // - assert bulkhead called appropriately (or not at all, if applicable)
             // - assert stat written
             // - assert exception data is correct
             // - if returning, assert result properties
+
+            // TODO repeat all the tests for sync calls
 
         }
     }
@@ -133,7 +279,9 @@ namespace Hudl.Mjolnir.Tests.Command
     // result and returns. Use this when you don't care what the Command actually does.
     internal class NoOpAsyncCommand : AsyncCommand<bool>
     {
-        public NoOpAsyncCommand() : this(TimeSpan.FromSeconds(10)) { }
+        // High default to avoid unplanned timeouts. Tests should specify a timeout if they want
+        // to test timeout behavior.
+        public NoOpAsyncCommand() : this(TimeSpan.FromHours(1)) { }
         public NoOpAsyncCommand(TimeSpan timeout) : base("test", "test", timeout) { }
         
         protected internal override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
@@ -142,44 +290,21 @@ namespace Hudl.Mjolnir.Tests.Command
         }
     }
 
-    //// Async command that does nothing, but goes async (off the current thread) for a short while
-    //// using a Task.Delay(). Use this when you don't care what the Command actually does.
-    //internal class NoOpOffThreadAsyncCommand : AsyncCommand<bool>
-    //{
-    //    public NoOpOffThreadAsyncCommand() : base("test", "test", TimeSpan.FromMilliseconds(10000))
-    //    { }
+    internal class DelayAsyncCommand : AsyncCommand<bool>
+    {
+        private readonly int _millis;
 
-    //    protected internal override async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
-    //    {
-    //        await Task.Delay(10, cancellationToken);
-    //        return true;
-    //    }
-    //}
+        // High default to avoid unplanned timeouts. Tests should specify a timeout if they want
+        // to test timeout behavior.
+        public DelayAsyncCommand(int millis) : base("test", "test", TimeSpan.FromHours(1))
+        {
+            _millis = millis;
+        }
 
-    //// Async command that's successful (i.e. doesn't fault). Doesn't actually go async; it wraps a
-    //// synchronous result and returns it.
-    //internal class SuccessfulOnThreadAsyncCommand : AsyncCommand<bool>
-    //{
-    //    public SuccessfulOnThreadAsyncCommand() : base("test", "test", TimeSpan.FromMilliseconds(10000))
-    //    { }
-        
-    //    protected internal override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
-    //    {
-    //        return Task.FromResult(true);
-    //    }
-    //}
-
-    //// Async command that's successful (i.e. doesn't fault). Goes async off the current thread for
-    //// a short while using a Task.Delay().
-    //internal class SuccessfulOffThreadAsyncCommand : AsyncCommand<bool>
-    //{
-    //    public SuccessfulOffThreadAsyncCommand() : base("test", "test", TimeSpan.FromMilliseconds(10000))
-    //    { }
-
-    //    protected internal override async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
-    //    {
-    //        await Task.Delay(10, cancellationToken);
-    //        return true;
-    //    }
-    //}
+        protected internal override async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+        {
+            await Task.Delay(_millis, cancellationToken);
+            return true;
+        }
+    }
 }
