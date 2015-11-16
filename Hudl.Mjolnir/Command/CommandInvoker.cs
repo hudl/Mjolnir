@@ -1,4 +1,5 @@
 ﻿using Hudl.Common.Extensions;
+using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.External;
@@ -12,8 +13,13 @@ namespace Hudl.Mjolnir.Command
 {
     public interface ICommandInvoker
     {
-        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null);
-        CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null);
+        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction);
+        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis);
+        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct);
+
+        CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction);
+        CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis);
+        CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct);
 
         // TODO possible alternate signatures:
         // 
@@ -25,6 +31,14 @@ namespace Hudl.Mjolnir.Command
 
     public class CommandInvoker : ICommandInvoker
     {
+        /// <summary>
+        /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the
+        /// default timeout. This is likely to be useful when debugging Command-decorated methods,
+        /// however it is not advisable to use in a production environment since it disables some
+        /// of Mjolnir's key protection features.
+        /// </summary>
+        private static readonly IConfigurableValue<bool> IgnoreCommandTimeouts = new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
+
         private readonly IStats _stats;
 
         // TODO kind of ugly, rework this. they're lightweight to construct, though, and
@@ -51,41 +65,54 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        public async Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null)
+        public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction)
+        {
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAsync(command, failureAction, token);
+        }
+
+        public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis)
+        {
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAsync(command, failureAction, token);
+        }
+
+        // TODO doesn't protect against None/default tokens. Should it?
+        public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
+        {
+            var informative = InformativeCancellationToken.ForCancellationToken(ct);
+            return InvokeAsync(command, failureAction, informative);
+        }
+
+        private async Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
         {
             // This doesn't adhere to the OnFailure action because it's a bug in the code
             // and should always throw so people see it and fix it.
             EnsureSingleInvoke(command);
             
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
-            var timeout = command.GetActualTimeout(timeoutMillis);
-
-            var invokeStopwatch = Stopwatch.StartNew();
-            var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
-            
-            var cts = timeout.HasValue
-                ? new CancellationTokenSource(timeout.Value)
-                : new CancellationTokenSource();
+            var stopwatch = Stopwatch.StartNew();
 
             try
             {
-                log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
+                log.InfoFormat("Invoke Command={0} Breaker={1} Bulkhead={2} Timeout={3}",
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    GetTimeoutForLog(timeout));
+                    GetTimeoutForLog(ct.Timeout));
+                
+                var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
+                stopwatch.Stop();
 
-                var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, cts.Token).ConfigureAwait(false);
-                executeStopwatch.Stop();
                 return new CommandResult<TResult>(result, status);
             }
             catch (Exception e)
             {
-                executeStopwatch.Stop();
+                stopwatch.Stop();
 
-                status = GetCompletionStatus(e, cts);
-                AttachCommandExceptionData(command, e, status, timeout);
+                status = GetCompletionStatus(e, ct);
+                AttachCommandExceptionData(command, e, status, ct, stopwatch);
 
                 if (failureAction == OnFailure.Throw)
                 {
@@ -96,48 +123,58 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                invokeStopwatch.Stop();
-
-                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
-                _stats.Elapsed(command.StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
+                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
             }
         }
 
-        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null)
+        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction)
+        {
+            var token = GetCancellationTokenForCommand(command);
+            return Invoke(command, failureAction, token);
+        }
+
+        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis)
+        {
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return Invoke(command, failureAction, token);
+        }
+
+        // TODO doesn't protect against None/default tokens. Should it?
+        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
+        {
+            var informative = InformativeCancellationToken.ForCancellationToken(ct);
+            return Invoke(command, failureAction, informative);
+        }
+
+        private CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
         {
             // This doesn't adhere to the OnFailure action because it's a bug in the code
             // and should always throw so people see it and fix it.
             EnsureSingleInvoke(command);
             
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
-            var timeout = command.GetActualTimeout(timeoutMillis);
-
-            var invokeStopwatch = Stopwatch.StartNew();
-            var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
-
-            var cts = timeout.HasValue
-                ? new CancellationTokenSource(timeout.Value)
-                : new CancellationTokenSource();
-
+            var stopwatch = Stopwatch.StartNew();
+            
             try
             {
-                log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
+                log.InfoFormat("Invoke Command={0} Breaker={1} Bulkhead={2} Timeout={3}",
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    GetTimeoutForLog(timeout));
+                    GetTimeoutForLog(ct.Timeout));
 
-                var result = _bulkheadInvoker.ExecuteWithBulkhead(command, cts.Token);
-                executeStopwatch.Stop();
+                var result = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
+                stopwatch.Stop();
+
                 return new CommandResult<TResult>(result, status);
             }
             catch (Exception e)
             {
-                executeStopwatch.Stop();
+                stopwatch.Stop();
 
-                status = GetCompletionStatus(e, cts);
-                AttachCommandExceptionData(command, e, status, timeout);
+                status = GetCompletionStatus(e, ct);
+                AttachCommandExceptionData(command, e, status, ct, stopwatch);
 
                 if (failureAction == OnFailure.Throw)
                 {
@@ -148,14 +185,22 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                invokeStopwatch.Stop();
-
-                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
-                _stats.Elapsed(command.StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
+                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
             }
         }
 
-        private void EnsureSingleInvoke(BaseCommand command)
+        private static InformativeCancellationToken GetCancellationTokenForCommand(BaseCommand command, long? invocationTimeout = null)
+        {
+            if (IgnoreCommandTimeouts.Value)
+            {
+                return InformativeCancellationToken.ForCancellationToken(CancellationToken.None);
+            }
+
+            var timeout = command.DetermineTimeout(invocationTimeout);
+            return InformativeCancellationToken.ForTimeout(timeout);
+        }
+
+        private static void EnsureSingleInvoke(BaseCommand command)
         {
             if (Interlocked.CompareExchange(ref command._hasInvoked, 1, 0) > 0)
             {
@@ -163,14 +208,14 @@ namespace Hudl.Mjolnir.Command
             }
         }
         
-        private static CommandCompletionStatus GetCompletionStatus(Exception exception, CancellationTokenSource cts)
+        private static CommandCompletionStatus GetCompletionStatus(Exception exception, InformativeCancellationToken ct)
         {
             if (IsCancellationException(exception))
             {
                 // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
                 // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
                 // cancelled from the client side.
-                if (cts.IsCancellationRequested)
+                if (ct.Token.IsCancellationRequested)
                 {
                     return CommandCompletionStatus.TimedOut;
                 }
@@ -186,17 +231,16 @@ namespace Hudl.Mjolnir.Command
             return CommandCompletionStatus.Faulted;
         }
 
-        private void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status, TimeSpan? timeout)
+        private static void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status, InformativeCancellationToken ct, Stopwatch invokeTimer)
         {
-            // TODO document that "Pool" changed to "Bulkhead"
-
             exception.WithData(new
             {
                 Command = command.Name,
-                Timeout = GetTimeoutForLog(timeout),
                 Status = status,
                 Breaker = command.BreakerKey,
                 Bulkhead = command.BulkheadKey,
+                Timeout = GetTimeoutForLog(ct.Timeout),
+                ElapsedMillis = invokeTimer.Elapsed.TotalMilliseconds,
             });
         }
 
@@ -233,6 +277,47 @@ namespace Hudl.Mjolnir.Command
             _value = value;
             _status = status;
             _exception = exception;
+        }
+    }
+
+    // Keeps track of how a CancellationToken was formed, where possible.
+    // This is mostly for diagnostic purposes and logging.
+    internal struct InformativeCancellationToken
+    {
+        private readonly CancellationToken _token;
+        private readonly TimeSpan? _timeout;
+
+        public CancellationToken Token { get { return _token; } }
+        public bool IsTimeoutToken { get { return _timeout != null; } }
+        public TimeSpan? Timeout { get { return _timeout; } }
+
+        private InformativeCancellationToken(CancellationToken token)
+        {
+            _token = token;
+            _timeout = null;
+        }
+
+        private InformativeCancellationToken(TimeSpan timeout)
+        {
+            var source = new CancellationTokenSource(timeout);
+            _token = source.Token;
+            _timeout = timeout;
+        }
+        
+        public static InformativeCancellationToken ForTimeout(long millis)
+        {
+            var timespan = TimeSpan.FromMilliseconds(millis);
+            return new InformativeCancellationToken(timespan);
+        }
+
+        public static InformativeCancellationToken ForTimeout(TimeSpan timeout)
+        {
+            return new InformativeCancellationToken(timeout);
+        }
+
+        public static InformativeCancellationToken ForCancellationToken(CancellationToken ct)
+        {
+            return new InformativeCancellationToken(ct);
         }
     }
 }
