@@ -255,7 +255,7 @@ namespace Hudl.Mjolnir.Command
         }
     }
 
-    // Failure is any of [Fault || Timeout || Reject]
+    // "Failure" is any of [Fault || Timeout || Reject]
     public enum OnFailure
     {
         Throw,
