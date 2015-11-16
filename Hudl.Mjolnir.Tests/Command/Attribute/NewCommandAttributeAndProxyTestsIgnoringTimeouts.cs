@@ -83,7 +83,10 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             ConfigProvider.Instance.Set(IgnoreTimeoutsKey, true);
             var classToProxy = new CancellableWithOverrunnningMethodTimeoutsIgnored();
             var proxy = CommandInterceptor.CreateProxy<ICancellableIgnoredTimeout>(classToProxy);
-            Assert.DoesNotThrow(() => proxy.CancellableMethod(CancellationToken.None));
+
+            // Should not throw.
+            proxy.CancellableMethod(CancellationToken.None);
+
             ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
         }
     }
