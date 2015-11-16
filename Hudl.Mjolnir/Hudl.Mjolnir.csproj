@@ -65,6 +65,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Bulkhead\BulkheadRejectedException.cs" />
+    <Compile Include="Bulkhead\SemaphoreBulkhead.cs" />
+    <Compile Include="Command\AsyncCommand.cs" />
+    <Compile Include="Command\BreakerInvoker.cs" />
     <Compile Include="Breaker\CircuitBreakerRejectedException.cs" />
     <Compile Include="Breaker\FailurePercentageCircuitBreaker.cs" />
     <Compile Include="Breaker\ICircuitBreaker.cs" />
@@ -73,12 +77,16 @@
     <Compile Include="Command\Attribute\CommandTimeoutAttribute.cs" />
     <Compile Include="Command\Attribute\FireAndForgetAttribute.cs" />
     <Compile Include="Command\Attribute\InvocationCommand.cs" />
+    <Compile Include="Command\BaseCommand.cs" />
+    <Compile Include="Command\BulkheadInvoker.cs" />
     <Compile Include="Command\Command.cs" />
     <Compile Include="Command\CommandCancelledException.cs" />
     <Compile Include="Command\CommandContext.cs" />
     <Compile Include="Command\CommandFailedException.cs" />
+    <Compile Include="Command\CommandInvoker.cs" />
     <Compile Include="Command\CommandRejectedException.cs" />
     <Compile Include="Command\CommandTimeoutException.cs" />
+    <Compile Include="Command\SyncCommand.cs" />
     <Compile Include="Command\VoidResult.cs" />
     <Compile Include="External\IgnoringStats.cs" />
     <Compile Include="External\IStats.cs" />
@@ -109,6 +117,7 @@
     <None Include="Hudl.Mjolnir.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

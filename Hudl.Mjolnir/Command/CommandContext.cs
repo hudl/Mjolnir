@@ -8,6 +8,7 @@ using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.ThreadPool;
 using Hudl.Mjolnir.Util;
+using Hudl.Mjolnir.Bulkhead;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -50,7 +51,10 @@ namespace Hudl.Mjolnir.Command
         // Thread pool global defaults.
         private static readonly IConfigurableValue<int> DefaultPoolThreadCount = new ConfigurableValue<int>("mjolnir.pools.default.threadCount", 10);
         private static readonly IConfigurableValue<int> DefaultPoolQueueLength = new ConfigurableValue<int>("mjolnir.pools.default.queueLength", 10);
-        
+
+        // Bulkhead global defaults.
+        private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkheads.default.maxConcurrent", 10);
+
         // Fallback global defaults.
         private static readonly IConfigurableValue<int> DefaultFallbackMaxConcurrent = new ConfigurableValue<int>("mjolnir.fallback.default.maxConcurrent", 50);
         
@@ -58,6 +62,7 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<IBulkheadSemaphore>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<IBulkheadSemaphore>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
         // This is a Dictionary only because there's no great concurrent Set type available. Just
@@ -165,6 +170,22 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", DefaultPoolQueueLength),
                     Stats));
         }
+
+        internal static IBulkheadSemaphore GetBulkhead(GroupKey key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException("key");
+            }
+
+            // TODO check GetOrAddSafe(), it may need fixing
+
+            return Instance._bulkheads.GetOrAddSafe(key, k =>
+                new SemaphoreBulkhead(new ConfigurableValue<int>("mjolnir.bulkheads." + key + ".maxConcurrent", DefaultBulkheadMaxConcurrent)));
+        }
+
+        // TODO deprecate "old" pool and command behavior?
+        // TODO go through all docs and doc comments and make sure they're accurate for the new changes
 
         internal static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
         {
