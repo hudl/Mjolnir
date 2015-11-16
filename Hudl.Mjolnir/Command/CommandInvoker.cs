@@ -21,7 +21,6 @@ namespace Hudl.Mjolnir.Command
         //   TResult InvokeAndUnwrapOrThrow<TResult>(...)
     }
 
-    // TODO add ConfigureAwait(false) where necessary
     // TODO what do timeouts/cancellations look like in exceptions now? make sure we didn't revert that logging change
 
     public class CommandInvoker : ICommandInvoker
@@ -71,7 +70,6 @@ namespace Hudl.Mjolnir.Command
 
             try
             {
-                // TODO renamed "InvokeAsync" in the log here, should be documented.
                 log.InfoFormat("Invoke Command={0} Breaker={1} Pool={2} Timeout={3}",
                     command.Name,
                     command.BreakerKey,
@@ -86,7 +84,6 @@ namespace Hudl.Mjolnir.Command
             {
                 executeStopwatch.Stop();
 
-                // TODO document new behavior here - exceptions aren't wrapped anymore. fallbacks removed.
                 status = GetCompletionStatus(e, cts);
                 AttachCommandExceptionData(command, e, status, timeout);
 
@@ -139,7 +136,6 @@ namespace Hudl.Mjolnir.Command
             {
                 executeStopwatch.Stop();
 
-                // TODO document new behavior here - exceptions aren't wrapped anymore. fallbacks removed.
                 status = GetCompletionStatus(e, cts);
                 AttachCommandExceptionData(command, e, status, timeout);
 
