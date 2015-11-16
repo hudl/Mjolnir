@@ -51,8 +51,8 @@ namespace Hudl.Mjolnir.Command
             try
             {
                 return UseCircuitBreakers.Value
-                    ? await _breakerInvoker.ExecuteWithBreakerAsync(command, ct)
-                    : await command.ExecuteAsync(ct);
+                    ? await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false)
+                    : await command.ExecuteAsync(ct).ConfigureAwait(false);
             }
             finally
             {

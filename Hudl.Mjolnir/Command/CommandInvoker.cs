@@ -27,23 +27,29 @@ namespace Hudl.Mjolnir.Command
     public class CommandInvoker : ICommandInvoker
     {
         private readonly IStats _stats;
-        private readonly IBulkheadInvoker _bulkheadInvoker;
 
-        public CommandInvoker()
+        // TODO kind of ugly, rework this. they're lightweight to construct, though, and
+        // callers shouldn't be repeatedly constructing invokers.
+        // TODO make sure callers know not to repeatedly construct invokers :)
+        private readonly IBulkheadInvoker _bulkheadInvoker = new BulkheadInvoker(new BreakerInvoker());
+
+        public CommandInvoker() : this(CommandContext.Stats)
         {
             _stats = CommandContext.Stats; // TODO any risk here? should we just DI this? possibly not.
-            _bulkheadInvoker = new BulkheadInvoker(new BreakerInvoker()); // TODO clean this up
         }
 
-        internal CommandInvoker(IStats stats)
+        internal CommandInvoker(IStats stats, IBulkheadInvoker bulkheadInvoker = null)
         {
             if (stats == null)
             {
                 throw new ArgumentNullException("stats");
             }
 
-            _stats = stats ?? CommandContext.Stats; // TODO any init risk here?
-            _bulkheadInvoker = new BulkheadInvoker(new BreakerInvoker()); // TODO clean this up
+            _stats = stats;
+            if (bulkheadInvoker != null)
+            {
+                _bulkheadInvoker = bulkheadInvoker;
+            }
         }
 
         public async Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long? timeoutMillis = null)

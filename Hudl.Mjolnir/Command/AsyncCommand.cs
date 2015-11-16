@@ -9,6 +9,7 @@ namespace Hudl.Mjolnir.Command
         public AsyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
         { }
 
+        // TODO do these have to be protected internal? maybe try reworking with some interfaces?
         protected internal abstract Task<TResult> ExecuteAsync(CancellationToken cancellationToken);
     }
 }

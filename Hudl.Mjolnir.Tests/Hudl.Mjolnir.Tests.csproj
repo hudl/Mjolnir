@@ -93,6 +93,7 @@
     <Compile Include="Command\CommandFallbackTests.cs" />
     <Compile Include="Command\CommandGroupKeyTests.cs" />
     <Compile Include="Command\CommandIgnoredTimeoutTests.cs" />
+    <Compile Include="Command\CommandInvokerTests.cs" />
     <Compile Include="Command\CommandTests.cs" />
     <Compile Include="Command\CommandThreadPoolTests.cs" />
     <Compile Include="Command\CommandTimeoutTests.cs" />
@@ -176,9 +177,9 @@
   <UsingTask AssemblyFile="../packages/xunit.runner.msbuild.2.0.0/build/portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
   <Target Name="UnitTest">
     <ItemGroup>
-      <TestAssemblies Include="bin\Release\Hudl.Mjolnir.Tests.dll"/>
+      <TestAssemblies Include="bin\Release\Hudl.Mjolnir.Tests.dll" />
     </ItemGroup>
-    <xunit Assemblies="@(TestAssemblies)" ParallelizeTestCollections="false"/>
+    <xunit Assemblies="@(TestAssemblies)" ParallelizeTestCollections="false" />
   </Target>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
