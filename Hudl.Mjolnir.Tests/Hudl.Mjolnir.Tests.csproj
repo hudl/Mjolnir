@@ -178,7 +178,7 @@
     <ItemGroup>
       <TestAssemblies Include="bin\Release\Hudl.Mjolnir.Tests.dll"/>
     </ItemGroup>
-    <xunit Assemblies="@(TestAssemblies)"/>
+    <xunit Assemblies="@(TestAssemblies)" ParallelizeTestCollections="false"/>
   </Target>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
