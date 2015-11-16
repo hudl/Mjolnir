@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -20,6 +21,12 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+
+// Disabled for now. A number of tests set static configuration state that,
+// when leaked between parallel tests, makes them quite sad. If we can find
+// a way to encapsulate that state, or perhaps just group those tests into
+// a non-parallelized group, we should revisit this.
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("070914b7-5f05-4d47-a275-98bb15754727")]

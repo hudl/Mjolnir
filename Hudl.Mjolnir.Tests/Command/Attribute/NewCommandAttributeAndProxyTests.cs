@@ -3,6 +3,7 @@ using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Command.Attribute;
 using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
+using Hudl.Config;
 
 namespace Hudl.Mjolnir.Tests.Command.Attribute
 {
@@ -64,6 +65,8 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         [Fact]
         public void ProxyPassesOnTokenToMethod_WhenTimeoutsNotIgnored()
         {
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
+
             var expectedResult = "test";
             var classToProxy = new CancellableWithTimeoutPreserved(expectedResult);
             var proxy = CommandInterceptor.CreateProxy<ICancellableTimeoutPreserved>(classToProxy);
@@ -78,6 +81,8 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         [Fact]
         public void MethodShouldTimeout_WhenTimeoutsAreNotIgnored()
         {
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
+
             var classToProxy = new CancellableWithOverrunnningMethod();
             var proxy = CommandInterceptor.CreateProxy<ICancellableTimeoutPreserved>(classToProxy);
             Assert.Throws<CommandTimeoutException>(() => proxy.CancellableMethod(CancellationToken.None));
