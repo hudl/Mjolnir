@@ -59,7 +59,7 @@ namespace Hudl.Mjolnir.Tests.Command
             // TODO test that the two non-CancellationToken overloads create the right cancellation tokens; after that, using the Token overload should be safe
 
             [Fact]
-            public async Task SuccessfulExecution_FailureModeThrow_ReturnsWrappedResult()
+            public async Task ExecuteSuccessful_FailureModeThrow_ReturnsWrappedResult()
             {
                 // Successful command execution should return a wrapped CommandResult.
 
@@ -83,7 +83,7 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             [Fact]
-            public async Task SuccessfulExecution_FailureModeReturn_ReturnsWrappedResult()
+            public async Task ExecuteSuccessful_FailureModeReturn_ReturnsWrappedResult()
             {
                 // Successful command execution should return a wrapped CommandResult.
 
@@ -108,7 +108,7 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             [Fact]
-            public async Task CanceledExecution_FailureModeThrow_Throws()
+            public async Task ExecutionCanceled_FailureModeThrow_Throws()
             {
                 // When failure mode is Throw, cancellation should result in an exception. Note
                 // that cancellation is different from timeouts (tested below). Timeouts are a
@@ -135,12 +135,12 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Canceled, exception.Data["Status"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
-                Assert.Equal("Disabled", exception.Data["TimeoutMillis"]);
+                Assert.Equal("Overridden", exception.Data["TimeoutMillis"]);
                 Assert.True((double) exception.Data["ElapsedMillis"] >= 0);
             }
 
             [Fact]
-            public async Task CanceledExecution_FailureModeReturn_Returns()
+            public async Task ExecutionCanceled_FailureModeReturn_Returns()
             {
                 // When failure mode is Return, cancellation shouldn't throw, and should instead
                 // return a result object with error information. Note that cancellation is
@@ -177,7 +177,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Canceled, result.Exception.Data["Status"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Bulkhead"]);
-                Assert.Equal("Disabled", result.Exception.Data["TimeoutMillis"]);
+                Assert.Equal("Overridden", result.Exception.Data["TimeoutMillis"]);
                 Assert.True((double) result.Exception.Data["ElapsedMillis"] >= 0);
 
                 Assert.Equal(CommandCompletionStatus.Canceled, result.Status);
@@ -185,7 +185,7 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             [Fact]
-            public async Task TimeoutExecution_FailureModeThrow_Throws()
+            public async Task TimeoutBeforeExecution_FailureModeThrow_Throws()
             {
                 // When failure mode is Throw, timeouts should result in an exception. Timeouts
                 // are a specific form of cancellation, and get logged/tracked as timeouts instead
@@ -215,7 +215,7 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             [Fact]
-            public async Task TimeoutExecution_FailureModeReturn_Returns()
+            public async Task TimeoutBeforeExecution_FailureModeReturn_Returns()
             {
                 // When failure mode is Return, cancellation shouldn't throw, and should instead
                 // return a result object with error information. Timeouts are a specific form of
@@ -256,13 +256,77 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(expectedResultValue, result.Value);
             }
 
-            // fault + throw failureaction
-            // fault + return failureaction
+            [Fact]
+            public async Task ExecutionFaulted_FailureModeThrow_Throws()
+            {
+                // When failure mode is Throw, faults should result in an exception.
+
+                var expectedException = new ExpectedTestException("Expected");
+                var command = new NoOpAsyncCommand();
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+                
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+
+                // We're testing the combination of OnFailure.Throw and the exceptions here.
+                var exception = await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.InvokeAsync(command, OnFailure.Throw));
+
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Faulted", It.IsAny<TimeSpan>()));
+                Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
+                Assert.Equal((int) command.DetermineTimeout().TotalMilliseconds, exception.Data["TimeoutMillis"]);
+                Assert.True((double)exception.Data["ElapsedMillis"] >= 0);
+            }
+
+            [Fact]
+            public async Task ExecutionFaulted_FailureModeReturn_Returns()
+            {
+                // When failure mode is Return, faults shouldn't throw, and should instead
+                // return a result object with error information.
+
+                // When a command fails and failure mode is Return, the value of the result will
+                // be default(Type). Our test Command uses a bool, so we should expect a false.
+                // Callers shouldn't be checking the result, anyway - if they're using the
+                // Return failure mode, they should be checking for success first.
+                const bool expectedResultValue = default(bool);
+
+                var expectedException = new ExpectedTestException("Expected");
+                var command = new NoOpAsyncCommand();
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+
+                // We're testing the combination of OnFailure.Return and the exceptions here.
+                var result = await invoker.InvokeAsync(command, OnFailure.Return);
+
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Faulted", It.IsAny<TimeSpan>()));
+
+                Assert.NotNull(result.Exception);
+                Assert.Equal("test.NoOpAsync", result.Exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.Faulted, result.Exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Bulkhead"]);
+                Assert.Equal((int)command.DetermineTimeout().TotalMilliseconds, result.Exception.Data["TimeoutMillis"]);
+                Assert.True((double) result.Exception.Data["ElapsedMillis"] >= 0);
+
+                Assert.Equal(CommandCompletionStatus.Faulted, result.Status);
+                Assert.Equal(expectedResultValue, result.Value);
+            }
+
             // reject + throw failureaction
             // reject + return failureaction
 
+            // timeout disabled via config
+
             // different timeout values and configs
-            
+
             // for each test:
             // - assert "Invoke" log written
             // - assert bulkhead called appropriately (or not at all, if applicable)

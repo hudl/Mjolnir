@@ -80,8 +80,8 @@ namespace Hudl.Mjolnir.Command
         // TODO doesn't protect against None/default tokens. Should it?
         public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
         {
-            var informative = InformativeCancellationToken.ForCancellationToken(ct);
-            return InvokeAsync(command, failureAction, informative);
+            var token = InformativeCancellationToken.ForOverridingToken(ct);
+            return InvokeAsync(command, failureAction, token);
         }
 
         // TODO have the command naming logic remove "AsyncCommand" suffixes as well
@@ -102,7 +102,7 @@ namespace Hudl.Mjolnir.Command
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    GetTimeoutForLog(ct.Timeout));
+                    GetTimeoutForLog(ct));
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
@@ -147,7 +147,7 @@ namespace Hudl.Mjolnir.Command
         // TODO doesn't protect against None/default tokens. Should it?
         public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
         {
-            var informative = InformativeCancellationToken.ForCancellationToken(ct);
+            var informative = InformativeCancellationToken.ForOverridingToken(ct);
             return Invoke(command, failureAction, informative);
         }
 
@@ -167,7 +167,7 @@ namespace Hudl.Mjolnir.Command
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    GetTimeoutForLog(ct.Timeout));
+                    GetTimeoutForLog(ct));
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
@@ -201,7 +201,7 @@ namespace Hudl.Mjolnir.Command
         {
             if (IgnoreCommandTimeouts.Value)
             {
-                return InformativeCancellationToken.ForCancellationToken(CancellationToken.None);
+                return InformativeCancellationToken.ForIgnored();
             }
 
             var timeout = command.DetermineTimeout(invocationTimeout);
@@ -247,7 +247,7 @@ namespace Hudl.Mjolnir.Command
                 Status = status,
                 Breaker = command.BreakerKey,
                 Bulkhead = command.BulkheadKey,
-                TimeoutMillis = GetTimeoutForLog(ct.Timeout),
+                TimeoutMillis = GetTimeoutForLog(ct),
                 ElapsedMillis = invokeTimer.Elapsed.TotalMilliseconds,
             });
         }
@@ -257,9 +257,24 @@ namespace Hudl.Mjolnir.Command
             return (e is TaskCanceledException || e is OperationCanceledException);
         }
 
-        private static object GetTimeoutForLog(TimeSpan? timeout)
+        private static object GetTimeoutForLog(InformativeCancellationToken ct)
         {
-            return (timeout.HasValue ? (int) timeout.Value.TotalMilliseconds : (object) "Disabled");
+            if (!ct.IsTimeoutToken && !ct.IsIgnored)
+            {
+                return "Overridden";
+            }
+
+            if (ct.IsIgnored)
+            {
+                return "Ignored";
+            }
+
+            if (!ct.Timeout.HasValue)
+            {
+                return "Missing";
+            }
+            
+            return (int)ct.Timeout.Value.TotalMilliseconds;
         }
     }
 
@@ -294,20 +309,24 @@ namespace Hudl.Mjolnir.Command
     {
         private readonly CancellationToken _token;
         private readonly TimeSpan? _timeout;
+        private readonly bool _isIgnored;
 
         public CancellationToken Token { get { return _token; } }
         public bool IsTimeoutToken { get { return _timeout != null; } }
         public TimeSpan? Timeout { get { return _timeout; } }
+        public bool IsIgnored {  get { return _isIgnored; } }
 
-        private InformativeCancellationToken(CancellationToken token)
+        private InformativeCancellationToken(CancellationToken token, bool ignored = false)
         {
             _token = token;
             _timeout = null;
+            _isIgnored = ignored;
         }
 
         private InformativeCancellationToken(TimeSpan timeout)
         {
             _timeout = timeout;
+            _isIgnored = false;
 
             if (timeout.TotalMilliseconds == 0)
             {
@@ -341,9 +360,14 @@ namespace Hudl.Mjolnir.Command
             return new InformativeCancellationToken(timeout);
         }
 
-        public static InformativeCancellationToken ForCancellationToken(CancellationToken ct)
+        public static InformativeCancellationToken ForOverridingToken(CancellationToken ct)
         {
             return new InformativeCancellationToken(ct);
+        }
+
+        public static InformativeCancellationToken ForIgnored()
+        {
+            return new InformativeCancellationToken(CancellationToken.None, true);
         }
     }
 }
