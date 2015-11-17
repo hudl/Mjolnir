@@ -7,6 +7,8 @@ using Moq;
 using Xunit;
 using System.Threading;
 using Hudl.Mjolnir.Tests.Helper;
+using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.Bulkhead;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -245,6 +247,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.DelayAsync execute", "TimedOut", It.IsAny<TimeSpan>()));
 
                 Assert.NotNull(result.Exception);
+                Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
                 Assert.Equal("test.DelayAsync", result.Exception.Data["Command"]);
                 Assert.Equal(CommandCompletionStatus.TimedOut, result.Exception.Data["Status"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
@@ -309,6 +312,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Faulted", It.IsAny<TimeSpan>()));
 
                 Assert.NotNull(result.Exception);
+                Assert.Equal(expectedException, result.Exception);
                 Assert.Equal("test.NoOpAsync", result.Exception.Data["Command"]);
                 Assert.Equal(CommandCompletionStatus.Faulted, result.Exception.Data["Status"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
@@ -320,15 +324,74 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(expectedResultValue, result.Value);
             }
 
+            [Fact]
+            public async Task ExecutionRejected_FailureModeThrow_Throws()
+            {
+                // When failure mode is Throw, rejections should result in an exception.
+
+                var expectedException = new CircuitBreakerRejectedException();
+                var command = new NoOpAsyncCommand();
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+
+                // We're testing the combination of OnFailure.Throw and the exceptions here.
+                var exception = await Assert.ThrowsAsync<CircuitBreakerRejectedException>(() => invoker.InvokeAsync(command, OnFailure.Throw));
+
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Rejected", It.IsAny<TimeSpan>()));
+                Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
+                Assert.Equal((int)command.DetermineTimeout().TotalMilliseconds, exception.Data["TimeoutMillis"]);
+                Assert.True((double)exception.Data["ElapsedMillis"] >= 0);
+            }
+
+            [Fact]
+            public async Task ExecutionRejected_FailureModeReturn_Returns()
+            {
+                // When failure mode is Return, rejections shouldn't throw, and should instead
+                // return a result object with error information.
+
+                // When a command fails and failure mode is Return, the value of the result will
+                // be default(Type). Our test Command uses a bool, so we should expect a false.
+                // Callers shouldn't be checking the result, anyway - if they're using the
+                // Return failure mode, they should be checking for success first.
+                const bool expectedResultValue = default(bool);
+
+                var expectedException = new BulkheadRejectedException();
+                var command = new NoOpAsyncCommand();
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object);
+
+                // We're testing the combination of OnFailure.Return and the exceptions here.
+                var result = await invoker.InvokeAsync(command, OnFailure.Return);
+
+                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Rejected", It.IsAny<TimeSpan>()));
+
+                Assert.NotNull(result.Exception);
+                Assert.Equal(expectedException, result.Exception);
+                Assert.Equal("test.NoOpAsync", result.Exception.Data["Command"]);
+                Assert.Equal(CommandCompletionStatus.Rejected, result.Exception.Data["Status"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
+                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Bulkhead"]);
+                Assert.Equal((int)command.DetermineTimeout().TotalMilliseconds, result.Exception.Data["TimeoutMillis"]);
+                Assert.True((double)result.Exception.Data["ElapsedMillis"] >= 0);
+
+                Assert.Equal(CommandCompletionStatus.Rejected, result.Status);
+                Assert.Equal(expectedResultValue, result.Value);
+            }
+
             // ignored timeouts override timeouts
             // ignored timeouts override custom tokens
-
-
-            // reject + throw failureaction
-            // reject + return failureaction
-
-            // timeout disabled via config
-
+            
             // different timeout values and configs
 
             // for each test:
