@@ -307,9 +307,27 @@ namespace Hudl.Mjolnir.Command
 
         private InformativeCancellationToken(TimeSpan timeout)
         {
-            var source = new CancellationTokenSource(timeout);
-            _token = source.Token;
             _timeout = timeout;
+
+            if (timeout.TotalMilliseconds == 0)
+            {
+                // If timeout is 0, we're immediately timed-out. This is somewhat
+                // here as a convenience for unit testing, but applies generally.
+                // Unit tests may use a 0ms timeout for some tests, and if tests
+                // execute too quickly, the cancellation token's internal timer
+                // may not have marked the token canceled yet. This works around
+                // that.
+
+                // Note that 0 is not "infinite" - that's typically the behavior
+                // for a timeout of -1.
+
+                _token = new CancellationToken(true);
+            }
+            else
+            {
+                var source = new CancellationTokenSource(timeout);
+                _token = source.Token;
+            }
         }
         
         public static InformativeCancellationToken ForTimeout(long millis)
