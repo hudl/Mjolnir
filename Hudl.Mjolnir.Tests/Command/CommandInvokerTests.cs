@@ -9,6 +9,7 @@ using System.Threading;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
+using Hudl.Config;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -260,6 +261,76 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             [Fact]
+            public async Task CancellationIgnored_InvokesRegardlessOfInvocationToken()
+            {
+                // When doing local development, timeouts often get hit after sitting on a
+                // breakpoint for too long. An optional configuration can be set to ignore
+                // cancellation and work around that. If the config is set, all cancellation
+                // (regardless of source) is ignored.
+
+                var command = new DelayAsyncCommand(1);
+                var expiredToken = new CancellationToken(true);
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
+                
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object, new TransientConfigurableValue<bool>(true));
+
+                // Even though we pass a token, the config value on the invoker should prevent the
+                // token from being used/checked. This shouldn't throw.
+                var result = await invoker.InvokeAsync(command, OnFailure.Throw, expiredToken);
+                
+                Assert.Equal(CommandCompletionStatus.RanToCompletion, result.Status);
+            }
+
+            [Fact]
+            public async Task CancellationIgnored_InvokesRegardlessOfInvocationTimeout()
+            {
+                // When doing local development, timeouts often get hit after sitting on a
+                // breakpoint for too long. An optional configuration can be set to ignore
+                // cancellation and work around that. If the config is set, all cancellation
+                // (regardless of source) is ignored.
+
+                var command = new NoOpAsyncCommand();
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
+
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object, new TransientConfigurableValue<bool>(true));
+                
+                // Even though we pass a timeout, the config value on the invoker should prevent the
+                // timeout from being used/checked. This shouldn't throw.
+                var result = await invoker.InvokeAsync(command, OnFailure.Throw, 0);
+
+                Assert.Equal(CommandCompletionStatus.RanToCompletion, result.Status);
+            }
+
+            [Fact]
+            public async Task CancellationIgnoredAndExecutionFaulted_MarksTimeoutIgnoredOnExceptionData()
+            {
+                // If a command faults and cancellation is disabled, we should still log the
+                // timeout we would have used on the exception. This is a fairly inconsequential
+                // test, but we might as well make sure what we're logging is accurate.
+
+                var expectedException = new ExpectedTestException("Expected");
+                var command = new NoOpAsyncCommand();
+
+                var mockStats = new Mock<IStats>();
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+                mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+
+                var invoker = new CommandInvoker(mockStats.Object, mockBulkheadInvoker.Object, new TransientConfigurableValue<bool>(true));
+
+                // We're testing the combination of OnFailure.Throw and the exceptions here.
+                var exception = await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.InvokeAsync(command, OnFailure.Throw));
+
+                Assert.NotNull(exception);
+                Assert.Equal("Ignored", exception.Data["TimeoutMillis"]);
+            }
+
+            [Fact]
             public async Task ExecutionFaulted_FailureModeThrow_Throws()
             {
                 // When failure mode is Throw, faults should result in an exception.
@@ -388,21 +459,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Rejected, result.Status);
                 Assert.Equal(expectedResultValue, result.Value);
             }
-
-            // ignored timeouts override timeouts
-            // ignored timeouts override custom tokens
             
-            // different timeout values and configs
-
-            // for each test:
-            // - assert "Invoke" log written
-            // - assert bulkhead called appropriately (or not at all, if applicable)
-            // - assert stat written
-            // - assert exception data is correct
-            // - if returning, assert result properties
-
             // TODO repeat all the tests for sync calls
-
         }
     }
 

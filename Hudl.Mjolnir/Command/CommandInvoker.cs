@@ -70,10 +70,9 @@ namespace Hudl.Mjolnir.Command
             return InvokeAsync(command, failureAction, token);
         }
 
-        // TODO doesn't protect against None/default tokens. Should it?
         public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
         {
-            var token = InformativeCancellationToken.ForOverridingToken(ct);
+            var token = GetCancellationTokenForCommand(ct);
             return InvokeAsync(command, failureAction, token);
         }
 
@@ -137,11 +136,10 @@ namespace Hudl.Mjolnir.Command
             return Invoke(command, failureAction, token);
         }
 
-        // TODO doesn't protect against None/default tokens. Should it?
         public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
         {
-            var informative = InformativeCancellationToken.ForOverridingToken(ct);
-            return Invoke(command, failureAction, informative);
+            var token = GetCancellationTokenForCommand(ct);
+            return Invoke(command, failureAction, token);
         }
 
         private CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
@@ -188,6 +186,16 @@ namespace Hudl.Mjolnir.Command
             {
                 _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
             }
+        }
+
+        private InformativeCancellationToken GetCancellationTokenForCommand(CancellationToken ct)
+        {
+            if (_ignoreCancellation.Value)
+            {
+                return InformativeCancellationToken.ForIgnored();
+            }
+
+            return InformativeCancellationToken.ForOverridingToken(ct);
         }
 
         private InformativeCancellationToken GetCancellationTokenForCommand(BaseCommand command, long? invocationTimeout = null)
@@ -293,12 +301,12 @@ namespace Hudl.Mjolnir.Command
         public CancellationToken Token { get { return _token; } }
         public TimeSpan? Timeout { get { return _timeout; } }
         public bool IsIgnored {  get { return _isIgnored; } }
-
+        
         private InformativeCancellationToken(CancellationToken token, bool ignored = false)
         {
-            _token = token;
             _timeout = null;
             _isIgnored = ignored;
+            _token = token;
         }
 
         private InformativeCancellationToken(TimeSpan timeout)
@@ -363,7 +371,7 @@ namespace Hudl.Mjolnir.Command
 
         public static InformativeCancellationToken ForOverridingToken(CancellationToken ct)
         {
-            return new InformativeCancellationToken(ct);
+            return new InformativeCancellationToken(ct, false);
         }
 
         public static InformativeCancellationToken ForIgnored()
