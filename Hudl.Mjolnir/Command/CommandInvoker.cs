@@ -31,38 +31,31 @@ namespace Hudl.Mjolnir.Command
 
     public class CommandInvoker : ICommandInvoker
     {
+        private readonly IStats _stats;
+        
+        private readonly IBulkheadInvoker _bulkheadInvoker;
+
         /// <summary>
         /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the
         /// default timeout. This is likely to be useful when debugging Command-decorated methods,
         /// however it is not advisable to use in a production environment since it disables some
         /// of Mjolnir's key protection features.
         /// </summary>
-        private static readonly IConfigurableValue<bool> IgnoreCommandTimeouts = new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
+        private readonly IConfigurableValue<bool> _ignoreTimeouts;
 
-        private readonly IStats _stats;
+        public CommandInvoker() : this(null, null, null)
+        { }
 
-        // TODO kind of ugly, rework this. they're lightweight to construct, though, and
-        // callers shouldn't be repeatedly constructing invokers.
-        // TODO make sure callers know not to repeatedly construct invokers :)
-        private readonly IBulkheadInvoker _bulkheadInvoker = new BulkheadInvoker(new BreakerInvoker());
-
-        public CommandInvoker() : this(CommandContext.Stats)
+        internal CommandInvoker(IStats stats = null, IBulkheadInvoker bulkheadInvoker = null, IConfigurableValue<bool> ignoreTimeouts = null)
         {
-            _stats = CommandContext.Stats; // TODO any risk here? should we just DI this? possibly not.
-        }
+            _stats = stats ?? CommandContext.Stats;
+            
+            // TODO kind of ugly, rework this. they're lightweight to construct, though, and
+            // callers shouldn't be repeatedly constructing invokers.
+            // TODO make sure callers know not to repeatedly construct invokers :)
+            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(new BreakerInvoker());
 
-        internal CommandInvoker(IStats stats, IBulkheadInvoker bulkheadInvoker = null)
-        {
-            if (stats == null)
-            {
-                throw new ArgumentNullException("stats");
-            }
-
-            _stats = stats;
-            if (bulkheadInvoker != null)
-            {
-                _bulkheadInvoker = bulkheadInvoker;
-            }
+            _ignoreTimeouts = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
         }
 
         public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction)
@@ -197,9 +190,9 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        private static InformativeCancellationToken GetCancellationTokenForCommand(BaseCommand command, long? invocationTimeout = null)
+        private InformativeCancellationToken GetCancellationTokenForCommand(BaseCommand command, long? invocationTimeout = null)
         {
-            if (IgnoreCommandTimeouts.Value)
+            if (_ignoreTimeouts.Value)
             {
                 return InformativeCancellationToken.ForIgnored();
             }
