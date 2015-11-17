@@ -135,7 +135,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Canceled, exception.Data["Status"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
-                Assert.Equal("Overridden", exception.Data["TimeoutMillis"]);
+                Assert.Equal("Token", exception.Data["TimeoutMillis"]);
                 Assert.True((double) exception.Data["ElapsedMillis"] >= 0);
             }
 
@@ -177,7 +177,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Canceled, result.Exception.Data["Status"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Breaker"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["Bulkhead"]);
-                Assert.Equal("Overridden", result.Exception.Data["TimeoutMillis"]);
+                Assert.Equal("Token", result.Exception.Data["TimeoutMillis"]);
                 Assert.True((double) result.Exception.Data["ElapsedMillis"] >= 0);
 
                 Assert.Equal(CommandCompletionStatus.Canceled, result.Status);
@@ -319,6 +319,10 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Faulted, result.Status);
                 Assert.Equal(expectedResultValue, result.Value);
             }
+
+            // ignored timeouts override timeouts
+            // ignored timeouts override custom tokens
+
 
             // reject + throw failureaction
             // reject + return failureaction

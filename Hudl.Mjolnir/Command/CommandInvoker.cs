@@ -41,7 +41,7 @@ namespace Hudl.Mjolnir.Command
         /// however it is not advisable to use in a production environment since it disables some
         /// of Mjolnir's key protection features.
         /// </summary>
-        private readonly IConfigurableValue<bool> _ignoreTimeouts;
+        private readonly IConfigurableValue<bool> _ignoreCancellation;
 
         public CommandInvoker() : this(null, null, null)
         { }
@@ -55,7 +55,7 @@ namespace Hudl.Mjolnir.Command
             // TODO make sure callers know not to repeatedly construct invokers :)
             _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(new BreakerInvoker());
 
-            _ignoreTimeouts = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
+            _ignoreCancellation = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
         }
 
         public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction)
@@ -95,7 +95,7 @@ namespace Hudl.Mjolnir.Command
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    GetTimeoutForLog(ct));
+                    ct.DescriptionForLog);
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
@@ -160,7 +160,7 @@ namespace Hudl.Mjolnir.Command
                     command.Name,
                     command.BreakerKey,
                     command.BulkheadKey,
-                    GetTimeoutForLog(ct));
+                    ct.DescriptionForLog);
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
@@ -192,7 +192,7 @@ namespace Hudl.Mjolnir.Command
 
         private InformativeCancellationToken GetCancellationTokenForCommand(BaseCommand command, long? invocationTimeout = null)
         {
-            if (_ignoreTimeouts.Value)
+            if (_ignoreCancellation.Value)
             {
                 return InformativeCancellationToken.ForIgnored();
             }
@@ -216,7 +216,7 @@ namespace Hudl.Mjolnir.Command
                 // If the timeout cancellationTokenSource was cancelled and we got an TaskCancelledException here then this means the call actually timed out.
                 // Otherwise an TaskCancelledException would have been raised if a user CancellationToken was passed through to the method call, and was explicitly
                 // cancelled from the client side.
-                if (ct.IsTimeoutToken && ct.Token.IsCancellationRequested)
+                if (ct.Timeout.HasValue && ct.Token.IsCancellationRequested)
                 {
                     return CommandCompletionStatus.TimedOut;
                 }
@@ -240,7 +240,7 @@ namespace Hudl.Mjolnir.Command
                 Status = status,
                 Breaker = command.BreakerKey,
                 Bulkhead = command.BulkheadKey,
-                TimeoutMillis = GetTimeoutForLog(ct),
+                TimeoutMillis = ct.DescriptionForLog,
                 ElapsedMillis = invokeTimer.Elapsed.TotalMilliseconds,
             });
         }
@@ -248,26 +248,6 @@ namespace Hudl.Mjolnir.Command
         private static bool IsCancellationException(Exception e)
         {
             return (e is TaskCanceledException || e is OperationCanceledException);
-        }
-
-        private static object GetTimeoutForLog(InformativeCancellationToken ct)
-        {
-            if (!ct.IsTimeoutToken && !ct.IsIgnored)
-            {
-                return "Overridden";
-            }
-
-            if (ct.IsIgnored)
-            {
-                return "Ignored";
-            }
-
-            if (!ct.Timeout.HasValue)
-            {
-                return "Missing";
-            }
-            
-            return (int)ct.Timeout.Value.TotalMilliseconds;
         }
     }
 
@@ -300,12 +280,17 @@ namespace Hudl.Mjolnir.Command
     // This is mostly for diagnostic purposes and logging.
     internal struct InformativeCancellationToken
     {
+        // Cancellation precedence
+        // - Config toggle to disable timeouts/cancellation
+        // - Cancellation token or timeout passed to Invoke()
+        // - Configured timeout for specific Command
+        // - Default timeout in Command constructor
+
         private readonly CancellationToken _token;
         private readonly TimeSpan? _timeout;
         private readonly bool _isIgnored;
 
         public CancellationToken Token { get { return _token; } }
-        public bool IsTimeoutToken { get { return _timeout != null; } }
         public TimeSpan? Timeout { get { return _timeout; } }
         public bool IsIgnored {  get { return _isIgnored; } }
 
@@ -342,6 +327,29 @@ namespace Hudl.Mjolnir.Command
             }
         }
         
+        public object DescriptionForLog
+        {
+            get
+            {
+                if (_isIgnored)
+                {
+                    return "Ignored";
+                }
+
+                if (_timeout.HasValue)
+                {
+                    return (int) _timeout.Value.TotalMilliseconds;
+                }
+
+                if (_token == CancellationToken.None || _token == default(CancellationToken))
+                {
+                    return "None";
+                }
+                
+                return "Token";
+            }
+        }
+
         public static InformativeCancellationToken ForTimeout(long millis)
         {
             var timespan = TimeSpan.FromMilliseconds(millis);
