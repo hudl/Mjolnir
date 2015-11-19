@@ -144,8 +144,8 @@ namespace Hudl.Mjolnir.Command
 
         private CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
         {
-            // This doesn't adhere to the OnFailure action because it's a bug in the code
-            // and should always throw so people see it and fix it.
+            // This doesn't look at the OnFailure action (to return vs. throw) because it means the
+            // caller has a bug in their code - we should always throw so people see it and fix it.
             EnsureSingleInvoke(command);
             
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
@@ -284,8 +284,11 @@ namespace Hudl.Mjolnir.Command
         }
     }
 
-    // Keeps track of how a CancellationToken was formed, where possible.
-    // This is mostly for diagnostic purposes and logging.
+    /// <summary>
+    /// Mostly for diagnostic purposes and logging, and should only be used internally. It's often
+    /// helpful to know the source of cancellation; when throwing an exception, we can be specific
+    /// in the message (e.g. "timed out" vs. just "canceled", which is clearer to the caller).
+    /// </summary>
     internal struct InformativeCancellationToken
     {
         // Cancellation precedence
@@ -314,7 +317,9 @@ namespace Hudl.Mjolnir.Command
             _timeout = timeout;
             _isIgnored = false;
 
-            if (timeout.TotalMilliseconds == 0)
+            // This (int) cast probably breaks timeouts that are < 1 millisecond. I'm not sure
+            // that's worth fixing yet. Notable, though.
+            if ((int) timeout.TotalMilliseconds == 0)
             {
                 // If timeout is 0, we're immediately timed-out. This is somewhat
                 // here as a convenience for unit testing, but applies generally.
