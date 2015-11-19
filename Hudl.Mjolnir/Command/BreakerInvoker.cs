@@ -25,10 +25,9 @@ namespace Hudl.Mjolnir.Command
 
             TResult result;
 
+            var stopwatch = Stopwatch.StartNew();
             try
             {
-                var stopwatch = Stopwatch.StartNew();
-
                 // Await here so we can catch the Exception and track the state.
                 // I suppose we could do this with a continuation, too. Await's easier.
                 result = await command.ExecuteAsync(ct).ConfigureAwait(false);
@@ -40,6 +39,7 @@ namespace Hudl.Mjolnir.Command
             {
                 if (CommandContext.IsExceptionIgnored(e.GetType()))
                 {
+                    breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
                 }
                 else
