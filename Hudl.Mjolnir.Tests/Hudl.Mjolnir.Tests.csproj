@@ -97,6 +97,7 @@
     <Compile Include="Command\CommandTests.cs" />
     <Compile Include="Command\CommandThreadPoolTests.cs" />
     <Compile Include="Command\CommandTimeoutTests.cs" />
+    <Compile Include="Example.cs" />
     <Compile Include="Helper\AlwaysSuccessfulCircuitBreaker.cs" />
     <Compile Include="Helper\AlwaysSuccessfulIsolationSemaphore.cs" />
     <Compile Include="Helper\AlwaysSuccessfulIsolationThreadPool.cs" />
