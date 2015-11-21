@@ -99,7 +99,6 @@
     <Compile Include="Helper\AlwaysSuccessfulCircuitBreaker.cs" />
     <Compile Include="Helper\AlwaysSuccessfulIsolationSemaphore.cs" />
     <Compile Include="Helper\AlwaysSuccessfulIsolationThreadPool.cs" />
-    <Compile Include="Helper\AssertX.cs" />
     <Compile Include="Helper\ExpectedTestException.cs" />
     <Compile Include="Helper\TestFixture.cs" />
     <Compile Include="Key\GroupKeyTests.cs" />
@@ -176,9 +175,9 @@
   <UsingTask AssemblyFile="../packages/xunit.runner.msbuild.2.0.0/build/portable-net45+win+wpa81+wp80+monotouch+monoandroid+Xamarin.iOS/xunit.runner.msbuild.dll" TaskName="Xunit.Runner.MSBuild.xunit" />
   <Target Name="UnitTest">
     <ItemGroup>
-      <TestAssemblies Include="bin\Release\Hudl.Mjolnir.Tests.dll"/>
+      <TestAssemblies Include="bin\Release\Hudl.Mjolnir.Tests.dll" />
     </ItemGroup>
-    <xunit Assemblies="@(TestAssemblies)" ParallelizeTestCollections="false"/>
+    <xunit Assemblies="@(TestAssemblies)" ParallelizeTestCollections="false" />
   </Target>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
