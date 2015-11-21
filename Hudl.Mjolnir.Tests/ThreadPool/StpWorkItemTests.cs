@@ -29,18 +29,9 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
 
             var stpWorkItem = new StpWorkItem<object>(mockWorkItemResult.Object);
 
-            try
-            {
-                stpWorkItem.Get(new CancellationToken(), timeout);
-            }
-            catch (ExpectedTestException e)
-            {
-                Assert.Equal(cause, e);
-                Assert.Equal(inner, e.InnerException);
-                return; // Expected.
-            }
-            
-            AssertX.FailExpectedException();
+            var e = Assert.Throws<ExpectedTestException>(() => stpWorkItem.Get(new CancellationToken(), timeout));
+            Assert.Equal(cause, e);
+            Assert.Equal(inner, e.InnerException);
         }
 
         [Fact]
@@ -61,17 +52,8 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
 
             var stpWorkItem = new StpWorkItem<object>(mockWorkItemResult.Object);
 
-            try
-            {
-                stpWorkItem.Get(token, workItemTimeout);
-            }
-            catch (OperationCanceledException e)
-            {
-                Assert.Equal(token, e.CancellationToken);
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();
+            var e = Assert.Throws<OperationCanceledException>(() => stpWorkItem.Get(token, workItemTimeout));
+            Assert.Equal(token, e.CancellationToken);
         }
     }
 }

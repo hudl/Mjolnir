@@ -63,19 +63,8 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
 
             var task = proxy.InvokeGenericTask();
 
-            try
-            {
-                // Using Assert.Throws(async () => {}) doesn't work right here,
-                // so falling back to the ol' try/catch.
-                await task;
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.Equal(exception, e.InnerException);
-                return;
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => task);
+            Assert.Equal(exception, e.InnerException);
         }
 
         [Fact]

@@ -25,18 +25,9 @@ namespace Hudl.Mjolnir.Tests.Command
                 ThreadPool = pool,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.Equal(CommandCompletionStatus.Rejected, e.Status);
-                Assert.Equal(exception, e.InnerException);
-                return;
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandRejectedException>(() => command.InvokeAsync());
+            Assert.Equal(CommandCompletionStatus.Rejected, e.Status);
+            Assert.Equal(exception, e.InnerException);
         }
 
         [Fact]
@@ -56,19 +47,10 @@ namespace Hudl.Mjolnir.Tests.Command
                 ThreadPool = pool,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.InnerException is IsolationThreadPoolRejectedException);
-                mockMetrics.Verify(m => m.MarkCommandFailure(), Times.Never);
-                mockMetrics.Verify(m => m.MarkCommandSuccess(), Times.Never);
-                return; // Expected.
-            }
-            
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandRejectedException>(() => command.InvokeAsync());
+            Assert.True(e.InnerException is IsolationThreadPoolRejectedException);
+            mockMetrics.Verify(m => m.MarkCommandFailure(), Times.Never);
+            mockMetrics.Verify(m => m.MarkCommandSuccess(), Times.Never);
         }
 
         [Fact]

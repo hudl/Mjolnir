@@ -58,17 +58,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
             await command.InvokeAsync();
 
-            try
-            {
-                await command.InvokeAsync(); // Should throw.
-            }
-            catch (InvalidOperationException e)
-            {
-                Assert.Equal("A command instance may only be invoked once", e.Message);
-                return; // Expected
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<InvalidOperationException>(() => command.InvokeAsync());
+            Assert.Equal("A command instance may only be invoked once", e.Message);
         }
 
         [Fact]

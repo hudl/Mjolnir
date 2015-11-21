@@ -16,16 +16,7 @@ namespace Hudl.Mjolnir.Tests.Command
         public async Task InvokeAsync_TimesOutAndNoFallback_ThrowsCommandException()
         {
             var command = new TimingOutWithoutFallbackCommand(TimeSpan.FromMilliseconds(100));
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException)
-            {
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();
+            await Assert.ThrowsAsync<CommandTimeoutException>(() => command.InvokeAsync());
         }
 
         [Fact]
@@ -33,17 +24,9 @@ namespace Hudl.Mjolnir.Tests.Command
         {
             var expected = new ExpectedTestException("Expected rethrown exception");
             var command = new TimingOutWithEchoThrowingFallbackCommand(expected);
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (ExpectedTestException e)
-            {
-                Assert.Equal(expected, e);
-                return; // Expected.
-            }
 
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<ExpectedTestException>(() => command.InvokeAsync());
+            Assert.Equal(expected, e);
         }
 
         [Fact]
@@ -58,32 +41,14 @@ namespace Hudl.Mjolnir.Tests.Command
         public async Task InvokeAsync_TaskFaultsAndNoFallback_ThrowsCommandException()
         {
             var command = new FaultingTaskWithoutFallbackCommand();
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException)
-            {
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();
+            await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
         }
 
         [Fact]
         public async Task InvokeAsync_ExecuteFaultsAndNoFallback_ThrowsCommandException()
         {
             var command = new FaultingExecuteWithoutFallbackCommand();
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException)
-            {
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();
+            await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
         }
 
         [Fact]
@@ -91,17 +56,9 @@ namespace Hudl.Mjolnir.Tests.Command
         {
             var expected = new ExpectedTestException("Expected rethrown exception");
             var command = new FaultingTaskWithEchoThrowingFallbackCommand(expected);
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (ExpectedTestException e)
-            {
-                Assert.Equal(expected, e);
-                return;
-            }
 
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<ExpectedTestException>(() => command.InvokeAsync());
+            Assert.Equal(expected, e);
         }
 
         [Fact]
@@ -136,17 +93,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var cause = new ExpectedTestException("Root cause exception");
             var command = new FaultingExecuteEchoCommandWithoutFallback(cause);
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.Equal(cause, e.GetBaseException());
-                return;
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
+            Assert.Equal(cause, e.GetBaseException());
         }
 
         [Fact]
@@ -155,17 +103,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var cause = new ExpectedTestException("Root cause exception");
             var command = new FaultingTaskEchoCommandWithoutFallback(cause);
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.Equal(cause, e.GetBaseException());
-                return;
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
+            Assert.Equal(cause, e.GetBaseException());
         }
 
         [Fact]
@@ -213,18 +152,9 @@ namespace Hudl.Mjolnir.Tests.Command
                 FallbackSemaphore = mockSemaphore.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                mockSemaphore.Verify(m => m.TryEnter(), Times.Once);
-                Assert.Equal(FallbackStatus.Rejected, e.FallbackStatus);
-                return;
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
+            mockSemaphore.Verify(m => m.TryEnter(), Times.Once);
+            Assert.Equal(FallbackStatus.Rejected, e.FallbackStatus);
         }
 
         [Fact]
@@ -239,18 +169,9 @@ namespace Hudl.Mjolnir.Tests.Command
                 FallbackSemaphore = mockSemaphore.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (ExpectedTestException e)
-            {
-                Assert.Equal(exception, e);
-                mockSemaphore.Verify(m => m.Release(), Times.Once);
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<ExpectedTestException>(() => command.InvokeAsync());
+            Assert.Equal(exception, e);
+            mockSemaphore.Verify(m => m.Release(), Times.Once);
         }
 
         private class TimingOutWithSuccessfulFallbackCommand : TimingOutWithoutFallbackCommand
