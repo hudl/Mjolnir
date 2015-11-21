@@ -18,21 +18,11 @@ namespace Hudl.Mjolnir.Tests.Command
         public async Task InvokeAsync_WithTimeout_TimesOutAndThrowsCommandException()
         {
             var command = new TimingOutWithoutFallbackCommand(Timeout);
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.GetBaseException() is OperationCanceledException);
-                return;
-            }
 
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandTimeoutException>(() => command.InvokeAsync());
+            Assert.True(e.GetBaseException() is OperationCanceledException);
         }
-
         
-
         [Fact]
         public async Task InvokeAsync_UnderTimeout_DoesntTimeoutOrThrowException()
         {
