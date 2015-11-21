@@ -9,6 +9,7 @@ using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.ThreadPool;
 using Hudl.Mjolnir.Util;
 using Hudl.Mjolnir.Bulkhead;
+using System.Threading;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -22,7 +23,7 @@ namespace Hudl.Mjolnir.Command
     public sealed class CommandContext
     {
         private static readonly CommandContext Instance = new CommandContext();
-
+        
         // Many properties in Mjolnir use a chain of possible configuration values, typically:
         // - Explicitly-configured group value
         // - Explicitly-configured default value
@@ -51,10 +52,7 @@ namespace Hudl.Mjolnir.Command
         // Thread pool global defaults.
         private static readonly IConfigurableValue<int> DefaultPoolThreadCount = new ConfigurableValue<int>("mjolnir.pools.default.threadCount", 10);
         private static readonly IConfigurableValue<int> DefaultPoolQueueLength = new ConfigurableValue<int>("mjolnir.pools.default.queueLength", 10);
-
-        // Bulkhead global defaults.
-        private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkheads.default.maxConcurrent", 10);
-
+        
         // Fallback global defaults.
         private static readonly IConfigurableValue<int> DefaultFallbackMaxConcurrent = new ConfigurableValue<int>("mjolnir.fallback.default.maxConcurrent", 50);
         
@@ -62,7 +60,7 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<IBulkheadSemaphore>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<IBulkheadSemaphore>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
         // This is a Dictionary only because there's no great concurrent Set type available. Just
@@ -171,17 +169,66 @@ namespace Hudl.Mjolnir.Command
                     Stats));
         }
 
+        /// <summary>
+        /// Callers should keep a local reference to the bulkhead object they receive from this
+        /// method, ensuring that they call TryEnter and Release on the same object reference.
+        /// Phrased differently: don't re-retrieve the bulkhead before calling Release().
+        /// </summary>
         internal static IBulkheadSemaphore GetBulkhead(GroupKey key)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
             }
+            
+            var holder = Instance._bulkheads.GetOrAddSafe(key,
+                k => new SemaphoreBulkheadHolder(key),
+                LazyThreadSafetyMode.ExecutionAndPublication);
 
-            // TODO check GetOrAddSafe(), it may need fixing
+            return holder.Bulkhead;
+        }
+        
+        // TODO unit tests on changing bulkhead limits dynamically
 
-            return Instance._bulkheads.GetOrAddSafe(key, k =>
-                new SemaphoreBulkhead(new ConfigurableValue<int>("mjolnir.bulkheads." + key + ".maxConcurrent", DefaultBulkheadMaxConcurrent)));
+        // In order to dynamically change semaphore limits, we replace the semaphore on config
+        // change events. We should never destroy the holder once it's been created - we may
+        // replace its internal members, but the holder should remain for the lifetime of the
+        // app to ensure consistent concurrency.
+        private class SemaphoreBulkheadHolder
+        {
+            // Note: changing the default value at runtime won't trigger a rebuild of the
+            // semaphores; that will require an app restart.
+            private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkheads.default.maxConcurrent", 10);
+
+            private readonly IConfigurableValue<int> _config;
+            private IBulkheadSemaphore _bulkhead;
+
+            public IBulkheadSemaphore Bulkhead { get { return _bulkhead; } }
+
+            public SemaphoreBulkheadHolder(GroupKey key)
+            {
+                // The order of things here is very intentional.
+                // We create the configurable value first, retrieve its current value, and then
+                // initialize the semaphore bulkhead. We register the change handler after that.
+                // That ought to help avoid a situation where we might fire a config change handler
+                // before we add the semaphore to the dictionary, potentially trying to add two
+                // entries with different values in rapid succession.
+
+                var configKey = "mjolnir.bulkheads." + key + ".maxConcurrent";
+                _config = new ConfigurableValue<int>(configKey, DefaultBulkheadMaxConcurrent);
+
+                var value = _config.Value;
+                _bulkhead = new SemaphoreBulkhead(value);
+
+                // On change, we'll replace the bulkhead. The assumption here is that a caller
+                // using the bulkhead will have kept a local reference to the bulkhead that they
+                // acquired a lock on, and will release the lock on that bulkhead and not one that
+                // has been replaced after a config change.
+                _config.AddChangeHandler(newLimit =>
+                {
+                    _bulkhead = new SemaphoreBulkhead(newLimit);
+                });
+            }
         }
 
         // TODO deprecate "old" pool and command behavior?

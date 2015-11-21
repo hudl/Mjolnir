@@ -16,10 +16,10 @@ namespace Hudl.Mjolnir.Bulkhead
     {
         private readonly SemaphoreSlim _semaphore;
 
-        internal SemaphoreBulkhead(IConfigurableValue<int> maxConcurrent)
+        internal SemaphoreBulkhead(int maxConcurrent)
         {
             // TODO validate value?
-            _semaphore = new SemaphoreSlim(maxConcurrent.Value);
+            _semaphore = new SemaphoreSlim(maxConcurrent);
 
             // TODO gauges, stats
         }
