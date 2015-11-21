@@ -14,9 +14,16 @@ namespace Hudl.Mjolnir.Command
 
     internal class BreakerInvoker : IBreakerInvoker
     {
+        private readonly ICommandContext _context;
+
+        public BreakerInvoker(ICommandContext context)
+        {
+            _context = context ?? CommandContext.Current;
+        }
+
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
+            var breaker = _context.GetCircuitBreaker(command.BreakerKey);
 
             if (!breaker.IsAllowing())
             {
@@ -37,7 +44,7 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                if (CommandContext.IsExceptionIgnored(e.GetType()))
+                if (_context.IsExceptionIgnored(e.GetType()))
                 {
                     breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
@@ -55,7 +62,7 @@ namespace Hudl.Mjolnir.Command
 
         public TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
-            var breaker = CommandContext.GetCircuitBreaker(command.BreakerKey);
+            var breaker = _context.GetCircuitBreaker(command.BreakerKey);
 
             if (!breaker.IsAllowing())
             {
@@ -75,7 +82,7 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                if (CommandContext.IsExceptionIgnored(e.GetType()))
+                if (_context.IsExceptionIgnored(e.GetType()))
                 {
                     breaker.Metrics.MarkCommandSuccess();
                 }

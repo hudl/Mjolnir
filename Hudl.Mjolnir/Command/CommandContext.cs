@@ -13,6 +13,20 @@ using System.Threading;
 
 namespace Hudl.Mjolnir.Command
 {
+    // TODO deprecate "old" pool and command behavior?
+    // TODO go through all docs and doc comments and make sure they're accurate for the new changes
+
+    internal interface ICommandContext
+    {
+        IStats Stats { get; set; }
+        void IgnoreExceptions(HashSet<Type> types);
+        bool IsExceptionIgnored(Type type);
+        ICircuitBreaker GetCircuitBreaker(GroupKey key);
+        IIsolationThreadPool GetThreadPool(GroupKey key);
+        IBulkheadSemaphore GetBulkhead(GroupKey key);
+        IIsolationSemaphore GetFallbackSemaphore(GroupKey key);
+    }
+
     /// <summary>
     /// Manages all of Mjolnir's pools, breakers, and other state. Also handles
     /// dependency injection for replaceable components (stats, config, etc.).
@@ -20,10 +34,8 @@ namespace Hudl.Mjolnir.Command
     /// Client code typically doesn't interact with CommandContext other than
     /// to inject dependencies.
     /// </summary>
-    public sealed class CommandContext
+    internal class CommandContextImpl : ICommandContext
     {
-        private static readonly CommandContext Instance = new CommandContext();
-        
         // Many properties in Mjolnir use a chain of possible configuration values, typically:
         // - Explicitly-configured group value
         // - Explicitly-configured default value
@@ -44,7 +56,7 @@ namespace Hudl.Mjolnir.Command
         private static readonly IConfigurableValue<long> DefaultBreakerTrippedDurationMillis = new ConfigurableValue<long>("mjolnir.breaker.default.trippedDurationMillis", 10000);
         private static readonly IConfigurableValue<bool> DefaultBreakerForceTripped = new ConfigurableValue<bool>("mjolnir.breaker.default.forceTripped", false);
         private static readonly IConfigurableValue<bool> DefaultBreakerForceFixed = new ConfigurableValue<bool>("mjolnir.breaker.default.forceFixed", false);
-        
+
         // Circuit breaker metrics global defaults.
         private static readonly IConfigurableValue<long> DefaultMetricsWindowMillis = new ConfigurableValue<long>("mjolnir.metrics.default.windowMillis", 30000);
         private static readonly IConfigurableValue<long> DefaultMetricsSnapshotTtlMillis = new ConfigurableValue<long>("mjolnir.metrics.default.snapshotTtlMillis", 1000);
@@ -52,55 +64,36 @@ namespace Hudl.Mjolnir.Command
         // Thread pool global defaults.
         private static readonly IConfigurableValue<int> DefaultPoolThreadCount = new ConfigurableValue<int>("mjolnir.pools.default.threadCount", 10);
         private static readonly IConfigurableValue<int> DefaultPoolQueueLength = new ConfigurableValue<int>("mjolnir.pools.default.queueLength", 10);
-        
+
         // Fallback global defaults.
         private static readonly IConfigurableValue<int> DefaultFallbackMaxConcurrent = new ConfigurableValue<int>("mjolnir.fallback.default.maxConcurrent", 50);
-        
+
         // Instance collections.
-        private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
+        private ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
+        private ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
+        private ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
+        private ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
+        private ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
         // This is a Dictionary only because there's no great concurrent Set type available. Just
         // use the keys if checking for a type.
         private readonly ConcurrentDictionary<Type, bool> _ignoredExceptionTypes = new ConcurrentDictionary<Type, bool>();
-        
+
         private IStats _stats = new IgnoringStats();
-
-        private CommandContext() {}
-
-        /// <summary>
-        /// Get/set the Stats implementation that all Mjolnir code should use.
-        /// 
-        /// This should be set as soon as possible if it's going to be implemented.
-        /// Other parts of Mjolnir will cache their Stats members, so changing
-        /// this after Breakers and Pools have been created won't update the
-        /// client for them.
-        /// </summary>
-        public static IStats Stats
+        public IStats Stats
         {
-            get { return Instance._stats; }
+            get { return _stats; }
             set
             {
                 if (value == null)
                 {
                     throw new ArgumentException();
                 }
-                Instance._stats = value;
+                _stats = value;
             }
         }
 
-        /// <summary>
-        /// Ignored exception types won't count toward breakers tripping or other error counters.
-        /// Useful for things like validation, where the system isn't having any problems and the
-        /// caller needs to validate before invoking. This list is most applicable when using
-        /// [Command] attributes, since extending Command offers the ability to catch these types
-        /// specifically within Execute() - though there may still be some benefit in extended
-        /// Commands for validation-like situations where throwing is still desired.
-        /// </summary>
-        public static void IgnoreExceptions(HashSet<Type> types)
+        public void IgnoreExceptions(HashSet<Type> types)
         {
             if (types == null || types.Count == 0)
             {
@@ -109,23 +102,23 @@ namespace Hudl.Mjolnir.Command
 
             foreach (var type in types)
             {
-                Instance._ignoredExceptionTypes.TryAdd(type, true);
+                _ignoredExceptionTypes.TryAdd(type, true);
             }
         }
 
-        internal static bool IsExceptionIgnored(Type type)
+        public bool IsExceptionIgnored(Type type)
         {
-            return Instance._ignoredExceptionTypes.ContainsKey(type);
+            return _ignoredExceptionTypes.ContainsKey(type);
         }
 
-        internal static ICircuitBreaker GetCircuitBreaker(GroupKey key)
+        public ICircuitBreaker GetCircuitBreaker(GroupKey key)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
             }
 
-            return Instance._circuitBreakers.GetOrAddSafe(key, k =>
+            return _circuitBreakers.GetOrAddSafe(key, k =>
             {
                 var metrics = GetCommandMetrics(key);
                 var properties = new FailurePercentageCircuitBreakerProperties(
@@ -139,14 +132,14 @@ namespace Hudl.Mjolnir.Command
             });
         }
 
-        private static ICommandMetrics GetCommandMetrics(GroupKey key)
+        private ICommandMetrics GetCommandMetrics(GroupKey key)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
             }
 
-            return Instance._metrics.GetOrAddSafe(key, k =>
+            return _metrics.GetOrAddSafe(key, k =>
                 new StandardCommandMetrics(
                     key,
                     new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", DefaultMetricsWindowMillis),
@@ -154,14 +147,14 @@ namespace Hudl.Mjolnir.Command
                     Stats));
         }
 
-        internal static IIsolationThreadPool GetThreadPool(GroupKey key)
+        public IIsolationThreadPool GetThreadPool(GroupKey key)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
             }
 
-            return Instance._pools.GetOrAddSafe(key, k =>
+            return _pools.GetOrAddSafe(key, k =>
                 new StpIsolationThreadPool(
                     key,
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", DefaultPoolThreadCount),
@@ -174,20 +167,37 @@ namespace Hudl.Mjolnir.Command
         /// method, ensuring that they call TryEnter and Release on the same object reference.
         /// Phrased differently: don't re-retrieve the bulkhead before calling Release().
         /// </summary>
-        internal static IBulkheadSemaphore GetBulkhead(GroupKey key)
+        public IBulkheadSemaphore GetBulkhead(GroupKey key)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
             }
-            
-            var holder = Instance._bulkheads.GetOrAddSafe(key,
+
+            var holder = _bulkheads.GetOrAddSafe(key,
                 k => new SemaphoreBulkheadHolder(key),
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
             return holder.Bulkhead;
         }
-        
+
+        public IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
+        {
+            if (key == null)
+            {
+                throw new ArgumentNullException("key");
+            }
+
+            return _fallbackSemaphores.GetOrAddSafe(key, k =>
+            {
+                // For now, the default here is 5x the default pool threadCount, with the presumption that
+                // several commands may using the same pool, and we should therefore try to allow for a bit
+                // more concurrent fallback execution.
+                var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", DefaultFallbackMaxConcurrent);
+                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);
+            });
+        }
+
         // TODO unit tests on changing bulkhead limits dynamically
 
         // In order to dynamically change semaphore limits, we replace the semaphore on config
@@ -230,25 +240,39 @@ namespace Hudl.Mjolnir.Command
                 });
             }
         }
+    }
+    
+    public sealed class CommandContext
+    {
+        internal static readonly ICommandContext Current = new CommandContextImpl();
+        
+        private CommandContext() {}
 
-        // TODO deprecate "old" pool and command behavior?
-        // TODO go through all docs and doc comments and make sure they're accurate for the new changes
-
-        internal static IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
+        /// <summary>
+        /// Get/set the Stats implementation that all Mjolnir code should use.
+        /// 
+        /// This should be set as soon as possible if it's going to be implemented.
+        /// Other parts of Mjolnir will cache their Stats members, so changing
+        /// this after Breakers and Pools have been created won't update the
+        /// client for them.
+        /// </summary>
+        public static IStats Stats
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException("key");
-            }
+            get { return Current.Stats; }
+            set { Current.Stats = value; }
+        }
 
-            return Instance._fallbackSemaphores.GetOrAddSafe(key, k =>
-            {
-                // For now, the default here is 5x the default pool threadCount, with the presumption that
-                // several commands may using the same pool, and we should therefore try to allow for a bit
-                // more concurrent fallback execution.
-                var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", DefaultFallbackMaxConcurrent);
-                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);
-            });
+        /// <summary>
+        /// Ignored exception types won't count toward breakers tripping or other error counters.
+        /// Useful for things like validation, where the system isn't having any problems and the
+        /// caller needs to validate before invoking. This list is most applicable when using
+        /// [Command] attributes, since extending Command offers the ability to catch these types
+        /// specifically within Execute() - though there may still be some benefit in extended
+        /// Commands for validation-like situations where throwing is still desired.
+        /// </summary>
+        public static void IgnoreExceptions(HashSet<Type> types)
+        {
+            Current.IgnoreExceptions(types);
         }
     }
 }

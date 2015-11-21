@@ -98,14 +98,14 @@ namespace Hudl.Mjolnir.Command
         private ICircuitBreaker _breaker;
         internal ICircuitBreaker CircuitBreaker
         {
-            private get { return _breaker ?? CommandContext.GetCircuitBreaker(_breakerKey); }
+            private get { return _breaker ?? CommandContext.Current.GetCircuitBreaker(_breakerKey); }
             set { _breaker = value; }
         }
 
         private IIsolationThreadPool _pool;
         internal IIsolationThreadPool ThreadPool
         {
-            private get { return _pool ?? CommandContext.GetThreadPool(_poolKey); }
+            private get { return _pool ?? CommandContext.Current.GetThreadPool(_poolKey); }
             set { _pool = value; }
         }
 
@@ -113,7 +113,7 @@ namespace Hudl.Mjolnir.Command
         internal IIsolationSemaphore FallbackSemaphore
         {
             // TODO Consider isolating these per-command instead of per-pool.
-            private get { return _fallbackSemaphore ?? CommandContext.GetFallbackSemaphore(_poolKey); }
+            private get { return _fallbackSemaphore ?? CommandContext.Current.GetFallbackSemaphore(_poolKey); }
             set { _fallbackSemaphore = value; }
         }
 
@@ -403,7 +403,7 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                if (CommandContext.IsExceptionIgnored(e.GetType()))
+                if (CommandContext.Current.IsExceptionIgnored(e.GetType()))
                 {
                     CircuitBreaker.Metrics.MarkCommandSuccess();
                 }

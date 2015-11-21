@@ -17,8 +17,9 @@ namespace Hudl.Mjolnir.Command
         protected static readonly IConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
 
         private readonly IBreakerInvoker _breakerInvoker;
+        private readonly ICommandContext _context;
 
-        public BulkheadInvoker(IBreakerInvoker breakerInvoker)
+        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context)
         {
             if (breakerInvoker == null)
             {
@@ -26,6 +27,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             _breakerInvoker = breakerInvoker;
+            _context = context ?? CommandContext.Current;
         }
 
         // Note: Bulkhead rejections shouldn't count as failures to the breaker. If a downstream
@@ -41,7 +43,7 @@ namespace Hudl.Mjolnir.Command
         {
             // TODO stats/events
 
-            var bulkhead = CommandContext.GetBulkhead(command.BulkheadKey);
+            var bulkhead = _context.GetBulkhead(command.BulkheadKey);
 
             if (!bulkhead.TryEnter())
             {
@@ -62,7 +64,7 @@ namespace Hudl.Mjolnir.Command
 
         public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
-            var bulkhead = CommandContext.GetBulkhead(command.BulkheadKey);
+            var bulkhead = _context.GetBulkhead(command.BulkheadKey);
 
             if (!bulkhead.TryEnter())
             {

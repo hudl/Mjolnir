@@ -35,8 +35,8 @@ namespace Hudl.Mjolnir.Command
 
     public class CommandInvoker : ICommandInvoker
     {
+        private readonly ICommandContext _context;
         private readonly IStats _stats;
-        
         private readonly IBulkheadInvoker _bulkheadInvoker;
 
         /// <summary>
@@ -49,15 +49,16 @@ namespace Hudl.Mjolnir.Command
 
         public CommandInvoker() : this(null, null, null)
         { }
-
+        
         internal CommandInvoker(IStats stats = null, IBulkheadInvoker bulkheadInvoker = null, IConfigurableValue<bool> ignoreTimeouts = null)
         {
-            _stats = stats ?? CommandContext.Stats;
+            _context = CommandContext.Current;
+            _stats = stats ?? _context.Stats;
             
             // TODO kind of ugly, rework this. they're lightweight to construct, though, and
             // callers shouldn't be repeatedly constructing invokers.
             // TODO make sure callers know not to repeatedly construct invokers :)
-            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(new BreakerInvoker());
+            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(new BreakerInvoker(_context), _context);
 
             _ignoreCancellation = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
         }
