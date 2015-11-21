@@ -13,9 +13,13 @@ namespace Hudl.Mjolnir.Command
 {
     public interface ICommandInvoker
     {
-        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction);
-        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis);
-        Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct);
+        Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command);
+        Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis);
+        Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
+
+        Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command);
+        Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis);
+        Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
 
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction);
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis);
@@ -58,32 +62,69 @@ namespace Hudl.Mjolnir.Command
             _ignoreCancellation = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
         }
 
-        public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction)
-        {
-            var token = GetCancellationTokenForCommand(command);
-            return InvokeAsync(command, failureAction, token);
-        }
-
-        public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis)
-        {
-            var token = GetCancellationTokenForCommand(command, timeoutMillis);
-            return InvokeAsync(command, failureAction, token);
-        }
-
-        public Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
-        {
-            var token = GetCancellationTokenForCommand(ct);
-            return InvokeAsync(command, failureAction, token);
-        }
-
         // TODO have the command naming logic remove "AsyncCommand" suffixes as well
 
-        private async Task<CommandResult<TResult>> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
+        public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAsync(command, token);
+        }
+
+        public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAsync(command, token);
+        }
+
+        public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAsync(command, token);
+        }
+
+        public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command)
+        {
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeReturnAsync(command, token);
+        }
+
+        public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis)
+        {
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeReturnAsync(command, token);
+        }
+
+        public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
+        {
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeReturnAsync(command, token);
+        }
+
+        private async Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
             // This doesn't adhere to the OnFailure action because it's a bug in the code
             // and should always throw so people see it and fix it.
             EnsureSingleInvoke(command);
-            
+
+            try
+            {
+                var result = await InvokeAsync(command, ct);
+                return new CommandResult<TResult>(result);
+            }
+            catch (Exception e)
+            {
+                return new CommandResult<TResult>(default(TResult), e);
+            }
+        }
+
+        private async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
+        {
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
             var status = CommandCompletionStatus.RanToCompletion;
             var stopwatch = Stopwatch.StartNew();
@@ -102,7 +143,7 @@ namespace Hudl.Mjolnir.Command
                 var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
                 stopwatch.Stop();
 
-                return new CommandResult<TResult>(result, status);
+                return result;
             }
             catch (Exception e)
             {
@@ -111,12 +152,7 @@ namespace Hudl.Mjolnir.Command
                 status = GetCompletionStatus(e, ct);
                 AttachCommandExceptionData(command, e, status, ct, stopwatch);
 
-                if (failureAction == OnFailure.Throw)
-                {
-                    throw;
-                }
-
-                return new CommandResult<TResult>(default(TResult), status, e);
+                throw;
             }
             finally
             {
@@ -166,7 +202,7 @@ namespace Hudl.Mjolnir.Command
                 var result = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
                 stopwatch.Stop();
 
-                return new CommandResult<TResult>(result, status);
+                return new CommandResult<TResult>(result);
             }
             catch (Exception e)
             {
@@ -180,7 +216,7 @@ namespace Hudl.Mjolnir.Command
                     throw;
                 }
 
-                return new CommandResult<TResult>(default(TResult), status, e);
+                return new CommandResult<TResult>(default(TResult), e);
             }
             finally
             {
@@ -265,21 +301,19 @@ namespace Hudl.Mjolnir.Command
         Throw,
         Return,
     }
-    
+
     public sealed class CommandResult<TResult>
     {
         private readonly TResult _value;
-        private readonly CommandCompletionStatus _status;
         private readonly Exception _exception;
 
         public TResult Value { get { return _value; } }
-        public CommandCompletionStatus Status { get { return _status; } }
         public Exception Exception { get { return _exception; } }
+        public bool WasSuccess { get { return _exception == null; } }
 
-        internal CommandResult(TResult value, CommandCompletionStatus status, Exception exception = null)
+        internal CommandResult(TResult value, Exception exception = null)
         {
             _value = value;
-            _status = status;
             _exception = exception;
         }
     }

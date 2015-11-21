@@ -20,16 +20,20 @@ namespace Hudl.Mjolnir.Tests
 
             // Async and sync commands inherit from different Base classes.
 
-            // Async example
-            var fileExistsAsyncCommand = new S3FileExistsAsyncCommand(asyncClient, "static-content", "foo.txt");
-            var result1 = await invoker.InvokeAsync(fileExistsAsyncCommand, OnFailure.Throw);
-            var exists1 = result1.Value;
+            // Async example with thrown exceptions
+            var command1 = new S3FileExistsAsyncCommand(asyncClient, "static-content", "foo.txt");
+            var exists1 = await invoker.InvokeThrowAsync(command1);
+
+            // Async example with wrapped result
+            var command2 = new S3FileExistsAsyncCommand(asyncClient, "static-content", "foo.txt");
+            var result2 = await invoker.InvokeReturnAsync(command2);
+            var exists2 = result2.Value;
 
 
             // Sync example
-            var fileExistsSyncCommand = new S3FileExistsCommand(syncClient, "static-content", "foo.txt");
-            var result2 = invoker.Invoke(fileExistsSyncCommand, OnFailure.Throw, 1000);
-            var exists2 = result2.Value;
+            var command3 = new S3FileExistsCommand(syncClient, "static-content", "foo.txt");
+            var result3 = invoker.Invoke(command3, OnFailure.Throw, 1000);
+            var exists3 = result2.Value;
 
 
             // TODO get some other (non-S3) real-world examples of commands in here
