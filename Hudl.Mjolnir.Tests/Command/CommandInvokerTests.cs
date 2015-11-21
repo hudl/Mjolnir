@@ -954,7 +954,7 @@ namespace Hudl.Mjolnir.Tests.Command
         public NoOpAsyncCommand() : this(TimeSpan.FromHours(1)) { }
         public NoOpAsyncCommand(TimeSpan timeout) : base("test", "test", timeout) { }
         
-        protected internal override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+        public override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
             return Task.FromResult(true);
         }
@@ -971,7 +971,7 @@ namespace Hudl.Mjolnir.Tests.Command
             _millis = millis;
         }
 
-        protected internal override async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+        public override async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
             await Task.Delay(_millis, cancellationToken);
             return true;
@@ -987,7 +987,7 @@ namespace Hudl.Mjolnir.Tests.Command
         public NoOpCommand() : this(TimeSpan.FromHours(1)) { }
         public NoOpCommand(TimeSpan timeout) : base("test", "test", timeout) { }
 
-        protected internal override bool Execute(CancellationToken cancellationToken)
+        public override bool Execute(CancellationToken cancellationToken)
         {
             return true;
         }
@@ -1004,7 +1004,7 @@ namespace Hudl.Mjolnir.Tests.Command
             _millis = millis;
         }
 
-        protected internal override bool Execute(CancellationToken cancellationToken)
+        public override bool Execute(CancellationToken cancellationToken)
         {
             Thread.Sleep(_millis);
             return true;

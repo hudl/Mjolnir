@@ -2,11 +2,7 @@
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
-using Moq;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -126,7 +122,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 _changeLimitTo = changeLimitTo;
             }
 
-            protected internal override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+            public override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
             {
                 ConfigProvider.Instance.Set(_configKey, _changeLimitTo);
                 return Task.FromResult(true);
@@ -146,7 +142,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 _changeLimitTo = changeLimitTo;
             }
 
-            protected internal override bool Execute(CancellationToken cancellationToken)
+            public override bool Execute(CancellationToken cancellationToken)
             {
                 ConfigProvider.Instance.Set(_configKey, _changeLimitTo);
                 return true;

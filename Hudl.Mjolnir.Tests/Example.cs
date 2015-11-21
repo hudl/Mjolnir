@@ -99,7 +99,7 @@ namespace Hudl.Mjolnir.Tests
             _fileName = fileName;
         }
 
-        protected internal override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+        public override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
             return _client.FileExistsAsync(_bucketName, _fileName);
         }
@@ -119,7 +119,7 @@ namespace Hudl.Mjolnir.Tests
             _fileName = fileName;
         }
 
-        protected internal override bool Execute(CancellationToken cancellationToken)
+        public override bool Execute(CancellationToken cancellationToken)
         {
             return _client.FileExists(_bucketName, _fileName);
         }
@@ -145,7 +145,7 @@ namespace Hudl.Mjolnir.Tests
             _statContentType = statContentType;
         }
 
-        protected internal override VoidResult Execute(CancellationToken cancellationToken)
+        public override VoidResult Execute(CancellationToken cancellationToken)
         {
             _client.UploadFile(_bucketName, _localFile, _key, _contentType, _statContentType);
             return new VoidResult();

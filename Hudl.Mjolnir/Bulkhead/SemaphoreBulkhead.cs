@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 
 namespace Hudl.Mjolnir.Bulkhead
 {
@@ -7,8 +8,6 @@ namespace Hudl.Mjolnir.Bulkhead
         void Release();
         bool TryEnter();
         int Available { get; }
-        //void Wait(CancellationToken ct);
-        //Task WaitAsync(CancellationToken ct);
     }
 
     internal class SemaphoreBulkhead : IBulkheadSemaphore
@@ -17,7 +16,11 @@ namespace Hudl.Mjolnir.Bulkhead
 
         internal SemaphoreBulkhead(int maxConcurrent)
         {
-            // TODO validate value?
+            if (maxConcurrent < 0)
+            {
+                throw new ArgumentOutOfRangeException("maxConcurrent", maxConcurrent, "Semaphore bulkhead must have a limit >= 0");
+            }
+
             _semaphore = new SemaphoreSlim(maxConcurrent);
 
             // TODO gauges, stats
@@ -43,23 +46,5 @@ namespace Hudl.Mjolnir.Bulkhead
         {
             get { return _semaphore.CurrentCount; }
         }
-
-        /// <summary>
-        /// Blocks until the semaphore is available or cancellation occurs (via the provided
-        /// CancellationToken).
-        /// </summary>
-        //public void Wait(CancellationToken ct)
-        //{
-        //    _semaphore.Wait(ct);
-        //}
-
-        /// <summary>
-        /// Asynchronously waits until the semaphore is available or cancellation occurs (via the 
-        /// provided CancellationToken).
-        /// </summary>
-        //public async Task WaitAsync(CancellationToken ct)
-        //{
-        //    await _semaphore.WaitAsync(ct);
-        //}
     }
 }
