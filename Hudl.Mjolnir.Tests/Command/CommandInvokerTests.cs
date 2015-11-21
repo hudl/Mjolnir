@@ -52,7 +52,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var result = await invoker.InvokeThrowAsync(command);
 
-                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())); // TODO test CancellationToken more accurately?
+                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()));
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "RanToCompletion", It.IsAny<TimeSpan>()));
                 Assert.Equal(expectedResultValue, result);
             }
@@ -296,7 +296,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // on what happens during successful execution.
                 var result = await invoker.InvokeReturnAsync(command);
 
-                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())); // TODO test CancellationToken more accurately?
+                mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()));
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "RanToCompletion", It.IsAny<TimeSpan>()));
                 Assert.Null(result.Exception);
                 Assert.Equal(expectedResultValue, result.Value);
@@ -538,7 +538,7 @@ namespace Hudl.Mjolnir.Tests.Command
             // We're testing OnFailure.Throws here. Mainly, it shouldn't throw if we're successful.
             var result = invoker.Invoke(command, OnFailure.Throw);
 
-            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())); // TODO test CancellationToken more accurately?
+            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
             Assert.True(result.WasSuccess);
             Assert.Null(result.Exception);
@@ -565,7 +565,7 @@ namespace Hudl.Mjolnir.Tests.Command
             // on what happens during successful execution.
             var result = invoker.Invoke(command, OnFailure.Return);
 
-            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())); // TODO test CancellationToken more accurately?
+            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
             Assert.True(result.WasSuccess);
             Assert.Null(result.Exception);

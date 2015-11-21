@@ -95,9 +95,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 ConfigProvider.Instance.Set(configKey, 0);
                 Assert.Equal(0, context.GetBulkhead(groupKey).Available);
             }
-
-            // TODO a test on BulkheadInvoker to make sure it releases on the same bulkhead
-            // it entered, and not a new one - particularly across a config change.
         }
     }
 }

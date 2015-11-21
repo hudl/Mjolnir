@@ -24,15 +24,8 @@ namespace Hudl.Mjolnir.Command
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction);
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis);
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct);
-
-        // TODO possible alternate signatures:
-        // 
-        // Could forego the CommandResult wrapper, which would enforce a OnFailure.Throw
-        //   TResult InvokeAndUnwrapOrThrow<TResult>(...)
     }
-
-    // TODO what do timeouts/cancellations look like in exceptions now? make sure we didn't revert that logging change
-
+    
     /// <summary>
     /// Invoker is thread-safe. Prefer to keep a single instance around and use it throughout your
     /// application (e.g. via dependency injection).
@@ -62,9 +55,7 @@ namespace Hudl.Mjolnir.Command
 
             _ignoreCancellation = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
         }
-
-        // TODO have the command naming logic remove "AsyncCommand" suffixes as well
-
+        
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)
         {
             EnsureSingleInvoke(command);
