@@ -10,6 +10,7 @@ using Hudl.Mjolnir.ThreadPool;
 using Hudl.Mjolnir.Util;
 using Hudl.Mjolnir.Bulkhead;
 using System.Threading;
+using log4net;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -36,6 +37,8 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     internal class CommandContextImpl : ICommandContext
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(CommandContextImpl));
+
         // Many properties in Mjolnir use a chain of possible configuration values, typically:
         // - Explicitly-configured group value
         // - Explicitly-configured default value
@@ -197,9 +200,7 @@ namespace Hudl.Mjolnir.Command
                 return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);
             });
         }
-
-        // TODO unit tests on changing bulkhead limits dynamically
-
+        
         // In order to dynamically change semaphore limits, we replace the semaphore on config
         // change events. We should never destroy the holder once it's been created - we may
         // replace its internal members, but the holder should remain for the lifetime of the
@@ -236,6 +237,14 @@ namespace Hudl.Mjolnir.Command
                 // has been replaced after a config change.
                 _config.AddChangeHandler(newLimit =>
                 {
+                    if (newLimit < 0)
+                    {
+                        Log.ErrorFormat("Semaphore bulkhead config {0} changed to an invalid limit of {0}, the bulkhead will not be changed",
+                            configKey,
+                            newLimit);
+                        return;
+                    }
+                    
                     _bulkhead = new SemaphoreBulkhead(newLimit);
                 });
             }

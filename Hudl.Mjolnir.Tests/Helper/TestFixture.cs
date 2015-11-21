@@ -8,7 +8,6 @@ namespace Hudl.Mjolnir.Tests.Helper
         private static readonly TestConfigProvider _configProvider = new TestConfigProvider();
         private static bool _configured = false;
 
-        internal const string UseCircuitBreakersKey = "mjolnir.useCircuitBreakers";
         internal const string IgnoreTimeoutsKey = "mjolnir.ignoreTimeouts"; 
         
         public TestFixture()

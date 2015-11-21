@@ -1,6 +1,4 @@
-﻿using Hudl.Config;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading;
 
 namespace Hudl.Mjolnir.Bulkhead
 {
@@ -8,6 +6,7 @@ namespace Hudl.Mjolnir.Bulkhead
     {
         void Release();
         bool TryEnter();
+        int Available { get; }
         //void Wait(CancellationToken ct);
         //Task WaitAsync(CancellationToken ct);
     }
@@ -39,7 +38,12 @@ namespace Hudl.Mjolnir.Bulkhead
         {
             return _semaphore.Wait(0);
         }
-        
+
+        public int Available
+        {
+            get { return _semaphore.CurrentCount; }
+        }
+
         /// <summary>
         /// Blocks until the semaphore is available or cancellation occurs (via the provided
         /// CancellationToken).

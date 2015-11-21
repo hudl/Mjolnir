@@ -90,6 +90,7 @@
     <Compile Include="Command\Attribute\NewCommandAttributeAndProxyTestsIgnoringTimeouts.cs" />
     <Compile Include="Command\CommandCircuitBreakerTests.cs" />
     <Compile Include="Command\Attribute\CommandAttributeAndProxyTests.cs" />
+    <Compile Include="Command\CommandContextTests.cs" />
     <Compile Include="Command\CommandFallbackTests.cs" />
     <Compile Include="Command\CommandGroupKeyTests.cs" />
     <Compile Include="Command\CommandIgnoredTimeoutTests.cs" />
@@ -103,6 +104,7 @@
     <Compile Include="Helper\AlwaysSuccessfulIsolationThreadPool.cs" />
     <Compile Include="Helper\AssertX.cs" />
     <Compile Include="Helper\ExpectedTestException.cs" />
+    <Compile Include="Helper\RandomGenerator.cs" />
     <Compile Include="Helper\TestFixture.cs" />
     <Compile Include="Key\GroupKeyTests.cs" />
     <Compile Include="Metrics\InterlockingLongCounterTests.cs" />
