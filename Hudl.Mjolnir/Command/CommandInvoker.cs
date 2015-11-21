@@ -33,10 +33,13 @@ namespace Hudl.Mjolnir.Command
 
     // TODO what do timeouts/cancellations look like in exceptions now? make sure we didn't revert that logging change
 
+    /// <summary>
+    /// Invoker is thread-safe. Prefer to keep a single instance around and use it throughout your
+    /// application (e.g. via dependency injection).
+    /// </summary>
     public class CommandInvoker : ICommandInvoker
     {
         private readonly ICommandContext _context;
-        private readonly IStats _stats;
         private readonly IBulkheadInvoker _bulkheadInvoker;
 
         /// <summary>
@@ -50,15 +53,12 @@ namespace Hudl.Mjolnir.Command
         public CommandInvoker() : this(null, null, null)
         { }
         
-        internal CommandInvoker(IStats stats = null, IBulkheadInvoker bulkheadInvoker = null, IConfigurableValue<bool> ignoreTimeouts = null)
+        internal CommandInvoker(ICommandContext context = null, IBulkheadInvoker bulkheadInvoker = null, IConfigurableValue<bool> ignoreTimeouts = null)
         {
-            _context = CommandContext.Current;
-            _stats = stats ?? _context.Stats;
-            
-            // TODO kind of ugly, rework this. they're lightweight to construct, though, and
-            // callers shouldn't be repeatedly constructing invokers.
-            // TODO make sure callers know not to repeatedly construct invokers :)
-            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(new BreakerInvoker(_context), _context);
+            _context = context ?? CommandContext.Current;
+
+            var breakerInvoker = new BreakerInvoker(_context);
+            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _context);
 
             _ignoreCancellation = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
         }
@@ -157,7 +157,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
+                _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
             }
         }
 
@@ -221,7 +221,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                _stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
+                _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
             }
         }
 
