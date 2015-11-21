@@ -4,6 +4,13 @@ using System;
 
 namespace Hudl.Mjolnir.Command
 {
+    /// <summary>
+    /// An operation that needs isolation during failure. When passed to an Invoke method on the
+    /// <see cref="CommandInvoker"/>, the operation implemented in the Execute method receives
+    /// protection via timeouts, circuit breakers, and bulkheads.
+    /// 
+    /// For a detailed overview, see https://github.com/hudl/Mjolnir/wiki.
+    /// </summary>
     public abstract class BaseCommand : Command
     {
         private readonly GroupKey _group;
@@ -13,7 +20,7 @@ namespace Hudl.Mjolnir.Command
         private readonly TimeSpan _constructorTimeout;
         
         // 0 == not yet invoked, > 0 == invoked
-        // This is modified by the invoker with concurrency protections.
+        // This is modified by the invoker with consideration for concurrency.
         internal int _hasInvoked = 0;
 
         /// <summary>
