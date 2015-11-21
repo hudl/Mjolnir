@@ -88,6 +88,7 @@
     <Compile Include="Breaker\FailurePercentageCircuitBreakerTests.cs" />
     <Compile Include="Command\Attribute\NewCommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\Attribute\NewCommandAttributeAndProxyTestsIgnoringTimeouts.cs" />
+    <Compile Include="Command\BulkheadInvokerTests.cs" />
     <Compile Include="Command\CommandCircuitBreakerTests.cs" />
     <Compile Include="Command\Attribute\CommandAttributeAndProxyTests.cs" />
     <Compile Include="Command\CommandContextTests.cs" />
