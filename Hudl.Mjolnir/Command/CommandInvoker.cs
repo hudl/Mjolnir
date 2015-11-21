@@ -11,11 +11,68 @@ using System.Threading.Tasks;
 
 namespace Hudl.Mjolnir.Command
 {
+    /// <summary>
+    /// Invokes commands, protecting and isolating the execution with timeouts, circuit breakers,
+    /// and bulkheads.
+    /// 
+    /// <seealso cref="CommandInvoker"/>
+    /// </summary>
     public interface ICommandInvoker
     {
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception.
+        /// 
+        /// If the command failed, the result will contain the causing exception. If the command
+        /// was successful, the result will have a properly set value.
+        /// 
+        /// <seealso cref="AsyncCommand{TResult}"/>
+        /// <seealso cref="CommandResult"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <returns>A Task wrapping a CommandResult.</returns>
         Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided timeout will override the timeout defined by
+        /// the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the command failed, the result will contain the causing exception. If the command
+        /// was successful, the result will have a properly set value.
+        /// 
+        /// <seealso cref="AsyncCommand{TResult}"/>
+        /// <seealso cref="CommandResult"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="timeoutMillis">
+        ///     A timeout that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task wrapping a CommandResult.</returns>
         Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided CancellationToken will override the timeout
+        /// defined by the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the command failed, the result will contain the causing exception. If the command
+        /// was successful, the result will have a properly set value.
+        /// 
+        /// <seealso cref="AsyncCommand{TResult}"/>
+        /// <seealso cref="CommandResult"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="ct">
+        ///     A cancellation token that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task wrapping a CommandResult.</returns>
         Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
+
+        // TODO finish doc comments here
 
         Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command);
         Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis);
