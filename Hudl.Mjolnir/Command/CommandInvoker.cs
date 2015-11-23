@@ -71,14 +71,119 @@ namespace Hudl.Mjolnir.Command
         /// <returns>A Task wrapping a CommandResult.</returns>
         Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
 
-        // TODO finish doc comments here
-
+        /// <summary>
+        /// Invokes the provided command. If the command fails (due to any exception, be it
+        /// Mjolnir's or a fault in the command's execution itself), the exception will be
+        /// rethrown.
+        /// 
+        /// Callers should consider using the <code>InvokeReturn*</code> overloads where possible
+        /// to handle failure gracefully (e.g. using fallbacks or retries).
+        /// 
+        /// <seealso cref="AsyncCommand{TResult}"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <returns>A Task wrapping the command's execution result.</returns>
         Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command);
+
+        /// <summary>
+        /// Invokes the provided command. If the command fails (due to any exception, be it
+        /// Mjolnir's or a fault in the command's execution itself), the exception will be
+        /// rethrown. The provided timeout will override the timeout defined by the command's
+        /// constructor, and will also override any configured timeouts.
+        /// 
+        /// Callers should consider using the <code>InvokeReturn*</code> overloads where possible
+        /// to handle failure gracefully (e.g. using fallbacks or retries).
+        /// 
+        /// <seealso cref="AsyncCommand{TResult}"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="timeoutMillis">
+        ///     A timeout that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task wrapping the command's execution result.</returns>
         Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis);
+
+        /// <summary>
+        /// Invokes the provided command. If the command fails (due to any exception, be it
+        /// Mjolnir's or a fault in the command's execution itself), the exception will be
+        /// rethrown. The provided CancellationToken will override the timeout defined by the
+        /// command's constructor, and will also override any configured timeouts.
+        /// 
+        /// Callers should consider using the <code>InvokeReturn*</code> overloads where possible
+        /// to handle failure gracefully (e.g. using fallbacks or retries).
+        /// 
+        /// <seealso cref="AsyncCommand{TResult}"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="ct">
+        ///     A cancellation token that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task wrapping the command's execution result.</returns>
         Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
 
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception.
+        /// 
+        /// If the failure action is "throw", exceptions will be rethrown. If the failure action is
+        /// "return" and the command fails, the result will contain the causing exception. If the
+        /// command succeeds (regardless of the failure action), the result will have a properly set
+        /// value.
+        /// 
+        /// <seealso cref="SyncCommand{TResult}"/>
+        /// <seealso cref="CommandResult{TResult}"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="failureAction">Whether to return or throw on failure.</param>
+        /// <returns>A CommandResult with a return value or exception information.</returns>
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided timeout will override the timeout defined by
+        /// the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the failure action is "throw", exceptions will be rethrown. If the failure action is
+        /// "return" and the command fails, the result will contain the causing exception. If the
+        /// command succeeds (regardless of the failure action), the result will have a properly set
+        /// value.
+        /// 
+        /// <seealso cref="SyncCommand{TResult}"/>
+        /// <seealso cref="CommandResult{TResult}"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="failureAction">Whether to return or throw on failure.</param>
+        /// <param name="timeoutMillis">
+        ///     A timeout that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A CommandResult with a return value or exception information.</returns>
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided CancellationToken will override the timeout
+        /// defined by the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the failure action is "throw", exceptions will be rethrown. If the failure action is
+        /// "return" and the command fails, the result will contain the causing exception. If the
+        /// command succeeds (regardless of the failure action), the result will have a properly set
+        /// value.
+        /// 
+        /// <seealso cref="SyncCommand{TResult}"/>
+        /// <seealso cref="CommandResult{TResult}"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="failureAction">Whether to return or throw on failure.</param>
+        /// <param name="ct">
+        ///     A cancellation token that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A CommandResult with a return value or exception information.</returns>
         CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct);
     }
     
