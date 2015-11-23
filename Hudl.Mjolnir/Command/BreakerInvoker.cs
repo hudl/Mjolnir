@@ -27,7 +27,6 @@ namespace Hudl.Mjolnir.Command
 
             if (!breaker.IsAllowing())
             {
-                // TODO unit test
                 _context.MetricEvents.RejectedByBreaker(breaker.Name, command.Name);
                 throw new CircuitBreakerRejectedException();
             }
@@ -73,7 +72,6 @@ namespace Hudl.Mjolnir.Command
             {
                 command._executionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
 
-                // TODO unit test
                 if (success)
                 {
                     _context.MetricEvents.BreakerSuccessCount(breaker.Name, command.Name);
@@ -93,6 +91,7 @@ namespace Hudl.Mjolnir.Command
 
             if (!breaker.IsAllowing())
             {
+                _context.MetricEvents.RejectedByBreaker(breaker.Name, command.Name);
                 throw new CircuitBreakerRejectedException();
             }
 
@@ -135,7 +134,6 @@ namespace Hudl.Mjolnir.Command
             {
                 command._executionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
 
-                // TODO unit test
                 if (success)
                 {
                     _context.MetricEvents.BreakerSuccessCount(breaker.Name, command.Name);

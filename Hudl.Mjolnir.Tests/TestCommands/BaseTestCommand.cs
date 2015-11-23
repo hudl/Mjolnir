@@ -1,6 +1,5 @@
 ﻿using System;
 using Hudl.Mjolnir.Command;
-using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Tests.Helper;
 
 namespace Hudl.Mjolnir.Tests.TestCommands
