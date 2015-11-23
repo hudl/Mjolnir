@@ -77,7 +77,7 @@ namespace Hudl.Mjolnir.Command
                 if (executedHere)
                 {
                     stopwatch.Stop();
-                    command._executionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                    command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
                 }
             }
         }
@@ -119,7 +119,7 @@ namespace Hudl.Mjolnir.Command
                 if (executedHere)
                 {
                     stopwatch.Stop();
-                    command._executionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                    command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
                 }
             }
         }

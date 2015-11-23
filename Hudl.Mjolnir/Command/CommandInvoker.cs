@@ -309,7 +309,7 @@ namespace Hudl.Mjolnir.Command
                 stopwatch.Stop();
 
                 _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
-                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString(), failureModeForMetrics.ToString().ToLowerInvariant());
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureModeForMetrics.ToString().ToLowerInvariant());
             }
         }
 
@@ -374,7 +374,7 @@ namespace Hudl.Mjolnir.Command
                 stopwatch.Stop();
 
                 _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
-                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
             }
         }
 
@@ -401,7 +401,7 @@ namespace Hudl.Mjolnir.Command
 
         private static void EnsureSingleInvoke(BaseCommand command)
         {
-            if (Interlocked.CompareExchange(ref command._hasInvoked, 1, 0) > 0)
+            if (Interlocked.CompareExchange(ref command.HasInvoked, 1, 0) > 0)
             {
                 throw new InvalidOperationException("A command instance may only be invoked once");
             }
@@ -439,7 +439,7 @@ namespace Hudl.Mjolnir.Command
                 Breaker = command.BreakerKey,
                 Bulkhead = command.BulkheadKey,
                 TimeoutMillis = ct.DescriptionForLog,
-                ExecuteMillis = command._executionTimeMillis,
+                ExecuteMillis = command.ExecutionTimeMillis,
             });
         }
 

@@ -70,7 +70,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                command._executionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
+                command.ExecutionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
 
                 if (success)
                 {
@@ -132,7 +132,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                command._executionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
+                command.ExecutionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
 
                 if (success)
                 {

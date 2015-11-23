@@ -21,12 +21,11 @@ namespace Hudl.Mjolnir.Command
         
         // 0 == not yet invoked, > 0 == invoked
         // This is modified by the invoker with consideration for concurrency.
-        internal int _hasInvoked = 0;
+        internal int HasInvoked = 0;
 
-        // TODO wrap with accessors
         // Stores the time spent in Execute() or ExecuteAsync().
         // Set by the component that actually calls the Execute* method.
-        internal double _executionTimeMillis;
+        internal double ExecutionTimeMillis { get; set; }
 
         /// <summary>
         /// Constructs the Command.

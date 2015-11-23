@@ -158,7 +158,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
 
-                Assert.True(command._executionTimeMillis > 0);
+                Assert.True(command.ExecutionTimeMillis > 0);
             }
 
             [Fact]
@@ -181,7 +181,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
 
-                Assert.True(command._executionTimeMillis > 0);
+                Assert.True(command.ExecutionTimeMillis > 0);
             }
 
             [Fact]
@@ -210,7 +210,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
 
-                Assert.Equal(0, command._executionTimeMillis);
+                Assert.Equal(0, command.ExecutionTimeMillis);
             }
 
             [Fact]
@@ -239,7 +239,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 
                 await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
 
-                Assert.Equal(0, command._executionTimeMillis);
+                Assert.Equal(0, command.ExecutionTimeMillis);
             }
         }
 
@@ -387,7 +387,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 invoker.ExecuteWithBulkhead(command, CancellationToken.None);
 
-                Assert.True(command._executionTimeMillis > 0);
+                Assert.True(command.ExecutionTimeMillis > 0);
             }
 
             [Fact]
@@ -410,7 +410,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
 
-                Assert.True(command._executionTimeMillis > 0);
+                Assert.True(command.ExecutionTimeMillis > 0);
             }
 
             [Fact]
@@ -439,7 +439,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 invoker.ExecuteWithBulkhead(command, CancellationToken.None);
 
-                Assert.Equal(0, command._executionTimeMillis);
+                Assert.Equal(0, command.ExecutionTimeMillis);
             }
 
             [Fact]
@@ -468,7 +468,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
 
-                Assert.Equal(0, command._executionTimeMillis);
+                Assert.Equal(0, command.ExecutionTimeMillis);
             }
         }
 
