@@ -71,10 +71,9 @@ namespace Hudl.Mjolnir.Command
 
             TResult result;
 
+            var stopwatch = Stopwatch.StartNew();
             try
             {
-                var stopwatch = Stopwatch.StartNew();
-
                 result = command.Execute(ct);
 
                 breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
@@ -84,6 +83,7 @@ namespace Hudl.Mjolnir.Command
             {
                 if (_context.IsExceptionIgnored(e.GetType()))
                 {
+                    breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
                 }
                 else
