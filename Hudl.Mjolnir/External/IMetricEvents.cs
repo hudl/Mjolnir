@@ -15,6 +15,11 @@
         /// <summary>
         /// When a command is invoked. Fires on completion.
         /// 
+        /// IMPORTANT: On "old" commands (i.e. inheriting from Command), the difference between
+        /// the invoke and execute times is probably insignificant - the execute time will likely
+        /// still contain a bit of Mjolnir overhead. The difference is more accurate on "newer"
+        /// commands that inherit from AsyncCommand or SyncCommand.
+        /// 
         /// Recommended metric: Timer, with fields like "status" and "failureAction" as dimensions.
         /// </summary>
         /// <param name="commandName">The name of the command.</param>
@@ -31,12 +36,10 @@
         /// <param name="failureAction">One of "throw" or "return".</param>
         void CommandInvoked(string commandName, double invokeMillis, double executeMillis, string status, string failureAction);
 
-        // TODO wire CommandInvoked into old commands
-        
         /// <summary>
         /// When an operation acquires a lock/thread on its bulkhead.
         /// 
-        /// IMPORTANT: does not fire for "old" commands (i.e. inheriting from Command). Only fires
+        /// IMPORTANT: Does not fire for "old" commands (i.e. inheriting from Command). Only fires
         /// for SyncCommand and AsyncCommand implementations that pass through CommandInvoker.
         /// 
         /// Recommended metric: Counter (increment, opposite LeaveBulkhead).

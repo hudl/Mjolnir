@@ -27,6 +27,7 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.ImmediatelyReturningCommandWithoutFallback total", "RanToCompletion", It.IsAny<TimeSpan>()), Times.Once);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.ImmediatelyReturningCommandWithoutFallback execute", "RanToCompletion", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.ImmediatelyReturningCommandWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "throw"));
             mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
@@ -45,6 +46,7 @@ namespace Hudl.Mjolnir.Tests.Stats
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback total", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback execute", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.FaultingTaskWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
             mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
@@ -63,6 +65,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             
             mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback total", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback execute", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.FaultingExecuteWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
             mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
@@ -82,6 +85,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             Assert.True(e.GetBaseException() is OperationCanceledException);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback total", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback execute", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.TimingOutWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
             mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
@@ -105,7 +109,7 @@ namespace Hudl.Mjolnir.Tests.Stats
             Assert.True(e.GetBaseException() is CircuitBreakerRejectedException);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback total", "Rejected", It.IsAny<TimeSpan>()), Times.Once);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback execute", "Rejected", It.IsAny<TimeSpan>()), Times.Once);
-
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.SuccessfulEchoCommandWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
             // Since this was a breaker rejection, we don't expect a bulkhead rejection event here.
             mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
@@ -159,9 +163,11 @@ namespace Hudl.Mjolnir.Tests.Stats
         public async Task InvokeAsync_ExecuteFaultsAndFallbackSucceeds()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var command = new FaultingExecuteWithSuccessfulFallbackCommand
             {
                 Stats = mockStats.Object,
+                MetricEvents = mockMetricEvents.Object,
             };
 
             await command.InvokeAsync();

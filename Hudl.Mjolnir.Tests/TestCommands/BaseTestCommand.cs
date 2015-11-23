@@ -13,8 +13,6 @@ namespace Hudl.Mjolnir.Tests.TestCommands
         internal BaseTestCommand(string group, string name, string isolationKey, TimeSpan? timeout)
             : base(group, name, isolationKey, isolationKey, timeout ?? TimeSpan.FromMilliseconds(10000))
         {
-            Stats = new IgnoringStats();
-            MetricEvents = new IgnoringMetricEvents();
             CircuitBreaker = new AlwaysSuccessfulCircuitBreaker();
             ThreadPool = new AlwaysSuccessfulIsolationThreadPool();
             FallbackSemaphore = new AlwaysSuccessfulIsolationSemaphore();

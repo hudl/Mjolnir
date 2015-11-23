@@ -324,7 +324,7 @@ namespace Hudl.Mjolnir.Command
             {
                 if (e is IsolationThreadPoolRejectedException)
                 {
-                    _metricEvents.RejectedByBulkhead(pool.Name, Name);
+                    MetricEvents.RejectedByBulkhead(pool.Name, Name);
                 }
 
                 var tokenSourceCancelled = cancellationTokenSource.IsCancellationRequested;
@@ -355,6 +355,8 @@ namespace Hudl.Mjolnir.Command
 
                 Stats.Elapsed(StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
                 Stats.Elapsed(StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
+
+                MetricEvents.CommandInvoked(Name, invokeStopwatch.Elapsed.TotalMilliseconds, executeStopwatch.Elapsed.TotalMilliseconds, status.ToString(), "throw");
             }
         }
 
