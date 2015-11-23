@@ -64,7 +64,7 @@
         /// </summary>
         /// <param name="bulkheadName">Name of the bulkhead rejecting the command.</param>
         /// <param name="commandName">Name of the rejected command.</param>
-        void RejectedByBulkhead(string bulkheadName, string commandName); // TODO wire into old bits and test
+        void RejectedByBulkhead(string bulkheadName, string commandName);
 
         /// <summary>
         /// Fires at (configurable) intervals, providing the current configuration state of the

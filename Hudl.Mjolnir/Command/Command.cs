@@ -95,6 +95,13 @@ namespace Hudl.Mjolnir.Command
             set { _stats = value; }
         }
 
+        private IMetricEvents _metricEvents;
+        internal IMetricEvents MetricEvents
+        {
+            private get { return _metricEvents ?? CommandContext.MetricEvents; }
+            set { _metricEvents = value; }
+        }
+
         private ICircuitBreaker _breaker;
         internal ICircuitBreaker CircuitBreaker
         {
@@ -302,17 +309,24 @@ namespace Hudl.Mjolnir.Command
             var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
             var cancellationTokenSource = new CancellationTokenSource(Timeout);
+            var pool = ThreadPool;
+
             try
             {
                 _log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
-                var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
+                var result = await ExecuteInIsolation(pool, cancellationTokenSource.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
                 return result;
             }
             catch (Exception e)
             {
+                if (e is IsolationThreadPoolRejectedException)
+                {
+                    _metricEvents.RejectedByBulkhead(pool.Name, Name);
+                }
+
                 var tokenSourceCancelled = cancellationTokenSource.IsCancellationRequested;
                 executeStopwatch.Stop();
                 var instigator = GetCommandFailedException(e,tokenSourceCancelled, out status).WithData(new
@@ -344,7 +358,7 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        private Task<TResult> ExecuteInIsolation(CancellationToken cancellationToken)
+        private Task<TResult> ExecuteInIsolation(IIsolationThreadPool pool, CancellationToken cancellationToken)
         {
             // Note: Thread pool rejections shouldn't count as failures to the breaker.
             // If a downstream dependency is slow, the pool will fill up, but the
@@ -357,7 +371,7 @@ namespace Hudl.Mjolnir.Command
             // even execute as far as the breaker and downstream dependencies are
             // concerned.
 
-            var workItem = ThreadPool.Enqueue(() =>
+            var workItem = pool.Enqueue(() =>
             {
                 var token = TimeoutsIgnored
                     ? CancellationToken.None

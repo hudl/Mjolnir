@@ -14,6 +14,7 @@ namespace Hudl.Mjolnir.Tests.TestCommands
             : base(group, name, isolationKey, isolationKey, timeout ?? TimeSpan.FromMilliseconds(10000))
         {
             Stats = new IgnoringStats();
+            MetricEvents = new IgnoringMetricEvents();
             CircuitBreaker = new AlwaysSuccessfulCircuitBreaker();
             ThreadPool = new AlwaysSuccessfulIsolationThreadPool();
             FallbackSemaphore = new AlwaysSuccessfulIsolationSemaphore();
