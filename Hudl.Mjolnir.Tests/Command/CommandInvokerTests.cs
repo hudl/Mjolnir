@@ -56,7 +56,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()));
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "RanToCompletion", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "throw"));
                 Assert.Equal(expectedResultValue, result);
             }
 
@@ -88,7 +88,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Canceled", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "throw"));
 
                 Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
                 Assert.Equal(CommandCompletionStatus.Canceled, exception.Data["Status"]);
@@ -124,7 +124,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.DelayAsync execute", "TimedOut", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
 
                 Assert.Equal("test.DelayAsync", exception.Data["Command"]);
                 Assert.Equal(CommandCompletionStatus.TimedOut, exception.Data["Status"]);
@@ -236,7 +236,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var exception = await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.InvokeThrowAsync(command));
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Faulted", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
 
                 Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
                 Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["Status"]);
@@ -267,7 +267,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var exception = await Assert.ThrowsAsync<CircuitBreakerRejectedException>(() => invoker.InvokeThrowAsync(command));
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Rejected", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
 
                 Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
                 Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["Status"]);
@@ -325,7 +325,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()));
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "RanToCompletion", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "return"));
                 Assert.Null(result.Exception);
                 Assert.Equal(expectedResultValue, result.Value);
             }
@@ -365,7 +365,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Canceled", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "return"));
 
                 Assert.NotNull(result.Exception);
                 Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
@@ -412,7 +412,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.DelayAsync execute", "TimedOut", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "return"));
 
                 Assert.NotNull(result.Exception);
                 Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
@@ -455,7 +455,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var result = await invoker.InvokeReturnAsync(command);
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Faulted", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "return"));
 
                 Assert.NotNull(result.Exception);
                 Assert.Equal(expectedException, result.Exception);
@@ -498,7 +498,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var result = await invoker.InvokeReturnAsync(command);
 
                 mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Rejected", It.IsAny<TimeSpan>()));
-                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected"));
+                mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "return"));
 
                 Assert.NotNull(result.Exception);
                 Assert.Equal(expectedException, result.Exception);
@@ -582,7 +582,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "throw"));
             Assert.True(result.WasSuccess);
             Assert.Null(result.Exception);
             Assert.Equal(expectedResultValue, result.Value);
@@ -612,7 +612,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "return"));
             Assert.True(result.WasSuccess);
             Assert.Null(result.Exception);
             Assert.Equal(expectedResultValue, result.Value);
@@ -646,7 +646,7 @@ namespace Hudl.Mjolnir.Tests.Command
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Canceled", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "throw"));
 
             Assert.Equal("test.NoOp", exception.Data["Command"]);
             Assert.Equal(CommandCompletionStatus.Canceled, exception.Data["Status"]);
@@ -691,7 +691,7 @@ namespace Hudl.Mjolnir.Tests.Command
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Canceled", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "return"));
 
             Assert.NotNull(result.Exception);
             Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
@@ -732,7 +732,7 @@ namespace Hudl.Mjolnir.Tests.Command
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.Sleep execute", "TimedOut", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
 
             Assert.Equal("test.Sleep", exception.Data["Command"]);
             Assert.Equal(CommandCompletionStatus.TimedOut, exception.Data["Status"]);
@@ -775,7 +775,7 @@ namespace Hudl.Mjolnir.Tests.Command
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.Sleep execute", "TimedOut", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "return"));
 
             Assert.NotNull(result.Exception);
             Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
@@ -894,7 +894,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var exception = Assert.Throws<ExpectedTestException>(() => invoker.Invoke(command, OnFailure.Throw));
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Faulted", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
             Assert.Equal("test.NoOp", exception.Data["Command"]);
             Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["Status"]);
             Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
@@ -932,7 +932,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var result = invoker.Invoke(command, OnFailure.Return);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Faulted", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "return"));
 
             Assert.NotNull(result.Exception);
             Assert.Equal(expectedException, result.Exception);
@@ -969,7 +969,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var exception = Assert.Throws<CircuitBreakerRejectedException>(() => invoker.Invoke(command, OnFailure.Throw));
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Rejected", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
 
             Assert.Equal("test.NoOp", exception.Data["Command"]);
             Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["Status"]);
@@ -1008,7 +1008,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var result = invoker.Invoke(command, OnFailure.Return);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Rejected", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected"));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "return"));
             
             Assert.NotNull(result.Exception);
             Assert.Equal(expectedException, result.Exception);

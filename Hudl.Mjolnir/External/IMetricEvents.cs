@@ -17,7 +17,7 @@ namespace Hudl.Mjolnir.External
         /// <summary>
         /// When a command is invoked. Fires on completion.
         /// 
-        /// Recommended metric: Timer
+        /// Recommended metric: Timer, with fields like "status" and "failureAction" as dimensions.
         /// </summary>
         /// <param name="commandName">The name of the command.</param>
         /// <param name="invokeMillis">
@@ -30,10 +30,8 @@ namespace Hudl.Mjolnir.External
         /// <param name="status">
         ///     Subject to change, but is typically one of: success, rejected, failed, timeout.
         /// </param>
-        /// TODO other dimensions?
-        ///   - sync/async?
-        ///   - failure action (throw/return)?
-        void CommandInvoked(string commandName, double invokeMillis, double executeMillis, string status);
+        /// <param name="failureAction">One of "throw" or "return".</param>
+        void CommandInvoked(string commandName, double invokeMillis, double executeMillis, string status, string failureAction);
 
         /// <summary>
         /// When an operation acquires a lock/thread on its bulkhead.
@@ -152,7 +150,7 @@ namespace Hudl.Mjolnir.External
             return;
         }
 
-        public void CommandInvoked(string commandName, double invokeMillis, double executeMillis, string status)
+        public void CommandInvoked(string commandName, double invokeMillis, double executeMillis, string status, string failureMode)
         {
             return;
         }

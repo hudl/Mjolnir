@@ -2,7 +2,6 @@
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
-using Hudl.Mjolnir.External;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -27,7 +26,7 @@ namespace Hudl.Mjolnir.Command
         /// was successful, the result will have a properly set value.
         /// 
         /// <seealso cref="AsyncCommand{TResult}"/>
-        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="CommandResult{TResult}"/>
         /// </summary>
         /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
         /// <param name="command">The command to invoke.</param>
@@ -43,7 +42,7 @@ namespace Hudl.Mjolnir.Command
         /// was successful, the result will have a properly set value.
         /// 
         /// <seealso cref="AsyncCommand{TResult}"/>
-        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="CommandResult{TResult}"/>
         /// </summary>
         /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
         /// <param name="command">The command to invoke.</param>
@@ -62,7 +61,7 @@ namespace Hudl.Mjolnir.Command
         /// was successful, the result will have a properly set value.
         /// 
         /// <seealso cref="AsyncCommand{TResult}"/>
-        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="CommandResult{TResult}"/>
         /// </summary>
         /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
         /// <param name="command">The command to invoke.</param>
@@ -118,7 +117,7 @@ namespace Hudl.Mjolnir.Command
             EnsureSingleInvoke(command);
 
             var token = GetCancellationTokenForCommand(command);
-            return InvokeAsync(command, token);
+            return InvokeAsync(command, token, OnFailure.Throw);
         }
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis)
@@ -126,7 +125,7 @@ namespace Hudl.Mjolnir.Command
             EnsureSingleInvoke(command);
 
             var token = GetCancellationTokenForCommand(command, timeoutMillis);
-            return InvokeAsync(command, token);
+            return InvokeAsync(command, token, OnFailure.Throw);
         }
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
@@ -134,7 +133,7 @@ namespace Hudl.Mjolnir.Command
             EnsureSingleInvoke(command);
 
             var token = GetCancellationTokenForCommand(ct);
-            return InvokeAsync(command, token);
+            return InvokeAsync(command, token, OnFailure.Throw);
         }
 
         public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command)
@@ -163,7 +162,7 @@ namespace Hudl.Mjolnir.Command
 
             try
             {
-                var result = await InvokeAsync(command, ct);
+                var result = await InvokeAsync(command, ct, OnFailure.Return);
                 return new CommandResult<TResult>(result);
             }
             catch (Exception e)
@@ -172,7 +171,9 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        private async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
+        // failureModeForMetrics is just so we can send "throw" or "return" along with the metrics
+        // event we fire for CommandInvoke(). Not really intended for use beyond that.
+        private async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct, OnFailure failureModeForMetrics)
         {
             var stopwatch = Stopwatch.StartNew();
 
@@ -203,7 +204,7 @@ namespace Hudl.Mjolnir.Command
                 stopwatch.Stop();
 
                 _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
-                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString());
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString(), failureModeForMetrics.ToString().ToLowerInvariant());
             }
         }
 
@@ -268,7 +269,7 @@ namespace Hudl.Mjolnir.Command
                 stopwatch.Stop();
 
                 _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
-                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString());
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
             }
         }
 
