@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Hudl.Mjolnir.External
+﻿namespace Hudl.Mjolnir.External
 {
     /// <summary>
     /// Clients can implement IMetricEvents to hook into metrics fired by Mjolnir components. The
@@ -38,8 +36,8 @@ namespace Hudl.Mjolnir.External
         /// 
         /// Recommended metric: Counter (increment, opposite LeaveBulkhead).
         /// </summary>
-        /// <param name="bulkheadName"></param>
-        /// <param name="commandName"></param>
+        /// <param name="bulkheadName">Name of the bulkhead being entered.</param>
+        /// <param name="commandName">Name of the command entering the bulkhead.</param>
         void EnterBulkhead(string bulkheadName, string commandName);
 
         /// <summary>
@@ -47,8 +45,8 @@ namespace Hudl.Mjolnir.External
         /// 
         /// Recommended metric: Counter (decrement, opposite EnterBulkhead).
         /// </summary>
-        /// <param name="bulkheadName"></param>
-        /// <param name="commandName"></param>
+        /// <param name="bulkheadName">Name of the bulkhead being left.</param>
+        /// <param name="commandName">Name of the command leaving the bulkhead.</param>
         void LeaveBulkhead(string bulkheadName, string commandName);
 
         /// <summary>
@@ -56,32 +54,42 @@ namespace Hudl.Mjolnir.External
         /// 
         /// Recommended metric: Meter
         /// </summary>
-        /// <param name="bulkheadName"></param>
-        /// <param name="commandName"></param>
+        /// <param name="bulkheadName">Name of the bulkhead rejecting the command.</param>
+        /// <param name="commandName">Name of the rejected command.</param>
         void RejectedByBulkhead(string bulkheadName, string commandName);
 
         /// <summary>
         /// Fires at (configurable) intervals, providing the current configuration state of the
-        /// bulkhead.
+        /// bulkhead. The default interval is 60 seconds.
         /// 
         /// Recommended metric: Gauge
         /// </summary>
-        /// <param name="bulkheadName"></param>
-        /// <param name="bulkheadType"></param>
-        /// <param name="maxConcurrent"></param>
+        /// <param name="bulkheadName">The name of the bulkhead.</param>
+        /// <param name="bulkheadType">The bulkhead type, e.g. "semaphore".</param>
+        /// <param name="maxConcurrent">
+        ///     The maximum concurrent ops the bulkhead currently allows.
+        /// </param>
         void BulkheadConfigGauge(string bulkheadName, string bulkheadType, int maxConcurrent); // TODO wire up
 
+        /// <summary>
+        /// When a circuit breaker trips.
+        /// </summary>
+        /// <param name="breakerName">Name of the tripped breaker.</param>
         void BreakerTripped(string breakerName);
-        void BreakerFixed(string breakerName);
-        //void BreakerTested(string breakerName);
 
+        /// <summary>
+        /// When a circuit breaker becomes fixed, i.e. is no longer tripped.
+        /// </summary>
+        /// <param name="breakerName">Name of the fixed breaker.</param>
+        void BreakerFixed(string breakerName);
+        
         /// <summary>
         /// When an operation is rejected by the breaker because the breaker is tripped.
         /// 
         /// Recommended metric: Meter
         /// </summary>
-        /// <param name="breakerName"></param>
-        /// <param name="commandName"></param>
+        /// <param name="breakerName">Name of the breaker rejecting the command.</param>
+        /// <param name="commandName">Name of the rejected command.</param>
         void RejectedByBreaker(string breakerName, string commandName);
 
         /// <summary>
@@ -90,8 +98,8 @@ namespace Hudl.Mjolnir.External
         /// 
         /// Recommended metric: Meter
         /// </summary>
-        /// <param name="breakerName"></param>
-        /// <param name="commandName"></param>
+        /// <param name="breakerName">Name of the breaker.</param>
+        /// <param name="commandName">Name of the command executing on the breaker.</param>
         void BreakerSuccessCount(string breakerName, string commandName);
 
         /// <summary>
@@ -101,8 +109,8 @@ namespace Hudl.Mjolnir.External
         /// 
         /// Recommended metric: Meter
         /// </summary>
-        /// <param name="breakerName"></param>
-        /// <param name="commandName"></param>
+        /// <param name="breakerName">Name of the breaker.</param>
+        /// <param name="commandName">Name of the command executing on the breaker.</param>
         void BreakerFailureCount(string breakerName, string commandName);
 
         /// <summary>
@@ -111,16 +119,25 @@ namespace Hudl.Mjolnir.External
         /// 
         /// Recommended metric: Gauge
         /// </summary>
-        /// <param name="breakerName"></param>
-        /// <param name="minimumOps"></param>
-        /// <param name="thresholdPercent"></param>
-        /// <param name="tripForMillis"></param>
-        void BreakerConfigGauge(string breakerName, long minimumOps, int thresholdPercent, long tripForMillis); // TODO wire up
+        /// <param name="breakerName">Name of the breaker.</param>
+        /// <param name="minimumOps">
+        ///     Minimum ops the breaker must see in its observation window before tripping.
+        /// </param>
+        /// <param name="windowMillis">
+        ///     The window the breaker counts successes/failures within.
+        /// </param>
+        /// <param name="thresholdPercent">
+        ///     Error rate in the observation window required to trip.
+        /// </param>
+        /// <param name="tripForMillis">
+        ///     Duration the breaker remains tripped for before testing.
+        /// </param>
+        void BreakerConfigGauge(string breakerName, long minimumOps, long windowMillis, int thresholdPercent, long tripForMillis); // TODO wire up
     }
 
     internal sealed class IgnoringMetricEvents : IMetricEvents
     {
-        public void BreakerConfigGauge(string breakerName, long minimumOps, int thresholdPercent, long tripForMillis)
+        public void BreakerConfigGauge(string breakerName, long windowMillis, long minimumOps, int thresholdPercent, long tripForMillis)
         {
             return;
         }
