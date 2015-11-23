@@ -73,6 +73,8 @@ namespace Hudl.Mjolnir.ThreadPool
             get { return "mjolnir pool " + _key; }
         }
 
+        public string Name { get { return _key.Name; } }
+
         public void Start()
         {
             var stopwatch = Stopwatch.StartNew();

@@ -86,6 +86,8 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 throw _exceptionToThrow;
             }
+
+            public string Name { get { return "rejecting"; } }
         }
     }
 }

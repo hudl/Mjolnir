@@ -31,8 +31,13 @@
         /// <param name="failureAction">One of "throw" or "return".</param>
         void CommandInvoked(string commandName, double invokeMillis, double executeMillis, string status, string failureAction);
 
+        // TODO wire CommandInvoked into old commands
+        
         /// <summary>
         /// When an operation acquires a lock/thread on its bulkhead.
+        /// 
+        /// IMPORTANT: does not fire for "old" commands (i.e. inheriting from Command). Only fires
+        /// for SyncCommand and AsyncCommand implementations that pass through CommandInvoker.
         /// 
         /// Recommended metric: Counter (increment, opposite LeaveBulkhead).
         /// </summary>
@@ -42,6 +47,9 @@
 
         /// <summary>
         /// When an operation releases the lock/thread it acquired on its bulkhead.
+        /// 
+        /// IMPORTANT: does not fire for "old" commands (i.e. inheriting from Command). Only fires
+        /// for SyncCommand and AsyncCommand implementations that pass through CommandInvoker.
         /// 
         /// Recommended metric: Counter (decrement, opposite EnterBulkhead).
         /// </summary>
@@ -56,7 +64,7 @@
         /// </summary>
         /// <param name="bulkheadName">Name of the bulkhead rejecting the command.</param>
         /// <param name="commandName">Name of the rejected command.</param>
-        void RejectedByBulkhead(string bulkheadName, string commandName);
+        void RejectedByBulkhead(string bulkheadName, string commandName); // TODO wire into old bits and test
 
         /// <summary>
         /// Fires at (configurable) intervals, providing the current configuration state of the
@@ -69,7 +77,7 @@
         /// <param name="maxConcurrent">
         ///     The maximum concurrent ops the bulkhead currently allows.
         /// </param>
-        void BulkheadConfigGauge(string bulkheadName, string bulkheadType, int maxConcurrent); // TODO wire up
+        void BulkheadConfigGauge(string bulkheadName, string bulkheadType, int maxConcurrent); // TODO wire up in both old and new bulkheads and test
 
         /// <summary>
         /// When a circuit breaker trips.

@@ -25,5 +25,7 @@
         /// <param name="func">Function to execute on the pool thread.</param>
         /// <returns>A work item whose <code>Get()</code> method will return the <code>TResult</code>.</returns>
         IWorkItem<TResult> Enqueue<TResult>(System.Func<TResult> func);
+
+        string Name { get; }
     }
 }
