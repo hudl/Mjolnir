@@ -30,7 +30,6 @@ namespace Hudl.Mjolnir.External
         /// <param name="status">
         ///     Subject to change, but is typically one of: success, rejected, failed, timeout.
         /// </param>
-        /// TODO microseconds or not?
         /// TODO other dimensions?
         ///   - sync/async?
         ///   - failure action (throw/return)?

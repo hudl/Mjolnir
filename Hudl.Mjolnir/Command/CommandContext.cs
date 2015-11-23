@@ -31,7 +31,7 @@ namespace Hudl.Mjolnir.Command
     }
 
     /// <summary>
-    /// Manages all of Mjolnir's pools, breakers, and other state. Also handles
+    /// Manages all of Mjolnir's bulkheads, breakers, and other state. Also handles
     /// dependency injection for replaceable components (stats, config, etc.).
     /// 
     /// Client code typically doesn't interact with CommandContext other than
@@ -74,11 +74,11 @@ namespace Hudl.Mjolnir.Command
         private static readonly IConfigurableValue<int> DefaultFallbackMaxConcurrent = new ConfigurableValue<int>("mjolnir.fallback.default.maxConcurrent", 50);
 
         // Instance collections.
-        private ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
-        private ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
-        private ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
-        private ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
-        private ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
+        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
         // This is a Dictionary only because there's no great concurrent Set type available. Just
         // use the keys if checking for a type.
@@ -227,7 +227,11 @@ namespace Hudl.Mjolnir.Command
             // semaphores; that will require an app restart.
             private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkheads.default.maxConcurrent", 10);
 
+            // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
+            // Keep the reference around, we have a change handler attached.
             private readonly IConfigurableValue<int> _config;
+            // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
+
             private IBulkheadSemaphore _bulkhead;
 
             public IBulkheadSemaphore Bulkhead { get { return _bulkhead; } }
@@ -267,11 +271,12 @@ namespace Hudl.Mjolnir.Command
         }
     }
     
-    public sealed class CommandContext
+    /// <summary>
+    /// Handles some dependency injection and configuration for Mjolnir.
+    /// </summary>
+    public static class CommandContext
     {
         internal static readonly ICommandContext Current = new CommandContextImpl();
-        
-        private CommandContext() {}
 
         /// <summary>
         /// Get/set the Stats implementation that all Mjolnir code should use.
