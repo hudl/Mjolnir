@@ -15,12 +15,11 @@ namespace Hudl.Mjolnir.Command
 
     internal class BulkheadInvoker : IBulkheadInvoker
     {
-        protected static readonly IConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
-
         private readonly IBreakerInvoker _breakerInvoker;
         private readonly ICommandContext _context;
+        private readonly IConfigurableValue<bool> _useCircuitBreakers; 
 
-        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context)
+        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context, IConfigurableValue<bool> useCircuitBreakers = null)
         {
             if (breakerInvoker == null)
             {
@@ -29,6 +28,7 @@ namespace Hudl.Mjolnir.Command
 
             _breakerInvoker = breakerInvoker;
             _context = context ?? CommandContext.Current;
+            _useCircuitBreakers = useCircuitBreakers ?? new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
         }
 
         // Note: Bulkhead rejections shouldn't count as failures to the breaker. If a downstream
@@ -63,7 +63,7 @@ namespace Hudl.Mjolnir.Command
             var executedHere = false;
             try
             {
-                if (UseCircuitBreakers.Value)
+                if (_useCircuitBreakers.Value)
                 {
                     executedHere = false;
                     return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
@@ -111,7 +111,7 @@ namespace Hudl.Mjolnir.Command
             var executedHere = false;
             try
             {
-                if (UseCircuitBreakers.Value)
+                if (_useCircuitBreakers.Value)
                 {
                     executedHere = false;
                     return _breakerInvoker.ExecuteWithBreaker(command, ct);

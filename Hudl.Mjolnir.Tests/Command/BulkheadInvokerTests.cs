@@ -1,10 +1,13 @@
 ﻿using Hudl.Config;
+using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Helper;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Moq;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Command
@@ -58,6 +61,186 @@ namespace Hudl.Mjolnir.Tests.Command
                 // above.
                 Assert.Equal(15, context.GetBulkhead(groupKey).Available);
             }
+
+            [Fact]
+            public async Task FiresMetricEventWhenRejected()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(false);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
+                // where we try to use it.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object);
+                var command = new ConfigurableKeyAsyncCommand(key);
+
+                await Assert.ThrowsAsync<BulkheadRejectedException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
+
+                mockMetricEvents.Verify(m => m.RejectedByBulkhead(key, command.Name));
+            }
+
+            [Fact]
+            public async Task FiresMetricEventWhenEnteringAndLeavingBulkheadAndCommandSucceeds()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
+                // where we try to use it. Pass a "false" value for useCircuitBreakers to help
+                // ensure that.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyAsyncCommand(key);
+
+                await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
+
+                mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
+                mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
+            }
+
+            [Fact]
+            public async Task FiresMetricEventWhenEnteringAndLeavingBulkheadAndCommandFails()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
+                // where we try to use it. Pass a "false" value for useCircuitBreakers to help
+                // ensure that.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyThrowingAsyncCommand(key);
+
+                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
+
+                mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
+                mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
+            }
+
+            [Fact]
+            public async Task SetsExecutionTimeOnCommandWhenInvokedWithoutBreakerAndCommandSucceeds()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyAsyncCommand(key);
+
+                await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
+
+                Assert.True(command._executionTimeMillis > 0);
+            }
+
+            [Fact]
+            public async Task SetsExecutionTimeOnCommandWhenInvokedWithoutBreakerAndCommandFails()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyThrowingAsyncCommand(key);
+
+                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
+
+                Assert.True(command._executionTimeMillis > 0);
+            }
+
+            [Fact]
+            public async Task DoesntSetExecutionTimeOnCommandWhenInvokedWithBreakerAndCommandSucceeds()
+            {
+                // If we execute on the breaker, the breaker should set the execution time instead
+                // of the bulkhead invoker.
+
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                var command = new ConfigurableKeyThrowingAsyncCommand(key);
+                mockBreakerInvoker.Setup(m => m.ExecuteWithBreakerAsync(command, It.IsAny<CancellationToken>()))
+                    .Returns(Task.FromResult(true));
+
+                // Pass true for useCircuitBreakers, we need to test that behavior here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
+
+                await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
+
+                Assert.Equal(0, command._executionTimeMillis);
+            }
+
+            [Fact]
+            public async Task DoesntSetExecutionTimeOnCommandWhenInvokedWithBreakerAndCommandFails()
+            {
+                // If we execute on the breaker, the breaker should set the execution time instead
+                // of the bulkhead invoker.
+
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                var command = new ConfigurableKeyThrowingAsyncCommand(key);
+                mockBreakerInvoker.Setup(m => m.ExecuteWithBreakerAsync(command, It.IsAny<CancellationToken>()))
+                    .Throws(new ExpectedTestException(command.Name));
+
+                // Pass true for useCircuitBreakers, we need to test that behavior here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
+                
+                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
+
+                Assert.Equal(0, command._executionTimeMillis);
+            }
         }
 
         public class ExecuteWithBulkhead : TestFixture
@@ -107,6 +290,186 @@ namespace Hudl.Mjolnir.Tests.Command
                 // above.
                 Assert.Equal(15, context.GetBulkhead(groupKey).Available);
             }
+
+            [Fact]
+            public void FiresMetricEventWhenRejected()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(false);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
+                // where we try to use it.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object);
+                var command = new ConfigurableKeyCommand(key);
+
+                Assert.Throws<BulkheadRejectedException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
+
+                mockMetricEvents.Verify(m => m.RejectedByBulkhead(key, command.Name));
+            }
+
+            [Fact]
+            public void FiresMetricEventWhenEnteringAndLeavingBulkheadAndCommandSucceeds()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
+                // where we try to use it. Pass a "false" value for useCircuitBreakers to help
+                // ensure that.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyCommand(key);
+
+                invoker.ExecuteWithBulkhead(command, CancellationToken.None);
+
+                mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
+                mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
+            }
+
+            [Fact]
+            public void FiresMetricEventWhenEnteringAndLeavingBulkheadAndCommandFails()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
+                // where we try to use it. Pass a "false" value for useCircuitBreakers to help
+                // ensure that.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyThrowingCommand(key);
+
+                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
+
+                mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
+                mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
+            }
+
+            [Fact]
+            public void SetsExecutionTimeOnCommandWhenInvokedWithoutBreakerAndCommandSucceeds()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyCommand(key);
+
+                invoker.ExecuteWithBulkhead(command, CancellationToken.None);
+
+                Assert.True(command._executionTimeMillis > 0);
+            }
+
+            [Fact]
+            public void SetsExecutionTimeOnCommandWhenInvokedWithoutBreakerAndCommandFails()
+            {
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
+                var command = new ConfigurableKeyThrowingCommand(key);
+
+                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
+
+                Assert.True(command._executionTimeMillis > 0);
+            }
+
+            [Fact]
+            public void DoesntSetExecutionTimeOnCommandWhenInvokedWithBreakerAndCommandSucceeds()
+            {
+                // If we execute on the breaker, the breaker should set the execution time instead
+                // of the bulkhead invoker.
+
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                var command = new ConfigurableKeyThrowingCommand(key);
+                mockBreakerInvoker.Setup(m => m.ExecuteWithBreaker(command, It.IsAny<CancellationToken>()))
+                    .Returns(true);
+
+                // Pass true for useCircuitBreakers, we need to test that behavior here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
+
+                invoker.ExecuteWithBulkhead(command, CancellationToken.None);
+
+                Assert.Equal(0, command._executionTimeMillis);
+            }
+
+            [Fact]
+            public void DoesntSetExecutionTimeOnCommandWhenInvokedWithBreakerAndCommandFails()
+            {
+                // If we execute on the breaker, the breaker should set the execution time instead
+                // of the bulkhead invoker.
+
+                var key = Rand.String();
+                var groupKey = GroupKey.Named(key);
+                var mockContext = new Mock<ICommandContext>();
+                var mockMetricEvents = new Mock<IMetricEvents>();
+                var mockBulkhead = new Mock<IBulkheadSemaphore>();
+                var mockBreakerInvoker = new Mock<IBreakerInvoker>();
+                mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+                mockBulkhead.Setup(m => m.TryEnter()).Returns(true);
+                mockBulkhead.SetupGet(m => m.Name).Returns(key);
+                mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
+
+                var command = new ConfigurableKeyThrowingCommand(key);
+                mockBreakerInvoker.Setup(m => m.ExecuteWithBreaker(command, It.IsAny<CancellationToken>()))
+                    .Throws(new ExpectedTestException(command.Name));
+
+                // Pass true for useCircuitBreakers, we need to test that behavior here.
+                var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
+
+                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
+
+                Assert.Equal(0, command._executionTimeMillis);
+            }
         }
 
         // Has a configurable key.
@@ -146,6 +509,57 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 ConfigProvider.Instance.Set(_configKey, _changeLimitTo);
                 return true;
+            }
+        }
+
+        // Allows a configurable isolation key. Command execution succeeds.
+        internal class ConfigurableKeyAsyncCommand : AsyncCommand<bool>
+        {
+            public ConfigurableKeyAsyncCommand(string key) : base(key, key, TimeSpan.FromSeconds(1000))
+            {}
+
+            public override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+            {
+                return Task.FromResult(true);
+            }
+        }
+
+        // Allows a configurable isolation key. Command execution fails.
+        internal class ConfigurableKeyThrowingAsyncCommand : AsyncCommand<bool>
+        {
+            public ConfigurableKeyThrowingAsyncCommand(string key)
+                : base(key, key, TimeSpan.FromSeconds(1000))
+            { }
+
+            public override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+            {
+                throw new ExpectedTestException(Name);
+            }
+        }
+
+        // Allows a configurable isolation key. Command execution succeeds.
+        internal class ConfigurableKeyCommand : SyncCommand<bool>
+        {
+            public ConfigurableKeyCommand(string key)
+                : base(key, key, TimeSpan.FromSeconds(1000))
+            { }
+
+            public override bool Execute(CancellationToken cancellationToken)
+            {
+                return true;
+            }
+        }
+
+        // Allows a configurable isolation key. Command execution fails.
+        internal class ConfigurableKeyThrowingCommand : SyncCommand<bool>
+        {
+            public ConfigurableKeyThrowingCommand(string key)
+                : base(key, key, TimeSpan.FromSeconds(1000))
+            { }
+
+            public override bool Execute(CancellationToken cancellationToken)
+            {
+                throw new ExpectedTestException(Name);
             }
         }
     }
