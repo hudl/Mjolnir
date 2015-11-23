@@ -46,16 +46,11 @@ namespace Hudl.Mjolnir.Command
 
             if (!bulkhead.TryEnter())
             {
-                // TODO unit test the metric firing here
                 _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
                 throw new BulkheadRejectedException();
             }
 
-            // TODO unit test
             _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
-
-            // TODO unit test - when not using breakers, the executionTimeMillis should
-            // be set on the command. otherwise, it shouldn't.
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -77,7 +72,6 @@ namespace Hudl.Mjolnir.Command
             {
                 bulkhead.Release();
 
-                // TODO unit test
                 _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
                 if (executedHere)
@@ -94,16 +88,11 @@ namespace Hudl.Mjolnir.Command
 
             if (!bulkhead.TryEnter())
             {
-                // TODO unit test the metric firing here
                 _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
                 throw new BulkheadRejectedException();
             }
 
-            // TODO unit test
             _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
-
-            // TODO unit test - when not using breakers, the executionTimeMillis should
-            // be set on the command. otherwise, it shouldn't.
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -125,7 +114,6 @@ namespace Hudl.Mjolnir.Command
             {
                 bulkhead.Release();
 
-                // TODO unit test
                 _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
                 if (executedHere)
