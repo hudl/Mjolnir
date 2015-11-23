@@ -27,26 +27,39 @@ namespace Hudl.Mjolnir.Command
 
             if (!breaker.IsAllowing())
             {
+                // TODO unit test
+                _context.MetricEvents.RejectedByBreaker(breaker.Name, command.Name);
                 throw new CircuitBreakerRejectedException();
             }
 
             TResult result;
 
-            var stopwatch = Stopwatch.StartNew();
+            var success = true;
+            var breakerStopwatch = Stopwatch.StartNew();
+            var executionStopwatch = Stopwatch.StartNew();
             try
             {
                 // Await here so we can catch the Exception and track the state.
                 // I suppose we could do this with a continuation, too. Await's easier.
                 result = await command.ExecuteAsync(ct).ConfigureAwait(false);
+                executionStopwatch.Stop();
 
-                breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
+                breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
                 breaker.Metrics.MarkCommandSuccess();
             }
             catch (Exception e)
             {
+                executionStopwatch.Stop();
+                success = false;
+
                 if (_context.IsExceptionIgnored(e.GetType()))
                 {
-                    breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
+                    success = true;
+
+                    // TODO the behavior here (and in the sync method) differs from the
+                    // original breaker invocation in Command. what do we _need_ to call
+                    // here? both of these? one?
+                    breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
                 }
                 else
@@ -55,6 +68,20 @@ namespace Hudl.Mjolnir.Command
                 }
 
                 throw;
+            }
+            finally
+            {
+                command._executionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
+
+                // TODO unit test
+                if (success)
+                {
+                    _context.MetricEvents.BreakerSuccessCount(breaker.Name, command.Name);
+                }
+                else
+                {
+                    _context.MetricEvents.BreakerFailureCount(breaker.Name, command.Name);
+                }
             }
 
             return result;
@@ -71,19 +98,30 @@ namespace Hudl.Mjolnir.Command
 
             TResult result;
 
-            var stopwatch = Stopwatch.StartNew();
+            var success = true;
+            var breakerStopwatch = Stopwatch.StartNew();
+            var executionStopwatch = Stopwatch.StartNew();
             try
             {
                 result = command.Execute(ct);
+                executionStopwatch.Stop();
 
-                breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
+                breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
                 breaker.Metrics.MarkCommandSuccess();
             }
             catch (Exception e)
             {
+                executionStopwatch.Stop();
+                success = false;
+
                 if (_context.IsExceptionIgnored(e.GetType()))
                 {
-                    breaker.MarkSuccess(stopwatch.ElapsedMilliseconds);
+                    success = true;
+
+                    // TODO the behavior here (and in the sync method) differs from the
+                    // original breaker invocation in Command. what do we _need_ to call
+                    // here? both of these? one?
+                    breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
                 }
                 else
@@ -92,6 +130,20 @@ namespace Hudl.Mjolnir.Command
                 }
 
                 throw;
+            }
+            finally
+            {
+                command._executionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
+
+                // TODO unit test
+                if (success)
+                {
+                    _context.MetricEvents.BreakerSuccessCount(breaker.Name, command.Name);
+                }
+                else
+                {
+                    _context.MetricEvents.BreakerFailureCount(breaker.Name, command.Name);
+                }
             }
 
             return result;

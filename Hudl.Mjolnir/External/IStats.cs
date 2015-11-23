@@ -8,4 +8,6 @@ namespace Hudl.Mjolnir.External
         void Elapsed(string service, string state, TimeSpan elapsed);
         void Gauge(string service, string state, long? metric = null);
     }
+
+    
 }

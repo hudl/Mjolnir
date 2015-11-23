@@ -21,6 +21,7 @@ namespace Hudl.Mjolnir.Command
     internal interface ICommandContext
     {
         IStats Stats { get; set; }
+        IMetricEvents MetricEvents { get; set; }
         void IgnoreExceptions(HashSet<Type> types);
         bool IsExceptionIgnored(Type type);
         ICircuitBreaker GetCircuitBreaker(GroupKey key);
@@ -97,6 +98,20 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
+        private IMetricEvents _metricEvents = new IgnoringMetricEvents();
+        public IMetricEvents MetricEvents
+        {
+            get { return _metricEvents; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException();
+                }
+                _metricEvents = value;
+            }
+        }
+
         public void IgnoreExceptions(HashSet<Type> types)
         {
             if (types == null || types.Count == 0)
@@ -132,7 +147,7 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", DefaultBreakerForceTripped),
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", DefaultBreakerForceFixed));
 
-                return new FailurePercentageCircuitBreaker(key, metrics, Stats, properties);
+                return new FailurePercentageCircuitBreaker(key, metrics, Stats, MetricEvents, properties);
             });
         }
 
@@ -230,7 +245,7 @@ namespace Hudl.Mjolnir.Command
                 _config = new ConfigurableValue<int>(configKey, DefaultBulkheadMaxConcurrent);
 
                 var value = _config.Value;
-                _bulkhead = new SemaphoreBulkhead(value);
+                _bulkhead = new SemaphoreBulkhead(key, value);
 
                 // On change, we'll replace the bulkhead. The assumption here is that a caller
                 // using the bulkhead will have kept a local reference to the bulkhead that they
@@ -246,7 +261,7 @@ namespace Hudl.Mjolnir.Command
                         return;
                     }
                     
-                    _bulkhead = new SemaphoreBulkhead(newLimit);
+                    _bulkhead = new SemaphoreBulkhead(key, newLimit);
                 });
             }
         }
@@ -266,10 +281,25 @@ namespace Hudl.Mjolnir.Command
         /// this after Breakers and Pools have been created won't update the
         /// client for them.
         /// </summary>
+        [Obsolete("Use MetricEvents instead")]
         public static IStats Stats
         {
             get { return Current.Stats; }
             set { Current.Stats = value; }
+        }
+
+        /// <summary>
+        /// Get/set the MetricEvents implementation that all Mjolnir code should use.
+        /// 
+        /// This should be set as soon as possible if it's going to be implemented.
+        /// Other parts of Mjolnir will cache their Stats members, so changing
+        /// this after Breakers and Pools have been created won't update the
+        /// client for them.
+        /// </summary>
+        public static IMetricEvents MetricEvents
+        {
+            get { return Current.MetricEvents; }
+            set { Current.MetricEvents = value; }
         }
 
         /// <summary>

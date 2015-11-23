@@ -157,8 +157,8 @@ namespace Hudl.Mjolnir.Command
 
         private async Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
-            // This doesn't adhere to the OnFailure action because it's a bug in the code
-            // and should always throw so people see it and fix it.
+            // Even though we're in a "Return" method, multiple invokes are a bug on the calling
+            // side, hence the possible exception here for visibility so the caller can fix.
             EnsureSingleInvoke(command);
 
             try
@@ -174,9 +174,10 @@ namespace Hudl.Mjolnir.Command
 
         private async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
             var status = CommandCompletionStatus.RanToCompletion;
-            var stopwatch = Stopwatch.StartNew();
 
             try
             {
@@ -189,23 +190,20 @@ namespace Hudl.Mjolnir.Command
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
 
-                var result = await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
-                stopwatch.Stop();
-
-                return result;
+                return await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                stopwatch.Stop();
-
                 status = GetCompletionStatus(e, ct);
-                AttachCommandExceptionData(command, e, status, ct, stopwatch);
-
+                AttachCommandExceptionData(command, e, status, ct);
                 throw;
             }
             finally
             {
+                stopwatch.Stop();
+
                 _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString());
             }
         }
 
@@ -232,10 +230,11 @@ namespace Hudl.Mjolnir.Command
             // This doesn't look at the OnFailure action (to return vs. throw) because it means the
             // caller has a bug in their code - we should always throw so people see it and fix it.
             EnsureSingleInvoke(command);
-            
+
+            var stopwatch = Stopwatch.StartNew();
+
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
             var status = CommandCompletionStatus.RanToCompletion;
-            var stopwatch = Stopwatch.StartNew();
             
             try
             {
@@ -249,16 +248,13 @@ namespace Hudl.Mjolnir.Command
                 ct.Token.ThrowIfCancellationRequested();
 
                 var result = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
-                stopwatch.Stop();
 
                 return new CommandResult<TResult>(result);
             }
             catch (Exception e)
             {
-                stopwatch.Stop();
-
                 status = GetCompletionStatus(e, ct);
-                AttachCommandExceptionData(command, e, status, ct, stopwatch);
+                AttachCommandExceptionData(command, e, status, ct);
 
                 if (failureAction == OnFailure.Throw)
                 {
@@ -269,7 +265,10 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
+                stopwatch.Stop();
+
                 _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command._executionTimeMillis, status.ToString());
             }
         }
 
@@ -325,7 +324,7 @@ namespace Hudl.Mjolnir.Command
             return CommandCompletionStatus.Faulted;
         }
 
-        private static void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status, InformativeCancellationToken ct, Stopwatch invokeTimer)
+        private static void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status, InformativeCancellationToken ct)
         {
             exception.WithData(new
             {
@@ -334,7 +333,7 @@ namespace Hudl.Mjolnir.Command
                 Breaker = command.BreakerKey,
                 Bulkhead = command.BulkheadKey,
                 TimeoutMillis = ct.DescriptionForLog,
-                ElapsedMillis = invokeTimer.Elapsed.TotalMilliseconds,
+                ExecuteMillis = command._executionTimeMillis,
             });
         }
 

@@ -179,14 +179,17 @@ namespace Hudl.Mjolnir.Tests.Stats
         public void CheckAndSetTripped_JustTripped()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var breaker = new BreakerBuilder(0, 0, "Test")
                 .WithStats(mockStats.Object)
+                .WithMetricEvents(mockMetricEvents.Object)
                 .Create();
 
             breaker.IsAllowing(); // Trip.
 
             mockStats.Verify(m => m.Elapsed("mjolnir breaker Test CheckAndSetTripped", "JustTripped", It.IsAny<TimeSpan>()), Times.Once);
             mockStats.Verify(m => m.Event("mjolnir breaker Test", "Tripped", null));
+            mockMetricEvents.Verify(m => m.BreakerTripped("Test"));
         }
 
         [Fact]
@@ -206,14 +209,17 @@ namespace Hudl.Mjolnir.Tests.Stats
         public void MarkSuccess_Fixed()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var breaker = new BreakerBuilder(0, 0, "Test")
                 .WithStats(mockStats.Object)
+                .WithMetricEvents(mockMetricEvents.Object)
                 .Create();
             breaker.IsAllowing(); // Trip.
 
             breaker.MarkSuccess(0);
 
             mockStats.Verify(m => m.Event("mjolnir breaker Test MarkSuccess", "Fixed", null), Times.Once);
+            mockMetricEvents.Verify(m => m.BreakerFixed("Test"));
         }
     }
 }

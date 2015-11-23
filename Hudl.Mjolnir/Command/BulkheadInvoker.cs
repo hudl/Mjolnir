@@ -1,6 +1,7 @@
 ﻿using Hudl.Config;
 using Hudl.Mjolnir.Bulkhead;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,24 +42,49 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            // TODO stats/events
-
             var bulkhead = _context.GetBulkhead(command.BulkheadKey);
 
             if (!bulkhead.TryEnter())
             {
+                // TODO unit test the metric firing here
+                _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
                 throw new BulkheadRejectedException();
             }
 
+            // TODO unit test
+            _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+
+            // TODO unit test - when not using breakers, the executionTimeMillis should
+            // be set on the command. otherwise, it shouldn't.
+
+            // This stopwatch should begin stopped (hence the constructor instead of the usual
+            // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
+            var stopwatch = new Stopwatch();
+            var executedHere = false;
             try
             {
-                return UseCircuitBreakers.Value
-                    ? await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false)
-                    : await command.ExecuteAsync(ct).ConfigureAwait(false);
+                if (UseCircuitBreakers.Value)
+                {
+                    executedHere = false;
+                    return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
+                }
+
+                executedHere = true;
+                stopwatch.Start();
+                return await command.ExecuteAsync(ct).ConfigureAwait(false);
             }
             finally
             {
                 bulkhead.Release();
+
+                // TODO unit test
+                _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+
+                if (executedHere)
+                {
+                    stopwatch.Stop();
+                    command._executionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                }
             }
         }
 
@@ -68,18 +94,45 @@ namespace Hudl.Mjolnir.Command
 
             if (!bulkhead.TryEnter())
             {
+                // TODO unit test the metric firing here
+                _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
                 throw new BulkheadRejectedException();
             }
 
+            // TODO unit test
+            _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+
+            // TODO unit test - when not using breakers, the executionTimeMillis should
+            // be set on the command. otherwise, it shouldn't.
+
+            // This stopwatch should begin stopped (hence the constructor instead of the usual
+            // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
+            var stopwatch = new Stopwatch();
+            var executedHere = false;
             try
             {
-                return UseCircuitBreakers.Value
-                    ? _breakerInvoker.ExecuteWithBreaker(command, ct)
-                    : command.Execute(ct);
+                if (UseCircuitBreakers.Value)
+                {
+                    executedHere = false;
+                    return _breakerInvoker.ExecuteWithBreaker(command, ct);
+                }
+
+                executedHere = true;
+                stopwatch.Start();
+                return command.Execute(ct);
             }
             finally
             {
                 bulkhead.Release();
+
+                // TODO unit test
+                _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+
+                if (executedHere)
+                {
+                    stopwatch.Stop();
+                    command._executionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                }
             }
         }
     }

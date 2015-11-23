@@ -31,6 +31,7 @@ namespace Hudl.Mjolnir.Breaker
 
         private readonly GroupKey _key;
         private readonly IStats _stats;
+        private readonly IMetricEvents _metricEvents;
 
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
@@ -40,10 +41,10 @@ namespace Hudl.Mjolnir.Breaker
         private volatile State _state;
         private long _lastTrippedTimestamp;
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IStats stats, FailurePercentageCircuitBreakerProperties properties)
-            : this(key, new SystemClock(), metrics, stats, properties) {}
+        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IStats stats, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties)
+            : this(key, new SystemClock(), metrics, stats, metricEvents, properties) {}
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IStats stats, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IStats stats, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _clock = clock;
@@ -54,7 +55,13 @@ namespace Hudl.Mjolnir.Breaker
                 throw new ArgumentNullException("stats");
             }
 
+            if (metricEvents == null)
+            {
+                throw new ArgumentNullException("metricEvents");
+            }
+
             _stats = stats;
+            _metricEvents = metricEvents;
 
             Properties = properties;
             _state = State.Fixed; // Start off assuming everything's fixed.
@@ -76,6 +83,11 @@ namespace Hudl.Mjolnir.Breaker
         private string StatsPrefix
         {
             get { return "mjolnir breaker " + _key; }
+        }
+
+        public string Name
+        {
+            get { return _key.Name; }
         }
 
         /// <summary>
@@ -100,6 +112,7 @@ namespace Hudl.Mjolnir.Breaker
             _metrics.Reset();
 
             _stats.Event(StatsPrefix + " MarkSuccess", "Fixed", null);
+            _metricEvents.BreakerFixed(Name);
         }
 
         /// <summary>
@@ -223,6 +236,7 @@ namespace Hudl.Mjolnir.Breaker
                     state = "JustTripped";
 
                     _stats.Event(StatsPrefix, State.Tripped.ToString(), null);
+                    _metricEvents.BreakerTripped(Name);
                     Log.ErrorFormat("Tripped Breaker={0} Operations={1} ErrorPercentage={2} Wait={3}",
                         _key,
                         snapshot.Total,

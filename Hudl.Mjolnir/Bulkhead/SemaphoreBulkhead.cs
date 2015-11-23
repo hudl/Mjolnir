@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Hudl.Mjolnir.Key;
+using System;
 using System.Threading;
 
 namespace Hudl.Mjolnir.Bulkhead
@@ -8,22 +9,28 @@ namespace Hudl.Mjolnir.Bulkhead
         void Release();
         bool TryEnter();
         int Available { get; }
+        string Name { get; }
     }
 
     internal class SemaphoreBulkhead : IBulkheadSemaphore
     {
         private readonly SemaphoreSlim _semaphore;
+        private readonly GroupKey _key;
 
-        internal SemaphoreBulkhead(int maxConcurrent)
+        internal SemaphoreBulkhead(GroupKey key, int maxConcurrent)
         {
             if (maxConcurrent < 0)
             {
                 throw new ArgumentOutOfRangeException("maxConcurrent", maxConcurrent, "Semaphore bulkhead must have a limit >= 0");
             }
 
+            _key = key;
             _semaphore = new SemaphoreSlim(maxConcurrent);
+        }
 
-            // TODO gauges, stats
+        public string Name
+        {
+            get { return _key.Name; }
         }
 
         public void Release()
