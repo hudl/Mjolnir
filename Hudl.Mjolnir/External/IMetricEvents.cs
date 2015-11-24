@@ -7,8 +7,6 @@
     /// 
     /// Each method has a "recommended metric" in its doc comments. These are suggestions if you're
     /// using a "Coda Hale" style metrics collector like statsd or Metrics.NET.
-    /// 
-    /// TODO open-source our adapters/implementation(s)
     /// </summary>
     public interface IMetricEvents
     {

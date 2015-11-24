@@ -14,9 +14,6 @@ using log4net;
 
 namespace Hudl.Mjolnir.Command
 {
-    // TODO go through all docs and doc comments and make sure they're accurate for the new changes
-    // TODO what do timeouts/cancellations look like in exceptions now? make sure we didn't revert that logging change
-
     internal interface ICommandContext
     {
         IStats Stats { get; set; }
