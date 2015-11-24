@@ -74,6 +74,7 @@ namespace Hudl.Mjolnir.Command
     /// See https://github.com/hudl/Mjolnir for an overview.
     /// </summary>
     /// <typeparam name="TResult">The type of the result returned by this Command's execution.</typeparam>
+    [Obsolete("Extend AsyncCommand or SyncCommand instead, and invoke with CommandInvoker. This will likely be removed in a future major release.")]
     public abstract class Command<TResult> : Command, ICommand<TResult>
     {
         internal readonly TimeSpan Timeout;

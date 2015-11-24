@@ -54,10 +54,6 @@ namespace Hudl.Mjolnir.Command
                 if (_context.IsExceptionIgnored(e.GetType()))
                 {
                     success = true;
-
-                    // TODO the behavior here (and in the sync method) differs from the
-                    // original breaker invocation in Command. what do we _need_ to call
-                    // here? both of these? one?
                     breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
                 }
@@ -116,10 +112,6 @@ namespace Hudl.Mjolnir.Command
                 if (_context.IsExceptionIgnored(e.GetType()))
                 {
                     success = true;
-
-                    // TODO the behavior here (and in the sync method) differs from the
-                    // original breaker invocation in Command. what do we _need_ to call
-                    // here? both of these? one?
                     breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
                 }
