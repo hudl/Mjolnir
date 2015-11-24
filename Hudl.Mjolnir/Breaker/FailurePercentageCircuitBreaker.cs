@@ -22,6 +22,7 @@ namespace Hudl.Mjolnir.Breaker
         internal readonly FailurePercentageCircuitBreakerProperties Properties;
 
         private static readonly ILog Log = LogManager.GetLogger(typeof (FailurePercentageCircuitBreaker));
+        private static readonly IConfigurableValue<long> ConfigGaugeIntervalMillis = new ConfigurableValue<long>("mjolnir.breakerConfigGaugeIntervalMillis", 60000);
 
         private readonly object _stateChangeLock = new { };
         private readonly object _singleTestLock = new { };
@@ -36,6 +37,7 @@ namespace Hudl.Mjolnir.Breaker
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
         private readonly GaugeTimer _timer;
+        private readonly GaugeTimer _timer2;
         // ReSharper restore NotAccessedField.Local
         
         private volatile State _state;
@@ -67,12 +69,22 @@ namespace Hudl.Mjolnir.Breaker
             _state = State.Fixed; // Start off assuming everything's fixed.
             _lastTrippedTimestamp = 0; // 0 is fine since it'll be far less than the first compared value.
 
+            // Old gauge, will be phased out in v3.0 when IStats are removed.
             _timer = new GaugeTimer((source, args) =>
             {
                 var snapshot = _metrics.GetSnapshot();
                 _stats.Gauge(StatsPrefix + " total", snapshot.Total >= properties.MinimumOperations.Value ? "Above" : "Below", snapshot.Total);
                 _stats.Gauge(StatsPrefix + " error", snapshot.ErrorPercentage >= properties.ThresholdPercentage.Value ? "Above" : "Below", snapshot.ErrorPercentage);
             }, gaugeIntervalMillisOverride);
+
+            _timer2 = new GaugeTimer((source, args) =>
+            {
+                _metricEvents.BreakerConfigGauge(
+                    Name,
+                    Properties.MinimumOperations.Value,
+                    Properties.ThresholdPercentage.Value,
+                    Properties.TrippedDurationMillis.Value);
+            }, ConfigGaugeIntervalMillis);
         }
 
         public ICommandMetrics Metrics

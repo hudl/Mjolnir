@@ -2,7 +2,7 @@
 {
     internal sealed class IgnoringMetricEvents : IMetricEvents
     {
-        public void BreakerConfigGauge(string breakerName, long windowMillis, long minimumOps, int thresholdPercent, long tripForMillis)
+        public void BreakerConfigGauge(string breakerName, long minimumOps, int thresholdPercent, long tripForMillis)
         {
             return;
         }

@@ -13,9 +13,12 @@ namespace Hudl.Mjolnir.ThreadPool
     /// </summary>
     internal class StpIsolationThreadPool : IIsolationThreadPool
     {
+        private static readonly IConfigurableValue<long> ConfigGaugeIntervalMillis = new ConfigurableValue<long>("mjolnir.bulkheadConfigGaugeIntervalMillis", 60000);
+
         private readonly GroupKey _key;
         private readonly SmartThreadPool _pool;
         private readonly IStats _stats;
+        private readonly IMetricEvents _metricEvents;
 
         private readonly IConfigurableValue<int> _threadCount;
         private readonly IConfigurableValue<int> _queueLength;
@@ -23,9 +26,10 @@ namespace Hudl.Mjolnir.ThreadPool
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
         private readonly GaugeTimer _timer;
+        private readonly GaugeTimer _timer2;
         // ReSharper restore NotAccessedField.Local
 
-        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IStats stats, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IStats stats, IMetricEvents metricEvents, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _threadCount = threadCount;
@@ -36,6 +40,12 @@ namespace Hudl.Mjolnir.ThreadPool
                 throw new ArgumentNullException("stats");
             }
             _stats = stats;
+
+            if (metricEvents == null)
+            {
+                throw new ArgumentNullException("metricEvents");
+            }
+            _metricEvents = metricEvents;
 
             var count = _threadCount.Value;
             var info = new STPStartInfo
@@ -51,6 +61,7 @@ namespace Hudl.Mjolnir.ThreadPool
 
             _pool = new SmartThreadPool(info);
 
+            // Old gauge, will be phased out in v3.0 when IStats are removed.
             _timer = new GaugeTimer((source, args) =>
             {
                 _stats.Gauge(StatsPrefix + " activeThreads", null, _pool.ActiveThreads);
@@ -60,6 +71,11 @@ namespace Hudl.Mjolnir.ThreadPool
                 // queue/dequeue operations, and may block here if the pool's getting queued into heavily.
                 _stats.Gauge(StatsPrefix + " pendingCompletion", null, _pool.CurrentWorkItemsCount);
             }, gaugeIntervalMillisOverride);
+
+            _timer2 = new GaugeTimer((source, args) =>
+            {
+                _metricEvents.BulkheadConfigGauge(Name, "pool", queueLength.Value + threadCount.Value);
+            }, ConfigGaugeIntervalMillis);
 
             _pool.OnThreadInitialization += () => _stats.Event(StatsPrefix + " thread", "Initialized", null);
             _pool.OnThreadTermination += () => _stats.Event(StatsPrefix + " thread", "Terminated", null);

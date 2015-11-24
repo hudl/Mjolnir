@@ -76,7 +76,8 @@ namespace Hudl.Mjolnir.Tests.ThreadPool
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<int>(threadCount),
                 new TransientConfigurableValue<int>(queueLength),
-                new IgnoringStats());
+                new IgnoringStats(),
+                new IgnoringMetricEvents());
             pool.Start();
             return pool;
         }

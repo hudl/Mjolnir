@@ -178,7 +178,8 @@ namespace Hudl.Mjolnir.Command
                     key,
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", DefaultPoolThreadCount),
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", DefaultPoolQueueLength),
-                    Stats));
+                    Stats,
+                    MetricEvents));
         }
 
         /// <summary>
@@ -194,7 +195,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             var holder = _bulkheads.GetOrAddSafe(key,
-                k => new SemaphoreBulkheadHolder(key),
+                k => new SemaphoreBulkheadHolder(key, _metricEvents),
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
             return holder.Bulkhead;
@@ -226,17 +227,20 @@ namespace Hudl.Mjolnir.Command
             // Note: changing the default value at runtime won't trigger a rebuild of the
             // semaphores; that will require an app restart.
             private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkheads.default.maxConcurrent", 10);
+            private static readonly IConfigurableValue<long> ConfigGaugeIntervalMillis = new ConfigurableValue<long>("mjolnir.bulkheadConfigGaugeIntervalMillis", 60000);
 
             // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
             // Keep the reference around, we have a change handler attached.
             private readonly IConfigurableValue<int> _config;
+            private readonly GaugeTimer _timer;
             // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
 
             private IBulkheadSemaphore _bulkhead;
-
             public IBulkheadSemaphore Bulkhead { get { return _bulkhead; } }
 
-            public SemaphoreBulkheadHolder(GroupKey key)
+            private readonly IMetricEvents _metricEvents;
+
+            public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents)
             {
                 // The order of things here is very intentional.
                 // We create the configurable value first, retrieve its current value, and then
@@ -267,6 +271,11 @@ namespace Hudl.Mjolnir.Command
                     
                     _bulkhead = new SemaphoreBulkhead(key, newLimit);
                 });
+
+                _timer = new GaugeTimer((source, args) =>
+                {
+                    _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.Value);
+                }, ConfigGaugeIntervalMillis);
             }
         }
     }

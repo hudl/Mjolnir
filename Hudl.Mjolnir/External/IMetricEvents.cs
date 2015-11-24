@@ -80,7 +80,7 @@
         /// <param name="maxConcurrent">
         ///     The maximum concurrent ops the bulkhead currently allows.
         /// </param>
-        void BulkheadConfigGauge(string bulkheadName, string bulkheadType, int maxConcurrent); // TODO wire up in both old and new bulkheads and test
+        void BulkheadConfigGauge(string bulkheadName, string bulkheadType, int maxConcurrent);
 
         /// <summary>
         /// When a circuit breaker trips.
@@ -134,15 +134,12 @@
         /// <param name="minimumOps">
         ///     Minimum ops the breaker must see in its observation window before tripping.
         /// </param>
-        /// <param name="windowMillis">
-        ///     The window the breaker counts successes/failures within.
-        /// </param>
         /// <param name="thresholdPercent">
         ///     Error rate in the observation window required to trip.
         /// </param>
         /// <param name="tripForMillis">
         ///     Duration the breaker remains tripped for before testing.
         /// </param>
-        void BreakerConfigGauge(string breakerName, long minimumOps, long windowMillis, int thresholdPercent, long tripForMillis); // TODO wire up
+        void BreakerConfigGauge(string breakerName, long minimumOps, int thresholdPercent, long tripForMillis);
     }
 }
