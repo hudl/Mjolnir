@@ -34,11 +34,11 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             }
         }
 
-        public class CancellableWithOverrunnningMethodTimeoutsIgnored : ICancellableIgnoredTimeout
+        public class CancellableWithOverrunningMethodTimeoutsIgnored : ICancellableIgnoredTimeout
         {
             public string CancellableMethod(CancellationToken token)
             {
-                Thread.Sleep(CancellableWithIgnoredTimeout.Timeout + 50);
+                Thread.Sleep(CancellableWithIgnoredTimeout.Timeout + 500);
                 token.ThrowIfCancellationRequested();
                 return string.Empty;
             }
@@ -81,7 +81,7 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         public void MethodShouldNotTimeout_WhenTimeoutsAreIgnored()
         {
             ConfigProvider.Instance.Set(IgnoreTimeoutsKey, true);
-            var classToProxy = new CancellableWithOverrunnningMethodTimeoutsIgnored();
+            var classToProxy = new CancellableWithOverrunningMethodTimeoutsIgnored();
             var proxy = CommandInterceptor.CreateProxy<ICancellableIgnoredTimeout>(classToProxy);
 
             // Should not throw.
