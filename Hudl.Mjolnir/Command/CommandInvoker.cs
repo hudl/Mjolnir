@@ -204,6 +204,12 @@ namespace Hudl.Mjolnir.Command
         /// </summary>
         private readonly IConfigurableValue<bool> _ignoreCancellation;
 
+        /// <summary>
+        /// Singleton instance. Prefer to inject ICommandInvoker into constructors where possible.
+        /// This can be used in older code where it's not as easy to introduce things like DI.
+        /// </summary>
+        public static readonly ICommandInvoker Instance = new CommandInvoker();
+
         public CommandInvoker() : this(null, null, null)
         { }
         
