@@ -297,22 +297,22 @@ namespace Hudl.Mjolnir.Command
         public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command)
         {
             var token = GetCancellationTokenForCommand(command);
-            return InvokeReturnAsync(command, token);
+            return InvokeAndWrapAsync(command, token);
         }
 
         public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis)
         {
             var token = GetCancellationTokenForCommand(command, timeoutMillis);
-            return InvokeReturnAsync(command, token);
+            return InvokeAndWrapAsync(command, token);
         }
 
         public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             var token = GetCancellationTokenForCommand(ct);
-            return InvokeReturnAsync(command, token);
+            return InvokeAndWrapAsync(command, token);
         }
 
-        private async Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
+        private async Task<CommandResult<TResult>> InvokeAndWrapAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
             // Even though we're in a "Return" method, multiple invokes are a bug on the calling
             // side, hence the possible exception here for visibility so the caller can fix.
@@ -366,30 +366,67 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction)
+        public TResult InvokeThrow<TResult>(SyncCommand<TResult> command)
         {
-            var token = GetCancellationTokenForCommand(command);
-            return Invoke(command, failureAction, token);
-        }
-
-        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, long timeoutMillis)
-        {
-            var token = GetCancellationTokenForCommand(command, timeoutMillis);
-            return Invoke(command, failureAction, token);
-        }
-
-        public CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, CancellationToken ct)
-        {
-            var token = GetCancellationTokenForCommand(ct);
-            return Invoke(command, failureAction, token);
-        }
-
-        private CommandResult<TResult> Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
-        {
-            // This doesn't look at the OnFailure action (to return vs. throw) because it means the
-            // caller has a bug in their code - we should always throw so people see it and fix it.
             EnsureSingleInvoke(command);
 
+            var token = GetCancellationTokenForCommand(command);
+            return Invoke(command, OnFailure.Throw, token);
+        }
+
+        public TResult InvokeThrow<TResult>(SyncCommand<TResult> command, long timeoutMillis)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return Invoke(command, OnFailure.Throw, token);
+        }
+
+        public TResult InvokeThrow<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(ct);
+            return Invoke(command, OnFailure.Throw, token);
+        }
+
+        public CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command)
+        {
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAndWrap(command, token);
+        }
+
+        public CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command, long timeoutMillis)
+        {
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAndWrap(command, token);
+        }
+
+        public CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        {
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAndWrap(command, token);
+        }
+
+        private CommandResult<TResult> InvokeAndWrap<TResult>(SyncCommand<TResult> command, InformativeCancellationToken ct)
+        {
+            // Even though we're in a "Return" method, multiple invokes are a bug on the calling
+            // side, hence the possible exception here for visibility so the caller can fix.
+            EnsureSingleInvoke(command);
+
+            try
+            {
+                var result = Invoke(command, OnFailure.Return, ct);
+                return new CommandResult<TResult>(result);
+            }
+            catch (Exception e)
+            {
+                return new CommandResult<TResult>(default(TResult), e);
+            }
+        }
+
+        private TResult Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
+        {
             var stopwatch = Stopwatch.StartNew();
 
             var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
@@ -406,21 +443,13 @@ namespace Hudl.Mjolnir.Command
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
 
-                var result = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
-
-                return new CommandResult<TResult>(result);
+                return _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
             }
             catch (Exception e)
             {
                 status = GetCompletionStatus(e, ct);
                 AttachCommandExceptionData(command, e, status, ct);
-
-                if (failureAction == OnFailure.Throw)
-                {
-                    throw;
-                }
-
-                return new CommandResult<TResult>(default(TResult), e);
+                throw;                
             }
             finally
             {
@@ -502,8 +531,8 @@ namespace Hudl.Mjolnir.Command
         }
     }
 
-    // "Failure" is any of [Fault || Timeout || Reject]
-    public enum OnFailure
+    // "Failure" means any of [Fault || Timeout || Reject]
+    internal enum OnFailure
     {
         Throw,
         Return,

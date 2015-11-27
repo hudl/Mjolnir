@@ -32,7 +32,7 @@ namespace Hudl.Mjolnir.Tests
 
             // Sync example
             var command3 = new S3FileExistsCommand(syncClient, "static-content", "foo.txt");
-            var result3 = invoker.Invoke(command3, OnFailure.Throw, 1000);
+            var result3 = invoker.InvokeThrow(command3, 1000);
             var exists3 = result2.Value;
 
 

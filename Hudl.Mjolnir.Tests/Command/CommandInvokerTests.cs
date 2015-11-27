@@ -515,10 +515,10 @@ namespace Hudl.Mjolnir.Tests.Command
         }
     }
 
-    public class Invoke : TestFixture
+    public class InvokeThrow : TestFixture
     {
         [Fact]
-        public void WhenCommandAlreadyInvoked_FailureModeIsThrow_Throws()
+        public void WhenCommandAlreadyInvoked_Throws()
         {
             // A command instance should only be invoked once. The failure mode
             // here shouldn't actually matter; there's a similar test below
@@ -528,41 +528,19 @@ namespace Hudl.Mjolnir.Tests.Command
             // The command used here doesn't matter.
             var command = new NoOpCommand();
             var invoker = new CommandInvoker();
-            var failureMode = OnFailure.Throw;
 
             // This first call shouldn't throw, but the second one should.
-            invoker.Invoke(command, failureMode);
+            invoker.InvokeThrow(command);
 
             // The timeout shouldn't matter. The invoked-once check should be
             // one of the first validations performed.
-            Assert.Throws(typeof(InvalidOperationException), () => invoker.Invoke(command, failureMode));
+            Assert.Throws(typeof(InvalidOperationException), () => invoker.InvokeThrow(command));
         }
 
         [Fact]
-        public void WhenCommandAlreadyInvoked_FailureModeIsReturn_StillThrows()
+        public void ExecuteSuccessful_ReturnsResult()
         {
-            // Even if the failure mode isn't "Throw", we want to throw in
-            // this situation. This is a bug on the calling side, since Command
-            // instances shouldn't be reused. The exception thrown should help
-            // the caller see that problem and fix it.
-
-            // The command used here doesn't matter.
-            var command = new NoOpCommand();
-            var invoker = new CommandInvoker();
-            var failureMode = OnFailure.Return;
-
-            // This first call shouldn't throw, but the second one should.
-            invoker.Invoke(command, failureMode);
-
-            // The timeout shouldn't matter. The invoked-once check should be
-            // one of the first validations performed.
-            Assert.Throws(typeof(InvalidOperationException), () => invoker.Invoke(command, failureMode));
-        }
-
-        [Fact]
-        public void ExecuteSuccessful_FailureModeThrow_ReturnsWrappedResult()
-        {
-            // Successful command execution should return a wrapped CommandResult.
+            // Successful command execution should return the result.
 
             const bool expectedResultValue = true;
             var command = new NoOpCommand();
@@ -578,48 +556,16 @@ namespace Hudl.Mjolnir.Tests.Command
             var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
 
             // We're testing OnFailure.Throws here. Mainly, it shouldn't throw if we're successful.
-            var result = invoker.Invoke(command, OnFailure.Throw);
+            var result = invoker.InvokeThrow(command);
 
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "throw"));
-            Assert.True(result.WasSuccess);
-            Assert.Null(result.Exception);
-            Assert.Equal(expectedResultValue, result.Value);
+            Assert.Equal(expectedResultValue, result);
         }
 
         [Fact]
-        public void ExecuteSuccessful_FailureModeReturn_ReturnsWrappedResult()
-        {
-            // Successful command execution should return a wrapped CommandResult.
-
-            const bool expectedResultValue = true;
-            var command = new NoOpCommand();
-
-            var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
-            var mockMetricEvents = new Mock<IMetricEvents>();
-            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
-            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
-            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(expectedResultValue);
-
-            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
-
-            // We're testing OnFailure.Return here. The failure mode shouldn't have any bearing
-            // on what happens during successful execution.
-            var result = invoker.Invoke(command, OnFailure.Return);
-
-            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "return"));
-            Assert.True(result.WasSuccess);
-            Assert.Null(result.Exception);
-            Assert.Equal(expectedResultValue, result.Value);
-        }
-
-        [Fact]
-        public void ExecutionCanceled_FailureModeThrow_Throws()
+        public void ExecutionCanceled_Throws()
         {
             // When failure mode is Throw, cancellation should result in an exception. Note
             // that cancellation is different from timeouts (tested below). Timeouts are a
@@ -639,7 +585,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expiredToken = new CancellationToken(true);
 
             // We're testing the combination of OnFailure.Throw and the expired token here.
-            var exception = Assert.Throws<OperationCanceledException>(() => invoker.Invoke(command, OnFailure.Throw, expiredToken));
+            var exception = Assert.Throws<OperationCanceledException>(() => invoker.InvokeThrow(command, expiredToken));
 
             // We shouldn't have even attempted the execution since the token was expired upon
             // entering the method.
@@ -657,7 +603,214 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public void ExecutionCanceled_FailureModeReturn_Returns()
+        public void TimeoutBeforeExecution_Throws()
+        {
+            // When failure mode is Throw, timeouts should result in an exception. Timeouts
+            // are a specific form of cancellation, and get logged/tracked as timeouts instead
+            // of general "cancellations".
+
+            var command = new SleepCommand(1);
+
+            var mockContext = new Mock<ICommandContext>();
+            var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
+            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+
+            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
+
+            // We're testing the combination of OnFailure.Throw and the timeout here.
+            var exception = Assert.Throws<OperationCanceledException>(() => invoker.InvokeThrow(command, 0));
+
+            // We shouldn't have even attempted the execution since the timeout expired by the
+            // time we entered the method.
+            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
+
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.Sleep execute", "TimedOut", It.IsAny<TimeSpan>()));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
+
+            Assert.Equal("test.Sleep", exception.Data["Command"]);
+            Assert.Equal(CommandCompletionStatus.TimedOut, exception.Data["Status"]);
+            Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
+            Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
+            Assert.Equal(0, exception.Data["TimeoutMillis"]);
+            Assert.True((double)exception.Data["ExecuteMillis"] >= 0);
+        }
+
+        [Fact]
+        public void CancellationIgnored_InvokesRegardlessOfInvocationToken()
+        {
+            // When doing local development, timeouts often get hit after sitting on a
+            // breakpoint for too long. An optional configuration can be set to ignore
+            // cancellation and work around that. If the config is set, all cancellation
+            // (regardless of source) is ignored.
+
+            var command = new SleepCommand(1);
+            var expiredToken = new CancellationToken(true);
+
+            var mockContext = new Mock<ICommandContext>();
+            var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
+            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(true);
+
+            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object, new TransientConfigurableValue<bool>(true));
+
+            // Even though we pass a token, the config value on the invoker should prevent the
+            // token from being used/checked. This shouldn't throw.
+            var result = invoker.InvokeThrow(command, expiredToken);
+
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public void CancellationIgnoredAndExecutionFaulted_MarksTimeoutIgnoredOnExceptionData()
+        {
+            // If a command faults and cancellation is disabled, we should still log the
+            // timeout we would have used on the exception. This is a fairly inconsequential
+            // test, but we might as well make sure what we're logging is accurate.
+
+            var expectedException = new ExpectedTestException("Expected");
+            var command = new NoOpCommand();
+
+            var mockContext = new Mock<ICommandContext>();
+            var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
+            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+
+            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object, new TransientConfigurableValue<bool>(true));
+
+            // We're testing the combination of OnFailure.Throw and the exceptions here.
+            var exception = Assert.Throws<ExpectedTestException>(() => invoker.InvokeThrow(command));
+
+            Assert.NotNull(exception);
+            Assert.Equal("Ignored", exception.Data["TimeoutMillis"]);
+        }
+
+        [Fact]
+        public void ExecutionFaulted_Throws()
+        {
+            // When failure mode is Throw, faults should result in an exception.
+
+            var expectedException = new ExpectedTestException("Expected");
+            var command = new NoOpCommand();
+
+            var mockContext = new Mock<ICommandContext>();
+            var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
+            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+
+            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
+
+            // We're testing the combination of OnFailure.Throw and the exceptions here.
+            var exception = Assert.Throws<ExpectedTestException>(() => invoker.InvokeThrow(command));
+
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Faulted", It.IsAny<TimeSpan>()));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
+            Assert.Equal("test.NoOp", exception.Data["Command"]);
+            Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["Status"]);
+            Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
+            Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
+            Assert.Equal((int)command.DetermineTimeout().TotalMilliseconds, exception.Data["TimeoutMillis"]);
+            Assert.True((double)exception.Data["ExecuteMillis"] >= 0);
+        }
+
+        [Fact]
+        public void ExecutionRejected_Throws()
+        {
+            // When failure mode is Throw, rejections should result in an exception.
+
+            var expectedException = new CircuitBreakerRejectedException();
+            var command = new NoOpCommand();
+
+            var mockContext = new Mock<ICommandContext>();
+            var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
+            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
+
+            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
+
+            // We're testing the combination of OnFailure.Throw and the exceptions here.
+            var exception = Assert.Throws<CircuitBreakerRejectedException>(() => invoker.InvokeThrow(command));
+
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Rejected", It.IsAny<TimeSpan>()));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
+
+            Assert.Equal("test.NoOp", exception.Data["Command"]);
+            Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["Status"]);
+            Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
+            Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
+            Assert.Equal((int)command.DetermineTimeout().TotalMilliseconds, exception.Data["TimeoutMillis"]);
+            Assert.True((double)exception.Data["ExecuteMillis"] >= 0);
+        }
+    }
+
+    public class InvokeReturn : TestFixture
+    {
+        [Fact]
+        public void WhenCommandAlreadyInvoked_StillThrows()
+        {
+            // Even if the failure mode isn't "Throw", we want to throw in
+            // this situation. This is a bug on the calling side, since Command
+            // instances shouldn't be reused. The exception thrown should help
+            // the caller see that problem and fix it.
+
+            // The command used here doesn't matter.
+            var command = new NoOpCommand();
+            var invoker = new CommandInvoker();
+
+            // This first call shouldn't throw, but the second one should.
+            invoker.InvokeReturn(command);
+
+            // The timeout shouldn't matter. The invoked-once check should be
+            // one of the first validations performed.
+            Assert.Throws(typeof(InvalidOperationException), () => invoker.InvokeReturn(command));
+        }
+
+        [Fact]
+        public void ExecuteSuccessful_ReturnsWrappedResult()
+        {
+            // Successful command execution should return a wrapped CommandResult.
+
+            const bool expectedResultValue = true;
+            var command = new NoOpCommand();
+
+            var mockContext = new Mock<ICommandContext>();
+            var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
+            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
+            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
+            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(expectedResultValue);
+
+            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
+
+            // We're testing OnFailure.Return here. The failure mode shouldn't have any bearing
+            // on what happens during successful execution.
+            var result = invoker.InvokeReturn(command);
+
+            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
+            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "return"));
+            Assert.True(result.WasSuccess);
+            Assert.Null(result.Exception);
+            Assert.Equal(expectedResultValue, result.Value);
+        }
+
+        [Fact]
+        public void ExecutionCanceled_Returns()
         {
             // When failure mode is Return, cancellation shouldn't throw, and should instead
             // return a result object with error information. Note that cancellation is
@@ -684,7 +837,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expiredToken = new CancellationToken(true);
 
             // Shouldn't throw.
-            var result = invoker.Invoke(command, OnFailure.Return, expiredToken);
+            var result = invoker.InvokeReturn(command, expiredToken);
 
             // We shouldn't have even attempted the execution since the token was expired upon
             // entering the method.
@@ -707,43 +860,7 @@ namespace Hudl.Mjolnir.Tests.Command
         }
 
         [Fact]
-        public void TimeoutBeforeExecution_FailureModeThrow_Throws()
-        {
-            // When failure mode is Throw, timeouts should result in an exception. Timeouts
-            // are a specific form of cancellation, and get logged/tracked as timeouts instead
-            // of general "cancellations".
-
-            var command = new SleepCommand(1);
-
-            var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
-            var mockMetricEvents = new Mock<IMetricEvents>();
-            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
-            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
-
-            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
-
-            // We're testing the combination of OnFailure.Throw and the timeout here.
-            var exception = Assert.Throws<OperationCanceledException>(() => invoker.Invoke(command, OnFailure.Throw, 0));
-
-            // We shouldn't have even attempted the execution since the timeout expired by the
-            // time we entered the method.
-            mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
-
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.Sleep execute", "TimedOut", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
-
-            Assert.Equal("test.Sleep", exception.Data["Command"]);
-            Assert.Equal(CommandCompletionStatus.TimedOut, exception.Data["Status"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
-            Assert.Equal(0, exception.Data["TimeoutMillis"]);
-            Assert.True((double)exception.Data["ExecuteMillis"] >= 0);
-        }
-
-        [Fact]
-        public void TimeoutBeforeExecution_FailureModeReturn_Returns()
+        public void TimeoutBeforeExecution_Returns()
         {
             // When failure mode is Return, cancellation shouldn't throw, and should instead
             // return a result object with error information. Timeouts are a specific form of
@@ -768,7 +885,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Return and the timeout here.
-            var result = invoker.Invoke(command, OnFailure.Return, 0);
+            var result = invoker.InvokeReturn(command, 0);
 
             // We shouldn't have even attempted the execution since the timeout expired by the
             // time we entered the method.
@@ -788,34 +905,6 @@ namespace Hudl.Mjolnir.Tests.Command
 
             Assert.False(result.WasSuccess);
             Assert.Equal(expectedResultValue, result.Value);
-        }
-
-        [Fact]
-        public void CancellationIgnored_InvokesRegardlessOfInvocationToken()
-        {
-            // When doing local development, timeouts often get hit after sitting on a
-            // breakpoint for too long. An optional configuration can be set to ignore
-            // cancellation and work around that. If the config is set, all cancellation
-            // (regardless of source) is ignored.
-
-            var command = new SleepCommand(1);
-            var expiredToken = new CancellationToken(true);
-
-            var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
-            var mockMetricEvents = new Mock<IMetricEvents>();
-            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
-            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
-            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(true);
-
-            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object, new TransientConfigurableValue<bool>(true));
-
-            // Even though we pass a token, the config value on the invoker should prevent the
-            // token from being used/checked. This shouldn't throw.
-            var result = invoker.Invoke(command, OnFailure.Throw, expiredToken);
-
-            Assert.True(result.WasSuccess);
         }
 
         [Fact]
@@ -840,71 +929,13 @@ namespace Hudl.Mjolnir.Tests.Command
 
             // Even though we pass a timeout, the config value on the invoker should prevent the
             // timeout from being used/checked. This shouldn't throw.
-            var result = invoker.Invoke(command, OnFailure.Throw, 0);
+            var result = invoker.InvokeReturn(command, 0);
 
             Assert.True(result.WasSuccess);
         }
 
         [Fact]
-        public void CancellationIgnoredAndExecutionFaulted_MarksTimeoutIgnoredOnExceptionData()
-        {
-            // If a command faults and cancellation is disabled, we should still log the
-            // timeout we would have used on the exception. This is a fairly inconsequential
-            // test, but we might as well make sure what we're logging is accurate.
-
-            var expectedException = new ExpectedTestException("Expected");
-            var command = new NoOpCommand();
-
-            var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
-            var mockMetricEvents = new Mock<IMetricEvents>();
-            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
-            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
-            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
-
-            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object, new TransientConfigurableValue<bool>(true));
-
-            // We're testing the combination of OnFailure.Throw and the exceptions here.
-            var exception = Assert.Throws<ExpectedTestException>(() => invoker.Invoke(command, OnFailure.Throw));
-
-            Assert.NotNull(exception);
-            Assert.Equal("Ignored", exception.Data["TimeoutMillis"]);
-        }
-
-        [Fact]
-        public void ExecutionFaulted_FailureModeThrow_Throws()
-        {
-            // When failure mode is Throw, faults should result in an exception.
-
-            var expectedException = new ExpectedTestException("Expected");
-            var command = new NoOpCommand();
-
-            var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
-            var mockMetricEvents = new Mock<IMetricEvents>();
-            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
-            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
-            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
-
-            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
-
-            // We're testing the combination of OnFailure.Throw and the exceptions here.
-            var exception = Assert.Throws<ExpectedTestException>(() => invoker.Invoke(command, OnFailure.Throw));
-
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Faulted", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
-            Assert.Equal("test.NoOp", exception.Data["Command"]);
-            Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["Status"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
-            Assert.Equal((int)command.DetermineTimeout().TotalMilliseconds, exception.Data["TimeoutMillis"]);
-            Assert.True((double)exception.Data["ExecuteMillis"] >= 0);
-        }
-
-        [Fact]
-        public void ExecutionFaulted_FailureModeReturn_Returns()
+        public void ExecutionFaulted_Returns()
         {
             // When failure mode is Return, faults shouldn't throw, and should instead
             // return a result object with error information.
@@ -929,7 +960,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Return and the exceptions here.
-            var result = invoker.Invoke(command, OnFailure.Return);
+            var result = invoker.InvokeReturn(command);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Faulted", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "return"));
@@ -945,38 +976,6 @@ namespace Hudl.Mjolnir.Tests.Command
 
             Assert.False(result.WasSuccess);
             Assert.Equal(expectedResultValue, result.Value);
-        }
-
-        [Fact]
-        public void ExecutionRejected_FailureModeThrow_Throws()
-        {
-            // When failure mode is Throw, rejections should result in an exception.
-
-            var expectedException = new CircuitBreakerRejectedException();
-            var command = new NoOpCommand();
-
-            var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
-            var mockMetricEvents = new Mock<IMetricEvents>();
-            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
-            mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
-            mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
-
-            var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
-
-            // We're testing the combination of OnFailure.Throw and the exceptions here.
-            var exception = Assert.Throws<CircuitBreakerRejectedException>(() => invoker.Invoke(command, OnFailure.Throw));
-
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Rejected", It.IsAny<TimeSpan>()));
-            mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
-
-            Assert.Equal("test.NoOp", exception.Data["Command"]);
-            Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["Status"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["Breaker"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["Bulkhead"]);
-            Assert.Equal((int)command.DetermineTimeout().TotalMilliseconds, exception.Data["TimeoutMillis"]);
-            Assert.True((double)exception.Data["ExecuteMillis"] >= 0);
         }
 
         [Fact]
@@ -1004,12 +1003,12 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
 
-            // We're testing the combination of OnFailure.Return and the exceptions here.
-            var result = invoker.Invoke(command, OnFailure.Return);
+            // We're testing the combination of the "return" failure mode and the exceptions here.
+            var result = invoker.InvokeReturn(command);
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Rejected", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "return"));
-            
+
             Assert.NotNull(result.Exception);
             Assert.Equal(expectedException, result.Exception);
             Assert.Equal("test.NoOp", result.Exception.Data["Command"]);
@@ -1022,14 +1021,6 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.False(result.WasSuccess);
             Assert.Equal(expectedResultValue, result.Value);
         }
-
-        //private Mock<ICommandContext> GetMockCommandContext()
-        //{
-        //    var mockContext = new Mock<ICommandContext>();
-        //    var mockMetricEvents = new Mock<IMetricEvents>();
-        //    mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
-        //    return mockContext;
-        //}
     }
 
     // Async command that does nothing, and doesn't actually go async - it wraps a synchronous
