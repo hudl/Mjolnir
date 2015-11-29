@@ -26,33 +26,11 @@ namespace Hudl.Mjolnir.Command
         // Stores the time spent in Execute() or ExecuteAsync().
         // Set by the component that actually calls the Execute* method.
         internal double ExecutionTimeMillis { get; set; }
-
+        
         /// <summary>
-        /// Constructs the Command.
+        /// Constructs the command.
         /// 
-        /// The group is used as part of the Command's <see cref="Name">Name</see>.
-        /// If the group contains dots, they'll be converted to dashes.
-        /// 
-        /// The provided <code>isolationKey</code> will be used as both the
-        /// breaker and bulkhead keys.
-        /// 
-        /// Command timeouts can be configured at runtime. Configuration keys
-        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
-        /// (i.e. <code>mjolnir.[Command.Name].Timeout</code>). If not
-        /// configured, the provided <code>defaultTimeout</code> will be used.
-        /// 
-        /// </summary>
-        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
-        /// <param name="isolationKey">Breaker and bulkhead key to use.</param>
-        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided.</param>
-        protected BaseCommand(string group, string isolationKey, TimeSpan defaultTimeout)
-            : this(group, null, isolationKey, isolationKey, defaultTimeout)
-        { }
-
-        /// <summary>
-        /// Constructs the Command.
-        /// 
-        /// The group is used as part of the Command's <see cref="Name">Name</see>.
+        /// The group is used as part of the command's <see cref="Name">Name</see>.
         /// If the group contains dots, they'll be converted to dashes.
         /// 
         /// Command timeouts can be configured at runtime. Configuration keys
@@ -151,7 +129,7 @@ namespace Hudl.Mjolnir.Command
 
         private static IConfigurableValue<long> GetTimeoutConfigurableValue(string commandName)
         {
-            return TimeoutConfigCache.GetOrAdd(commandName, n => new ConfigurableValue<long>("command." + commandName + ".Timeout"));
+            return TimeoutConfigCache.GetOrAdd(commandName, n => new ConfigurableValue<long>("mjolnir.command." + commandName + ".Timeout"));
         }
 
         internal string Name

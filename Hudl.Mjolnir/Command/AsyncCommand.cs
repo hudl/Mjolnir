@@ -16,7 +16,46 @@ namespace Hudl.Mjolnir.Command
     /// <typeparam name="TResult">The type of the result returned by this command's execution.</typeparam>
     public abstract class AsyncCommand<TResult> : BaseCommand
     {
-        public AsyncCommand(string group, string isolationKey, TimeSpan defaultTimeout) : base(group, isolationKey, defaultTimeout)
+        /// <summary>
+        /// Constructs the command.
+        /// 
+        /// The group is used as part of the command's <see cref="Name">Name</see>.
+        /// If the group contains dots, they'll be converted to dashes.
+        /// 
+        /// The provided <code>isolationKey</code> will be used as both the
+        /// breaker and bulkhead keys.
+        /// 
+        /// Command timeouts can be configured at runtime. Configuration keys
+        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
+        /// (i.e. <code>mjolnir.command.[Command.Name].Timeout</code>). If not
+        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// 
+        /// </summary>
+        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
+        /// <param name="isolationKey">Breaker and bulkhead key to use.</param>
+        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided.</param>
+        protected AsyncCommand(string group, string isolationKey, TimeSpan defaultTimeout)
+            : base(group, isolationKey, isolationKey, defaultTimeout)
+        { }
+
+        /// <summary>
+        /// Constructs the command.
+        /// 
+        /// The group is used as part of the command's <see cref="Name">Name</see>.
+        /// If the group contains dots, they'll be converted to dashes.
+        /// 
+        /// Command timeouts can be configured at runtime. Configuration keys
+        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
+        /// (i.e. <code>mjolnir.command.[Command.Name].Timeout</code>). If not
+        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// 
+        /// </summary>
+        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
+        /// <param name="breakerKey">Breaker to use for this command.</param>
+        /// <param name="bulkheadKey">Bulkhead to use for this command.</param>
+        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided.</param>
+        protected AsyncCommand(string group, string breakerKey, string bulkheadKey, TimeSpan defaultTimeout)
+            : base(group, breakerKey, bulkheadKey, defaultTimeout)
         { }
 
         /// <summary>

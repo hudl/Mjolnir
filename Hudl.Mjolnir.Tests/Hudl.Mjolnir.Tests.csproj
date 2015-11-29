@@ -99,6 +99,7 @@
     <Compile Include="Command\CommandInvokerTests.cs" />
     <Compile Include="Command\CommandTests.cs" />
     <Compile Include="Command\CommandThreadPoolTests.cs" />
+    <Compile Include="Command\BaseCommandTests.cs" />
     <Compile Include="Command\CommandTimeoutTests.cs" />
     <Compile Include="Example.cs" />
     <Compile Include="Helper\AlwaysSuccessfulCircuitBreaker.cs" />
