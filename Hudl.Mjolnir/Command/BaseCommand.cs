@@ -3,6 +3,8 @@ using Hudl.Mjolnir.Key;
 using System;
 
 // TODO remove IStats from new BaseCommand and new invokers
+// - once done, remove the StatsPrefix accessor at the bottom of BaseCommand
+// TODO for release notes, mention that the new commands use "mjolnir.command" instead of just "command" as a config prefix for timeouts
 
 namespace Hudl.Mjolnir.Command
 {
@@ -48,7 +50,7 @@ namespace Hudl.Mjolnir.Command
         /// <param name="bulkheadKey">Bulkhead to use for this command.</param>
         /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided. </param>
         protected BaseCommand(string group, string breakerKey, string bulkheadKey, TimeSpan? defaultTimeout)
-            : this(group, null, breakerKey, bulkheadKey, defaultTimeout = null)
+            : this(group, null, breakerKey, bulkheadKey, defaultTimeout)
         { }
 
         internal BaseCommand(string group, string name, string breakerKey, string bulkheadKey, TimeSpan? defaultTimeout = null)
@@ -70,7 +72,7 @@ namespace Hudl.Mjolnir.Command
 
             if (defaultTimeout != null && defaultTimeout.Value.TotalMilliseconds <= 0)
             {
-                throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
+                throw new ArgumentException("Positive default timeout is required if passed", "defaultTimeout");
             }
 
             _group = GroupKey.Named(group);
@@ -80,6 +82,7 @@ namespace Hudl.Mjolnir.Command
             _constructorTimeout = defaultTimeout ?? DefaultTimeout;
         }
 
+        // Default Timeout: The system default timeout (2 seconds). Used if nothing else is set.
         // Constructor Timeout: Value defined in the Command constructor.
         // Configured Timeout: Value provided by config.
         // Invocation Timeout: Value passed into the Invoke() / InvokeAsync() call.

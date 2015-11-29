@@ -9,6 +9,11 @@ namespace Hudl.Mjolnir.Tests.Helper
         private static bool _configured = false;
 
         internal const string IgnoreTimeoutsKey = "mjolnir.ignoreTimeouts"; 
+
+        protected string AnyString
+        {
+            get { return Rand.String(); }
+        }
         
         public TestFixture()
         {
