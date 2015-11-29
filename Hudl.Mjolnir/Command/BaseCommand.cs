@@ -2,6 +2,8 @@
 using Hudl.Mjolnir.Key;
 using System;
 
+// TODO remove IStats from new BaseCommand and new invokers
+
 namespace Hudl.Mjolnir.Command
 {
     /// <summary>
@@ -13,6 +15,8 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     public abstract class BaseCommand : Command
     {
+        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMilliseconds(2000);
+
         private readonly GroupKey _group;
         private readonly string _name;
         private readonly GroupKey _breakerKey;
@@ -42,12 +46,12 @@ namespace Hudl.Mjolnir.Command
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
         /// <param name="breakerKey">Breaker to use for this command.</param>
         /// <param name="bulkheadKey">Bulkhead to use for this command.</param>
-        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided.</param>
-        protected BaseCommand(string group, string breakerKey, string bulkheadKey, TimeSpan defaultTimeout)
-            : this(group, null, breakerKey, bulkheadKey, defaultTimeout)
+        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided. </param>
+        protected BaseCommand(string group, string breakerKey, string bulkheadKey, TimeSpan? defaultTimeout)
+            : this(group, null, breakerKey, bulkheadKey, defaultTimeout = null)
         { }
 
-        internal BaseCommand(string group, string name, string breakerKey, string bulkheadKey, TimeSpan defaultTimeout)
+        internal BaseCommand(string group, string name, string breakerKey, string bulkheadKey, TimeSpan? defaultTimeout = null)
         {
             if (string.IsNullOrWhiteSpace(group))
             {
@@ -64,7 +68,7 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException("bulkheadKey");
             }
 
-            if (defaultTimeout.TotalMilliseconds <= 0)
+            if (defaultTimeout != null && defaultTimeout.Value.TotalMilliseconds <= 0)
             {
                 throw new ArgumentException("Positive default timeout is required", "defaultTimeout");
             }
@@ -73,7 +77,7 @@ namespace Hudl.Mjolnir.Command
             _name = string.IsNullOrWhiteSpace(name) ? GenerateAndCacheName(Group) : CacheProvidedName(Group, name);
             _breakerKey = GroupKey.Named(breakerKey);
             _bulkheadKey = GroupKey.Named(bulkheadKey);
-            _constructorTimeout = defaultTimeout;
+            _constructorTimeout = defaultTimeout ?? DefaultTimeout;
         }
 
         // Constructor Timeout: Value defined in the Command constructor.

@@ -123,6 +123,63 @@ namespace Hudl.Mjolnir.Tests.Command
             }
         }
 
+        public class DetermineTimeout : TestFixture
+        {
+            [Fact]
+            public void InvocationTimeoutZero_UsesInvocationTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void InvocationTimeoutPositive_UsesInvocationTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void InvocationTimeoutNegative_FallsBackToConfiguredTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void InvocationTimeoutNull_FallsBackToConfiguredTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void NoInvocationTimeout_ConfiguredTimeoutNegative_FallsBackToConstructorTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void NoInvocationTimeout_ConfiguredTimeoutZero_FallsBackToConstructorTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void NoInvocationTimeout_ConfiguredTimeoutPositive_UsesConfiguredTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void NoInvocationTimeout_NoConfiguredTimeout_UsesConstructorTimeout()
+            {
+
+            }
+
+            [Fact]
+            public void NoInvocationTimeout_NoConfiguredTimeout_NoConstructorTimeout_UsesDefaultTimeout()
+            {
+
+            }
+        }
+
 
         private class TestCommand : BaseCommand
         {
