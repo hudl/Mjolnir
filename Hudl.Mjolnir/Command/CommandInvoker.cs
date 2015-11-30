@@ -360,8 +360,6 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 stopwatch.Stop();
-
-                _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
                 _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureModeForMetrics.ToString().ToLowerInvariant());
             }
         }
@@ -454,8 +452,6 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 stopwatch.Stop();
-
-                _context.Stats.Elapsed(command.StatsPrefix + " execute", status.ToString(), stopwatch.Elapsed);
                 _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
             }
         }
