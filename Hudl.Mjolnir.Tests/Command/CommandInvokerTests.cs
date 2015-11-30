@@ -43,10 +43,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Returns(Task.FromResult(expectedResultValue));
 
@@ -55,7 +53,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 var result = await invoker.InvokeThrowAsync(command);
 
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()));
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "RanToCompletion", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "throw"));
                 Assert.Equal(expectedResultValue, result);
             }
@@ -71,10 +68,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
                 var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
@@ -87,7 +82,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 // entering the method.
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Canceled", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "throw"));
 
                 Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
@@ -108,10 +102,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new DelayAsyncCommand(1);
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
                 var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
@@ -123,7 +115,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 // time we entered the method.
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.DelayAsync execute", "TimedOut", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
 
                 Assert.Equal("test.DelayAsync", exception.Data["Command"]);
@@ -146,10 +137,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expiredToken = new CancellationToken(true);
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
 
@@ -172,10 +161,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Returns(Task.FromResult(true));
 
@@ -198,10 +185,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -223,10 +208,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -235,7 +218,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 // We're testing the combination of OnFailure.Throw and the exceptions here.
                 var exception = await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.InvokeThrowAsync(command));
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Faulted", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
 
                 Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
@@ -255,10 +237,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -266,7 +246,6 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var exception = await Assert.ThrowsAsync<CircuitBreakerRejectedException>(() => invoker.InvokeThrowAsync(command));
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Rejected", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
 
                 Assert.Equal("test.NoOpAsync", exception.Data["Command"]);
@@ -310,10 +289,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Returns(Task.FromResult(expectedResultValue));
 
@@ -324,7 +301,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 var result = await invoker.InvokeReturnAsync(command);
 
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()));
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "RanToCompletion", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "return"));
                 Assert.Null(result.Exception);
                 Assert.Equal(expectedResultValue, result.Value);
@@ -347,10 +323,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
                 // We're testing the combination of OnFailure.Return and the expired token here.
@@ -364,7 +338,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 // entering the method.
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Canceled", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "return"));
 
                 Assert.NotNull(result.Exception);
@@ -396,10 +369,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new DelayAsyncCommand(1);
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
                 var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
@@ -411,7 +382,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 // time we entered the method.
                 mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>()), Times.Never);
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.DelayAsync execute", "TimedOut", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "return"));
 
                 Assert.NotNull(result.Exception);
@@ -442,10 +412,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -454,7 +422,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 // Exception should be captured and wrapped in the result.
                 var result = await invoker.InvokeReturnAsync(command);
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Faulted", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "return"));
 
                 Assert.NotNull(result.Exception);
@@ -486,10 +453,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
-                var mockStats = new Mock<IStats>();
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-                mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
                 mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
                 mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkheadAsync(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -497,7 +462,6 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var result = await invoker.InvokeReturnAsync(command);
 
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOpAsync execute", "Rejected", It.IsAny<TimeSpan>()));
                 mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "return"));
 
                 Assert.NotNull(result.Exception);
@@ -546,10 +510,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(expectedResultValue);
 
@@ -559,7 +521,6 @@ namespace Hudl.Mjolnir.Tests.Command
             var result = invoker.InvokeThrow(command);
 
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "throw"));
             Assert.Equal(expectedResultValue, result);
         }
@@ -575,10 +536,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
             var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
@@ -591,7 +550,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // entering the method.
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Canceled", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "throw"));
 
             Assert.Equal("test.NoOp", exception.Data["Command"]);
@@ -612,10 +570,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SleepCommand(1);
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
             var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
@@ -627,7 +583,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // time we entered the method.
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.Sleep execute", "TimedOut", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
 
             Assert.Equal("test.Sleep", exception.Data["Command"]);
@@ -650,10 +605,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var expiredToken = new CancellationToken(true);
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(true);
 
@@ -677,10 +630,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -702,10 +653,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -714,7 +663,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // We're testing the combination of OnFailure.Throw and the exceptions here.
             var exception = Assert.Throws<ExpectedTestException>(() => invoker.InvokeThrow(command));
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Faulted", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
             Assert.Equal("test.NoOp", exception.Data["Command"]);
             Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["Status"]);
@@ -733,10 +681,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -745,7 +691,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // We're testing the combination of OnFailure.Throw and the exceptions here.
             var exception = Assert.Throws<CircuitBreakerRejectedException>(() => invoker.InvokeThrow(command));
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Rejected", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
 
             Assert.Equal("test.NoOp", exception.Data["Command"]);
@@ -788,10 +733,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(expectedResultValue);
 
@@ -802,7 +745,6 @@ namespace Hudl.Mjolnir.Tests.Command
             var result = invoker.InvokeReturn(command);
 
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()));
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "RanToCompletion", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "return"));
             Assert.True(result.WasSuccess);
             Assert.Null(result.Exception);
@@ -826,10 +768,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
             // We're testing the combination of OnFailure.Return and the expired token here.
@@ -843,7 +783,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // entering the method.
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Canceled", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Canceled", "return"));
 
             Assert.NotNull(result.Exception);
@@ -876,10 +815,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SleepCommand(1);
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
             var invoker = new CommandInvoker(mockContext.Object, mockBulkheadInvoker.Object);
@@ -891,7 +828,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // time we entered the method.
             mockBulkheadInvoker.Verify(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>()), Times.Never);
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.Sleep execute", "TimedOut", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "return"));
 
             Assert.NotNull(result.Exception);
@@ -918,10 +854,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(true);
 
@@ -950,10 +884,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -962,7 +894,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // We're testing the combination of OnFailure.Return and the exceptions here.
             var result = invoker.InvokeReturn(command);
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Faulted", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "return"));
 
             Assert.NotNull(result.Exception);
@@ -994,10 +925,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
-            var mockStats = new Mock<IStats>();
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
-            mockContext.SetupGet(m => m.Stats).Returns(mockStats.Object);
             mockContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
 
@@ -1006,7 +935,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // We're testing the combination of the "return" failure mode and the exceptions here.
             var result = invoker.InvokeReturn(command);
 
-            mockStats.Verify(m => m.Elapsed("mjolnir command test.NoOp execute", "Rejected", It.IsAny<TimeSpan>()));
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Rejected", "return"));
 
             Assert.NotNull(result.Exception);
