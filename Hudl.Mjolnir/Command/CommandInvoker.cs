@@ -232,8 +232,203 @@ namespace Hudl.Mjolnir.Command
         /// </param>
         /// <returns>A CommandResult with a return value or exception information.</returns>
         CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command, CancellationToken ct);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception.
+        /// 
+        /// If the command failed, the result will contain the causing exception.
+        /// 
+        /// <seealso cref="AsyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <returns>A Task wrapping a CommandResult.</returns>
+        Task<CommandResult> InvokeReturnAsync(AsyncCommand command);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided timeout will override the timeout defined by
+        /// the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the command failed, the result will contain the causing exception.
+        /// 
+        /// <seealso cref="AsyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="timeoutMillis">
+        ///     A timeout that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task wrapping a CommandResult.</returns>
+        Task<CommandResult> InvokeReturnAsync(AsyncCommand command, long timeoutMillis);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided CancellationToken will override the timeout
+        /// defined by the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the command failed, the result will contain the causing exception.
+        /// 
+        /// <seealso cref="AsyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// </summary>
+        /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="ct">
+        ///     A cancellation token that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task wrapping a CommandResult.</returns>
+        Task<CommandResult> InvokeReturnAsync(AsyncCommand command, CancellationToken ct);
+
+        /// <summary>
+        /// Invokes the provided command. If the command fails (due to any exception, be it
+        /// Mjolnir's or a fault in the command's execution itself), the exception will be
+        /// rethrown.
+        /// 
+        /// Callers should consider using the <code>InvokeReturn*</code> overloads where possible
+        /// to handle failure gracefully (e.g. using fallbacks or retries).
+        /// 
+        /// <seealso cref="AsyncCommand"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <returns>A Task.</returns>
+        Task InvokeThrowAsync(AsyncCommand command);
+
+        /// <summary>
+        /// Invokes the provided command. If the command fails (due to any exception, be it
+        /// Mjolnir's or a fault in the command's execution itself), the exception will be
+        /// rethrown. The provided timeout will override the timeout defined by the command's
+        /// constructor, and will also override any configured timeouts.
+        /// 
+        /// Callers should consider using the <code>InvokeReturn*</code> overloads where possible
+        /// to handle failure gracefully (e.g. using fallbacks or retries).
+        /// 
+        /// <seealso cref="AsyncCommand"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="timeoutMillis">
+        ///     A timeout that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task.</returns>
+        Task InvokeThrowAsync(AsyncCommand command, long timeoutMillis);
+
+        /// <summary>
+        /// Invokes the provided command. If the command fails (due to any exception, be it
+        /// Mjolnir's or a fault in the command's execution itself), the exception will be
+        /// rethrown. The provided CancellationToken will override the timeout defined by the
+        /// command's constructor, and will also override any configured timeouts.
+        /// 
+        /// Callers should consider using the <code>InvokeReturn*</code> overloads where possible
+        /// to handle failure gracefully (e.g. using fallbacks or retries).
+        /// 
+        /// <seealso cref="AsyncCommand"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="ct">
+        ///     A cancellation token that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A Task.</returns>
+        Task InvokeThrowAsync(AsyncCommand command, CancellationToken ct);
+
+        /// <summary>
+        /// Invokes the provided command, rethrowing any exceptions that happen during execution.
+        /// 
+        /// <seealso cref="SyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="InvokeReturn(SyncCommand)"/>
+        /// <seealso cref="InvokeThrowAsync(AsyncCommand)"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="failureAction">Whether to return or throw on failure.</param>
+        void InvokeThrow(SyncCommand command);
+
+        /// <summary>
+        /// Invokes the provided command, rethrowing any exceptions that happen during execution.
+        /// The provided timeout will override the timeout defined by the command's constructor,
+        /// and will also override any configured timeouts.
+        /// 
+        /// <seealso cref="SyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="InvokeReturn(SyncCommand, long)"/>
+        /// <seealso cref="InvokeThrowAsync(AsyncCommand, long)"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="timeoutMillis">
+        ///     A timeout that overrides the defined and configured timeouts.
+        /// </param>
+        void InvokeThrow(SyncCommand command, long timeoutMillis);
+
+        /// <summary>
+        /// Invokes the provided command, rethrowing any exceptions that happen during execution.
+        /// The provided CancellationToken will override the timeout defined by the command's
+        /// constructor, and will also override any configured timeouts.
+        /// 
+        /// <seealso cref="SyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="InvokeReturn(SyncCommand, CancellationToken)"/>
+        /// <seealso cref="InvokeThrowAsync(AsyncCommand, CancellationToken)"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="ct">
+        ///     A cancellation token that overrides the defined and configured timeouts.
+        /// </param>
+        void InvokeThrow(SyncCommand command, CancellationToken ct);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception.
+        /// 
+        /// If the command fails, the result will contain the causing exception.
+        /// 
+        /// <seealso cref="SyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="InvokeThrow(SyncCommand)"/>
+        /// <seealso cref="InvokeReturnAsync(AsyncCommand)"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <returns>A CommandResult with  exception information.</returns>
+        CommandResult InvokeReturn(SyncCommand command);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided timeout will override the timeout defined by
+        /// the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the command fails, the result will contain the causing exception.
+        /// 
+        /// <seealso cref="SyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="InvokeThrow(SyncCommand, long)"/>
+        /// <seealso cref="InvokeReturnAsync(AsyncCommand, long)"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="timeoutMillis">
+        ///     A timeout that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A CommandResult with exception information.</returns>
+        CommandResult InvokeReturn(SyncCommand command, long timeoutMillis);
+
+        /// <summary>
+        /// Invokes the provided command and returns a wrapped result, even if the command's
+        /// execution threw an Exception. The provided CancellationToken will override the timeout
+        /// defined by the command's constructor, and will also override any configured timeouts.
+        /// 
+        /// If the command fails, the result will contain the causing exception.
+        /// 
+        /// <seealso cref="SyncCommand"/>
+        /// <seealso cref="CommandResult"/>
+        /// <seealso cref="InvokeThrow(SyncCommand, CancellationToken)"/>
+        /// <seealso cref="InvokeReturnAsync(AsyncCommand, CancellationToken)"/>
+        /// </summary>
+        /// <param name="command">The command to invoke.</param>
+        /// <param name="ct">
+        ///     A cancellation token that overrides the defined and configured timeouts.
+        /// </param>
+        /// <returns>A CommandResult with exception information.</returns>
+        CommandResult InvokeReturn(SyncCommand command, CancellationToken ct);
     }
-    
+
     /// <summary>
     /// Invoker is thread-safe. Prefer to keep a single instance around and use it throughout your
     /// application (e.g. via dependency injection).
@@ -525,6 +720,192 @@ namespace Hudl.Mjolnir.Command
         {
             return (e is TaskCanceledException || e is OperationCanceledException);
         }
+
+        public Task InvokeThrowAsync(AsyncCommand command)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAsync(command, token, OnFailure.Throw);
+        }
+
+        public Task InvokeThrowAsync(AsyncCommand command, long timeoutMillis)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAsync(command, token, OnFailure.Throw);
+        }
+
+        public Task InvokeThrowAsync(AsyncCommand command, CancellationToken ct)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAsync(command, token, OnFailure.Throw);
+        }
+
+        public Task<CommandResult> InvokeReturnAsync(AsyncCommand command)
+        {
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAndWrapAsync(command, token);
+        }
+
+        public Task<CommandResult> InvokeReturnAsync(AsyncCommand command, long timeoutMillis)
+        {
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAndWrapAsync(command, token);
+        }
+
+        public Task<CommandResult> InvokeReturnAsync(AsyncCommand command, CancellationToken ct)
+        {
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAndWrapAsync(command, token);
+        }
+
+        private async Task<CommandResult> InvokeAndWrapAsync(AsyncCommand command, InformativeCancellationToken ct)
+        {
+            // Even though we're in a "Return" method, multiple invokes are a bug on the calling
+            // side, hence the possible exception here for visibility so the caller can fix.
+            EnsureSingleInvoke(command);
+
+            try
+            {
+                await InvokeAsync(command, ct, OnFailure.Return);
+                return new CommandResult();
+            }
+            catch (Exception e)
+            {
+                return new CommandResult(e);
+            }
+        }
+
+        // failureModeForMetrics is just so we can send "throw" or "return" along with the metrics
+        // event we fire for CommandInvoke(). Not really intended for use beyond that.
+        private async Task InvokeAsync(AsyncCommand command, InformativeCancellationToken ct, OnFailure failureModeForMetrics)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
+            var status = CommandCompletionStatus.RanToCompletion;
+
+            try
+            {
+                log.InfoFormat("Invoke Command={0} Breaker={1} Bulkhead={2} Timeout={3}",
+                    command.Name,
+                    command.BreakerKey,
+                    command.BulkheadKey,
+                    ct.DescriptionForLog);
+
+                // If we've already timed out or been canceled, skip execution altogether.
+                ct.Token.ThrowIfCancellationRequested();
+
+                await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                status = GetCompletionStatus(e, ct);
+                AttachCommandExceptionData(command, e, status, ct);
+                throw;
+            }
+            finally
+            {
+                stopwatch.Stop();
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureModeForMetrics.ToString().ToLowerInvariant());
+            }
+        }
+
+        public void InvokeThrow(SyncCommand command)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(command);
+            Invoke(command, OnFailure.Throw, token);
+        }
+
+        public void InvokeThrow(SyncCommand command, long timeoutMillis)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            Invoke(command, OnFailure.Throw, token);
+        }
+
+        public void InvokeThrow(SyncCommand command, CancellationToken ct)
+        {
+            EnsureSingleInvoke(command);
+
+            var token = GetCancellationTokenForCommand(ct);
+            Invoke(command, OnFailure.Throw, token);
+        }
+
+        public CommandResult InvokeReturn(SyncCommand command)
+        {
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAndWrap(command, token);
+        }
+
+        public CommandResult InvokeReturn(SyncCommand command, long timeoutMillis)
+        {
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAndWrap(command, token);
+        }
+
+        public CommandResult InvokeReturn(SyncCommand command, CancellationToken ct)
+        {
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAndWrap(command, token);
+        }
+
+        private CommandResult InvokeAndWrap(SyncCommand command, InformativeCancellationToken ct)
+        {
+            // Even though we're in a "Return" method, multiple invokes are a bug on the calling
+            // side, hence the possible exception here for visibility so the caller can fix.
+            EnsureSingleInvoke(command);
+
+            try
+            {
+                Invoke(command, OnFailure.Return, ct);
+                return new CommandResult();
+            }
+            catch (Exception e)
+            {
+                return new CommandResult(e);
+            }
+        }
+
+        private void Invoke(SyncCommand command, OnFailure failureAction, InformativeCancellationToken ct)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
+            var status = CommandCompletionStatus.RanToCompletion;
+
+            try
+            {
+                log.InfoFormat("Invoke Command={0} Breaker={1} Bulkhead={2} Timeout={3}",
+                    command.Name,
+                    command.BreakerKey,
+                    command.BulkheadKey,
+                    ct.DescriptionForLog);
+
+                // If we've already timed out or been canceled, skip execution altogether.
+                ct.Token.ThrowIfCancellationRequested();
+
+                _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
+            }
+            catch (Exception e)
+            {
+                status = GetCompletionStatus(e, ct);
+                AttachCommandExceptionData(command, e, status, ct);
+                throw;
+            }
+            finally
+            {
+                stopwatch.Stop();
+                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
+            }
+        }
     }
 
     // "Failure" means any of [Fault || Timeout || Reject]
@@ -532,6 +913,19 @@ namespace Hudl.Mjolnir.Command
     {
         Throw,
         Return,
+    }
+
+    public sealed class CommandResult
+    {
+        private readonly Exception _exception;
+
+        public Exception Exception { get { return _exception; } }
+        public bool WasSuccess { get { return _exception == null; } }
+
+        internal CommandResult(Exception exception = null)
+        {
+            _exception = exception;
+        }
     }
 
     public sealed class CommandResult<TResult>

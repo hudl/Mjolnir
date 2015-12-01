@@ -125,7 +125,7 @@ namespace Hudl.Mjolnir.Tests
         }
     }
 
-    class S3UploadFileCommand : SyncCommand<VoidResult>
+    class S3UploadFileCommand : SyncCommand
     {
         private readonly IS3Client _client;
         private readonly string _bucketName;
@@ -145,10 +145,9 @@ namespace Hudl.Mjolnir.Tests
             _statContentType = statContentType;
         }
 
-        public override VoidResult Execute(CancellationToken cancellationToken)
+        public override void Execute(CancellationToken cancellationToken)
         {
             _client.UploadFile(_bucketName, _localFile, _key, _contentType, _statContentType);
-            return new VoidResult();
         }
     }
 }

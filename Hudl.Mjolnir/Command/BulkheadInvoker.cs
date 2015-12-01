@@ -11,6 +11,8 @@ namespace Hudl.Mjolnir.Command
     {
         Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
         TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct);
+        Task ExecuteWithBulkheadAsync(AsyncCommand command, CancellationToken ct);
+        void ExecuteWithBulkhead(SyncCommand command, CancellationToken ct);
     }
 
     internal class BulkheadInvoker : IBulkheadInvoker
@@ -109,6 +111,94 @@ namespace Hudl.Mjolnir.Command
                 executedHere = true;
                 stopwatch.Start();
                 return command.Execute(ct);
+            }
+            finally
+            {
+                bulkhead.Release();
+
+                _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+
+                if (executedHere)
+                {
+                    stopwatch.Stop();
+                    command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                }
+            }
+        }
+
+        public async Task ExecuteWithBulkheadAsync(AsyncCommand command, CancellationToken ct)
+        {
+            var bulkhead = _context.GetBulkhead(command.BulkheadKey);
+
+            if (!bulkhead.TryEnter())
+            {
+                _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
+                throw new BulkheadRejectedException();
+            }
+
+            _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+
+            // This stopwatch should begin stopped (hence the constructor instead of the usual
+            // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
+            var stopwatch = new Stopwatch();
+            var executedHere = false;
+            try
+            {
+                if (_useCircuitBreakers.Value)
+                {
+                    executedHere = false;
+                    await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
+                    return;
+                }
+
+                executedHere = true;
+                stopwatch.Start();
+                await command.ExecuteAsync(ct).ConfigureAwait(false);
+                return;
+            }
+            finally
+            {
+                bulkhead.Release();
+
+                _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+
+                if (executedHere)
+                {
+                    stopwatch.Stop();
+                    command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                }
+            }
+        }
+
+        public void ExecuteWithBulkhead(SyncCommand command, CancellationToken ct)
+        {
+            var bulkhead = _context.GetBulkhead(command.BulkheadKey);
+
+            if (!bulkhead.TryEnter())
+            {
+                _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
+                throw new BulkheadRejectedException();
+            }
+
+            _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+
+            // This stopwatch should begin stopped (hence the constructor instead of the usual
+            // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
+            var stopwatch = new Stopwatch();
+            var executedHere = false;
+            try
+            {
+                if (_useCircuitBreakers.Value)
+                {
+                    executedHere = false;
+                    _breakerInvoker.ExecuteWithBreaker(command, ct);
+                    return;
+                }
+
+                executedHere = true;
+                stopwatch.Start();
+                command.Execute(ct);
+                return;
             }
             finally
             {
