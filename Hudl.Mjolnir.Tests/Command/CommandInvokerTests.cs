@@ -315,11 +315,6 @@ namespace Hudl.Mjolnir.Tests.Command
                 // cancellation, and get logged/tracked as timeouts instead of general
                 // "cancellations".
 
-                // When a command fails and failure mode is Return, the value of the result will
-                // be default(Type). Our test Command uses a bool, so we should expect a false.
-                // Callers shouldn't be checking the result, anyway - if they're using the
-                // Return failure mode, they should be checking for success first.
-                const bool expectedResultValue = default(bool);
                 var command = new NoOpAsyncCommand();
 
                 var mockContext = new Mock<ICommandContext>();
@@ -349,7 +344,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal("Token", result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
-                Assert.Equal(expectedResultValue, result.Value);
+                Assert.Throws<InvalidOperationException>(() => result.Value);
             }
 
             [Fact]
@@ -359,13 +354,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // return a result object with error information. Timeouts are a specific form of
                 // cancellation, and get logged/tracked as timeouts instead of general
                 // "cancellations".
-
-                // When a command fails and failure mode is Return, the value of the result will
-                // be default(Type). Our test Command uses a bool, so we should expect a false.
-                // Callers shouldn't be checking the result, anyway - if they're using the
-                // Return failure mode, they should be checking for success first.
-                const bool expectedResultValue = default(bool);
-
+                
                 var command = new DelayAsyncCommand(1);
 
                 var mockContext = new Mock<ICommandContext>();
@@ -393,7 +382,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(0, result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
-                Assert.Equal(expectedResultValue, result.Value);
+                Assert.Throws<InvalidOperationException>(() => result.Value);
             }
 
             [Fact]
@@ -401,12 +390,6 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 // When failure mode is Return, faults shouldn't throw, and should instead
                 // return a result object with error information.
-
-                // When a command fails and failure mode is Return, the value of the result will
-                // be default(Type). Our test Command uses a bool, so we should expect a false.
-                // Callers shouldn't be checking the result, anyway - if they're using the
-                // Return failure mode, they should be checking for success first.
-                const bool expectedResultValue = default(bool);
 
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
@@ -434,7 +417,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
                 Assert.False(result.WasSuccess);
-                Assert.Equal(expectedResultValue, result.Value);
+                Assert.Throws<InvalidOperationException>(() => result.Value);
             }
 
             [Fact]
@@ -442,12 +425,6 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 // When failure mode is Return, rejections shouldn't throw, and should instead
                 // return a result object with error information.
-
-                // When a command fails and failure mode is Return, the value of the result will
-                // be default(Type). Our test Command uses a bool, so we should expect a false.
-                // Callers shouldn't be checking the result, anyway - if they're using the
-                // Return failure mode, they should be checking for success first.
-                const bool expectedResultValue = default(bool);
 
                 var expectedException = new BulkheadRejectedException();
                 var command = new NoOpAsyncCommand();
@@ -474,7 +451,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
                 Assert.False(result.WasSuccess);
-                Assert.Equal(expectedResultValue, result.Value);
+                Assert.Throws<InvalidOperationException>(() => result.Value);
             }
         }
     }
@@ -760,11 +737,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // cancellation, and get logged/tracked as timeouts instead of general
             // "cancellations".
 
-            // When a command fails and failure mode is Return, the value of the result will
-            // be default(Type). Our test Command uses a bool, so we should expect a false.
-            // Callers shouldn't be checking the result, anyway - if they're using the
-            // Return failure mode, they should be checking for success first.
-            const bool expectedResultValue = default(bool);
             var command = new NoOpCommand();
 
             var mockContext = new Mock<ICommandContext>();
@@ -795,7 +767,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
             Assert.False(result.WasSuccess);
-            Assert.Equal(expectedResultValue, result.Value);
+            Assert.Throws<InvalidOperationException>(() => result.Value);
         }
 
         [Fact]
@@ -805,13 +777,7 @@ namespace Hudl.Mjolnir.Tests.Command
             // return a result object with error information. Timeouts are a specific form of
             // cancellation, and get logged/tracked as timeouts instead of general
             // "cancellations".
-
-            // When a command fails and failure mode is Return, the value of the result will
-            // be default(Type). Our test Command uses a bool, so we should expect a false.
-            // Callers shouldn't be checking the result, anyway - if they're using the
-            // Return failure mode, they should be checking for success first.
-            const bool expectedResultValue = default(bool);
-
+            
             var command = new SleepCommand(1);
 
             var mockContext = new Mock<ICommandContext>();
@@ -840,7 +806,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
             Assert.False(result.WasSuccess);
-            Assert.Equal(expectedResultValue, result.Value);
+            Assert.Throws<InvalidOperationException>(() => result.Value);
         }
 
         [Fact]
@@ -874,12 +840,6 @@ namespace Hudl.Mjolnir.Tests.Command
             // When failure mode is Return, faults shouldn't throw, and should instead
             // return a result object with error information.
 
-            // When a command fails and failure mode is Return, the value of the result will
-            // be default(Type). Our test Command uses a bool, so we should expect a false.
-            // Callers shouldn't be checking the result, anyway - if they're using the
-            // Return failure mode, they should be checking for success first.
-            const bool expectedResultValue = default(bool);
-
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
@@ -906,7 +866,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
             Assert.False(result.WasSuccess);
-            Assert.Equal(expectedResultValue, result.Value);
+            Assert.Throws<InvalidOperationException>(() => result.Value);
         }
 
         [Fact]
@@ -914,12 +874,6 @@ namespace Hudl.Mjolnir.Tests.Command
         {
             // When failure mode is Return, rejections shouldn't throw, and should instead
             // return a result object with error information.
-
-            // When a command fails and failure mode is Return, the value of the result will
-            // be default(Type). Our test Command uses a bool, so we should expect a false.
-            // Callers shouldn't be checking the result, anyway - if they're using the
-            // Return failure mode, they should be checking for success first.
-            const bool expectedResultValue = default(bool);
 
             var expectedException = new BulkheadRejectedException();
             var command = new NoOpCommand();
@@ -947,7 +901,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
             Assert.False(result.WasSuccess);
-            Assert.Equal(expectedResultValue, result.Value);
+            Assert.Throws<InvalidOperationException>(() => result.Value);
         }
     }
 

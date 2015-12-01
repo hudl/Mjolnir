@@ -10,7 +10,7 @@ namespace Hudl.Mjolnir.Tests.Helper
 
         internal const string IgnoreTimeoutsKey = "mjolnir.ignoreTimeouts"; 
 
-        protected string AnyString
+        protected static string AnyString
         {
             get { return Rand.String(); }
         }

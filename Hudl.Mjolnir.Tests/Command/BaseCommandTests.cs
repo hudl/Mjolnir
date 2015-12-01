@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Hudl.Config;
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Tests.Helper;
@@ -236,8 +238,39 @@ namespace Hudl.Mjolnir.Tests.Command
 
         public class Name : TestFixture
         {
-            // TODO assert that we use the generated name cache
-            // TODO tests for various command classes and groups, validating name normalization
+            [Fact]
+            public void CommandNamesAreCorrect()
+            {
+                BaseTestNamingCommand command;
+
+                // We drop the "Command" suffix if it exists.
+                // "Async" is kept in case clients implement sync and async versions of the same command.
+                command = new FooAsyncCommand("my-group");
+                Assert.Equal("my-group.FooAsync", command.Name);
+
+                // Dots in the group name are replaced with dashes.
+                command = new FooAsyncCommand("my.group");
+                Assert.Equal("my-group.FooAsync", command.Name);
+            }
+
+            // A handful of commands with various names.
+
+            private class BaseTestNamingCommand : AsyncCommand<object>
+            {
+                protected BaseTestNamingCommand(string group) : base(group, AnyString, ValidTimeout)
+                { }
+
+                public override Task<object> ExecuteAsync(CancellationToken cancellationToken)
+                {
+                    // We're not actually going to execute these.
+                    throw new NotImplementedException();
+                }
+            }
+
+            private class FooAsyncCommand : BaseTestNamingCommand
+            {
+                public FooAsyncCommand(string group) : base(group) { }
+            }
         }
 
         private class TestCommand : BaseCommand
