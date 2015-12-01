@@ -510,14 +510,16 @@ namespace Hudl.Mjolnir.Command
 
         private static void AttachCommandExceptionData(BaseCommand command, Exception exception, CommandCompletionStatus status, InformativeCancellationToken ct)
         {
+            // Use namespaced keys here to avoid clobbering data that the application might've
+            // already attached (or will attach later).
             exception.WithData(new
             {
-                Command = command.Name,
-                Status = status,
-                Breaker = command.BreakerKey,
-                Bulkhead = command.BulkheadKey,
-                TimeoutMillis = ct.DescriptionForLog,
-                ExecuteMillis = command.ExecutionTimeMillis,
+                MjolnirCommand = command.Name,
+                MjolnirStatus = status,
+                MjolnirBreaker = command.BreakerKey,
+                MjolnirBulkhead = command.BulkheadKey,
+                MjolnirTimeoutMillis = ct.DescriptionForLog,
+                MjolnirExecuteMillis = command.ExecutionTimeMillis,
             });
         }
 
@@ -525,28 +527,12 @@ namespace Hudl.Mjolnir.Command
         {
             return (e is TaskCanceledException || e is OperationCanceledException);
         }
-    }
 
-    // "Failure" means any of [Fault || Timeout || Reject]
-    internal enum OnFailure
-    {
-        Throw,
-        Return,
-    }
-
-    public sealed class CommandResult<TResult>
-    {
-        private readonly TResult _value;
-        private readonly Exception _exception;
-
-        public TResult Value { get { return _value; } }
-        public Exception Exception { get { return _exception; } }
-        public bool WasSuccess { get { return _exception == null; } }
-
-        internal CommandResult(TResult value, Exception exception = null)
+        // "Failure" means any of [Fault || Timeout || Reject]
+        private enum OnFailure
         {
-            _value = value;
-            _exception = exception;
+            Throw,
+            Return,
         }
     }
 

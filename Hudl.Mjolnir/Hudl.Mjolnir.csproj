@@ -85,6 +85,7 @@
     <Compile Include="Command\CommandFailedException.cs" />
     <Compile Include="Command\CommandInvoker.cs" />
     <Compile Include="Command\CommandRejectedException.cs" />
+    <Compile Include="Command\CommandResult.cs" />
     <Compile Include="Command\CommandTimeoutException.cs" />
     <Compile Include="Command\SyncCommand.cs" />
     <Compile Include="Command\VoidResult.cs" />
