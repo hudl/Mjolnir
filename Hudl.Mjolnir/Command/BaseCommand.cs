@@ -36,8 +36,8 @@ namespace Hudl.Mjolnir.Command
         /// If the group contains dots, they'll be converted to dashes.
         /// 
         /// Command timeouts can be configured at runtime. Configuration keys
-        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
-        /// (i.e. <code>mjolnir.[Command.Name].Timeout</code>). If not
+        /// follow the form: <code>mjolnir.command.group-key.CommandClassName.Timeout</code>
+        /// (i.e. <code>mjolnir.command.[Command.Name].Timeout</code>). If not
         /// configured, the provided <code>defaultTimeout</code> will be used.
         /// 
         /// </summary>
@@ -106,7 +106,7 @@ namespace Hudl.Mjolnir.Command
             return _constructorTimeout;
         }
 
-        private string CacheProvidedName(GroupKey group, string name)
+        private static string CacheProvidedName(GroupKey group, string name)
         {
             var cacheKey = new Tuple<string, GroupKey>(name, group);
             return ProvidedNameCache.GetOrAdd(cacheKey, t => cacheKey.Item2.Name.Replace(".", "-") + "." + name.Replace(".", "-"));
