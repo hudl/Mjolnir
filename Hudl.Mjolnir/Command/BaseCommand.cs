@@ -2,12 +2,6 @@
 using Hudl.Mjolnir.Key;
 using System;
 
-// TODO remove IStats from new BaseCommand and new invokers
-// - once done, remove the StatsPrefix accessor at the bottom of BaseCommand
-// TODO mention in release notes that IStats aren't used on new BaseCommand/invoker calls
-// TODO for release notes, mention that the new commands use "mjolnir.command" instead of just "command" as a config prefix for timeouts
-// TODO data attached to exceptions should be namespaced (since we're modifying exceptions we don't own anymore)
-
 namespace Hudl.Mjolnir.Command
 {
     /// <summary>
