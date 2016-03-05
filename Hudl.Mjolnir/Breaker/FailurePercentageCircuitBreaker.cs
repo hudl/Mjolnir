@@ -34,10 +34,12 @@ namespace Hudl.Mjolnir.Breaker
         private readonly IStats _stats;
         private readonly IMetricEvents _metricEvents;
 
+        // Eventually the _statsTimer here will go away. IStats are deprecated and IMetrics are the
+        // way of the future.
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
-        private readonly GaugeTimer _timer;
-        private readonly GaugeTimer _timer2;
+        private readonly GaugeTimer _statsTimer;
+        private readonly GaugeTimer _metricsTimer;
         // ReSharper restore NotAccessedField.Local
         
         private volatile State _state;
@@ -70,14 +72,14 @@ namespace Hudl.Mjolnir.Breaker
             _lastTrippedTimestamp = 0; // 0 is fine since it'll be far less than the first compared value.
 
             // Old gauge, will be phased out in v3.0 when IStats are removed.
-            _timer = new GaugeTimer((source, args) =>
+            _statsTimer = new GaugeTimer((source, args) =>
             {
                 var snapshot = _metrics.GetSnapshot();
                 _stats.Gauge(StatsPrefix + " total", snapshot.Total >= properties.MinimumOperations.Value ? "Above" : "Below", snapshot.Total);
                 _stats.Gauge(StatsPrefix + " error", snapshot.ErrorPercentage >= properties.ThresholdPercentage.Value ? "Above" : "Below", snapshot.ErrorPercentage);
             }, gaugeIntervalMillisOverride);
 
-            _timer2 = new GaugeTimer((source, args) =>
+            _metricsTimer = new GaugeTimer((source, args) =>
             {
                 _metricEvents.BreakerConfigGauge(
                     Name,
