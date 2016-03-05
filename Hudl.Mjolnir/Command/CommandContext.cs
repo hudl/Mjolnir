@@ -144,7 +144,7 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", DefaultBreakerForceFixed));
 
                 return new FailurePercentageCircuitBreaker(key, metrics, Stats, MetricEvents, properties);
-            });
+            }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         private ICommandMetrics GetCommandMetrics(GroupKey key)
@@ -159,7 +159,8 @@ namespace Hudl.Mjolnir.Command
                     key,
                     new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", DefaultMetricsWindowMillis),
                     new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", DefaultMetricsSnapshotTtlMillis),
-                    Stats));
+                    Stats),
+                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         public IIsolationThreadPool GetThreadPool(GroupKey key)
@@ -175,7 +176,8 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", DefaultPoolThreadCount),
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", DefaultPoolQueueLength),
                     Stats,
-                    MetricEvents));
+                    MetricEvents),
+                LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         /// <summary>
@@ -211,7 +213,7 @@ namespace Hudl.Mjolnir.Command
                 // more concurrent fallback execution.
                 var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", DefaultFallbackMaxConcurrent);
                 return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);
-            });
+            }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
         
         // In order to dynamically change semaphore limits, we replace the semaphore on config
