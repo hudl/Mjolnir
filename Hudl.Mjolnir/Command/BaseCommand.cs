@@ -85,6 +85,17 @@ namespace Hudl.Mjolnir.Command
         // Invocation Timeout: Value passed into the Invoke() / InvokeAsync() call.
         internal TimeSpan DetermineTimeout(long? invocationTimeoutMillis = null)
         {
+            // Thoughts on invocation timeout vs. configured timeout:
+            //
+            // Generally, I'd recommend using one or the other, but not both. Configurable timeouts
+            // are useful for changing the value at runtime, but are (at least in our environment)
+            // shared across many services, so they don't permit fine-grained control over
+            // individual calls. Invocation timeouts allow that fine-grained control, but require a
+            // deploy to change them.
+            //
+            // Basically, consider the balance between runtime control and fine-grained per-call
+            // control when setting timeouts.
+
             // Prefer the invocation timeout first. It's more specific than the Constructor
             // Timeout (which is defined by the command author and is treated as a "catch-all"),
             // It's also more specific than the Configured Timeout, which is a way to tune

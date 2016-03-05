@@ -47,7 +47,9 @@ namespace Hudl.Mjolnir.Command
         /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
         /// <param name="command">The command to invoke.</param>
         /// <param name="timeoutMillis">
-        ///     A timeout that overrides the defined and configured timeouts.
+        ///     A timeout that overrides the defined and configured timeouts. Use this only when
+        ///     necessary, and prefer to tune timeouts with configurable values instead of
+        ///     these hard-coded, per-call timeouts.
         /// </param>
         /// <returns>A Task wrapping a CommandResult.</returns>
         Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis);
@@ -100,7 +102,9 @@ namespace Hudl.Mjolnir.Command
         /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
         /// <param name="command">The command to invoke.</param>
         /// <param name="timeoutMillis">
-        ///     A timeout that overrides the defined and configured timeouts.
+        ///     A timeout that overrides the defined and configured timeouts. Use this only when
+        ///     necessary, and prefer to tune timeouts with configurable values instead of
+        ///     these hard-coded, per-call timeouts.
         /// </param>
         /// <returns>A Task wrapping the command's execution result.</returns>
         Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis);
@@ -151,7 +155,9 @@ namespace Hudl.Mjolnir.Command
         /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
         /// <param name="command">The command to invoke.</param>
         /// <param name="timeoutMillis">
-        ///     A timeout that overrides the defined and configured timeouts.
+        ///     A timeout that overrides the defined and configured timeouts. Use this only when
+        ///     necessary, and prefer to tune timeouts with configurable values instead of
+        ///     these hard-coded, per-call timeouts.
         /// </param>
         /// <returns>The command's execution result.</returns>
         TResult InvokeThrow<TResult>(SyncCommand<TResult> command, long timeoutMillis);
@@ -207,7 +213,9 @@ namespace Hudl.Mjolnir.Command
         /// <typeparam name="TResult">The type of the result returned by command's execution.</typeparam>
         /// <param name="command">The command to invoke.</param>
         /// <param name="timeoutMillis">
-        ///     A timeout that overrides the defined and configured timeouts.
+        ///     A timeout that overrides the defined and configured timeouts. Use this only when
+        ///     necessary, and prefer to tune timeouts with configurable values instead of
+        ///     these hard-coded, per-call timeouts.
         /// </param>
         /// <returns>A CommandResult with a return value or exception information.</returns>
         CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command, long timeoutMillis);
