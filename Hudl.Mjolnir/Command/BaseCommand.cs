@@ -36,9 +36,10 @@ namespace Hudl.Mjolnir.Command
         /// If the group contains dots, they'll be converted to dashes.
         /// 
         /// Command timeouts can be configured at runtime. Configuration keys
-        /// follow the form: <code>mjolnir.command.group-key.CommandClassName.Timeout</code>
-        /// (i.e. <code>mjolnir.command.[Command.Name].Timeout</code>). If not
-        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// follow the form: <code>mjolnir.command.[Command.Name].Timeout</code>). If not
+        /// configured, the provided <code>defaultTimeout</code> will be used. If no
+        /// <code>defaultTimeout</code> is provided, a Mjolnir-wide timeout of 2 seconds
+        /// will be applied.
         /// 
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
@@ -135,7 +136,13 @@ namespace Hudl.Mjolnir.Command
             return TimeoutConfigCache.GetOrAdd(commandName, n => new ConfigurableValue<long>("mjolnir.command." + commandName + ".Timeout"));
         }
 
-        internal string Name
+        /// <summary>
+        /// The generated command name, used for logging and configuration. Follow the form:
+        /// <code>group-key.CommandClassName</code>. Some normalization is performed before
+        /// generating the name, like removing "." characters from group names and truncating
+        /// the class name.
+        /// </summary>
+        public string Name
         {
             get { return _name; }
         }

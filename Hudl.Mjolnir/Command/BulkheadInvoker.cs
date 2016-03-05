@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 
 namespace Hudl.Mjolnir.Command
 {
+    /// <summary>
+    /// Executes a command within a bulkhead.
+    /// </summary>
     internal interface IBulkheadInvoker
     {
-        Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
-        TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct);
+        Task<TResult> ExecuteWithinBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
+        TResult ExecuteWithinBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct);
     }
 
     internal class BulkheadInvoker : IBulkheadInvoker
@@ -40,7 +43,7 @@ namespace Hudl.Mjolnir.Command
         // We'll neither mark these as success *nor* failure, since they really didn't even execute
         // as far as the breaker and downstream dependencies are concerned.
 
-        public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
+        public async Task<TResult> ExecuteWithinBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _context.GetBulkhead(command.BulkheadKey);
 
@@ -55,12 +58,16 @@ namespace Hudl.Mjolnir.Command
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
             var stopwatch = new Stopwatch();
+
+            // If circuit breakers are enabled, the execution will happen down in the circuit
+            // breaker invoker. If they're disabled, it'll happen here. Since we want an accurate
+            // timing of the method execution, we'll use this to track where the execution happens
+            // and then set ExecutionTimeMillis in the finally block conditionally.
             var executedHere = false;
             try
             {
                 if (_useCircuitBreakers.Value)
                 {
-                    executedHere = false;
                     return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
                 }
 
@@ -74,6 +81,7 @@ namespace Hudl.Mjolnir.Command
 
                 _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
+                // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)
                 {
                     stopwatch.Stop();
@@ -82,7 +90,7 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        public TResult ExecuteWithinBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _context.GetBulkhead(command.BulkheadKey);
 

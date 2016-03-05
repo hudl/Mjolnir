@@ -34,7 +34,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var context = new CommandContextImpl();
 
                 var bulkhead = context.GetBulkhead(key);
-                Assert.Equal(10, bulkhead.Available);
+                Assert.Equal(10, bulkhead.CountAvailable);
             }
 
             [Fact]
@@ -67,13 +67,13 @@ namespace Hudl.Mjolnir.Tests.Command
                 ConfigProvider.Instance.Set(configKey, newExpectedCount);
 
                 // Shouldn't change any existing referenced bulkheads...
-                Assert.Equal(initialExpectedCount, bulkhead.Available);
+                Assert.Equal(initialExpectedCount, bulkhead.CountAvailable);
 
                 // ...but newly-retrieved bulkheads should get a new instance
                 // with the updated count.
                 var newBulkhead = context.GetBulkhead(groupKey);
                 Assert.NotEqual(bulkhead, newBulkhead);
-                Assert.Equal(newExpectedCount, newBulkhead.Available);
+                Assert.Equal(newExpectedCount, newBulkhead.CountAvailable);
             }
 
             [Fact]
@@ -85,15 +85,15 @@ namespace Hudl.Mjolnir.Tests.Command
                 var context = new CommandContextImpl();
 
                 // Should have a valid default value initially.
-                Assert.Equal(10, context.GetBulkhead(groupKey).Available);
+                Assert.Equal(10, context.GetBulkhead(groupKey).CountAvailable);
 
                 // Negative limits aren't valid.
                 ConfigProvider.Instance.Set(configKey, -1);
-                Assert.Equal(10, context.GetBulkhead(groupKey).Available);
+                Assert.Equal(10, context.GetBulkhead(groupKey).CountAvailable);
 
                 // Zero (disallow all) is a valid value.
                 ConfigProvider.Instance.Set(configKey, 0);
-                Assert.Equal(0, context.GetBulkhead(groupKey).Available);
+                Assert.Equal(0, context.GetBulkhead(groupKey).CountAvailable);
             }
         }
     }

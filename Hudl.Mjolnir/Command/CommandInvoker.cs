@@ -349,7 +349,7 @@ namespace Hudl.Mjolnir.Command
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
 
-                return await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
+                return await _bulkheadInvoker.ExecuteWithinBulkheadAsync(command, ct.Token).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -441,7 +441,7 @@ namespace Hudl.Mjolnir.Command
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
 
-                return _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
+                return _bulkheadInvoker.ExecuteWithinBulkhead(command, ct.Token);
             }
             catch (Exception e)
             {
