@@ -13,7 +13,7 @@ namespace Hudl.Mjolnir.Command.Attribute
     /// 
     /// Should only be used on interface methods.
     /// </summary>
-    [Obsolete("Use [FireAndForget] from the Hudl.Mjolnir.Attributes package instead")]
+    [Obsolete("Will be removed in a future release. Leaving async calls un-awaited is generally not recommended.")]
     [AttributeUsage(AttributeTargets.Method)]
     public class FireAndForgetAttribute : System.Attribute
     {

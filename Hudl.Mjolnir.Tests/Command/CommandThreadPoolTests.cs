@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Tests.TestCommands;
@@ -25,7 +26,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 ThreadPool = pool,
             };
 
-            var e = await Assert.ThrowsAsync<CommandRejectedException>(() => command.InvokeAsync());
+            var e = await Assert.ThrowsAsync<CommandRejectedException>(command.InvokeAsync);
             Assert.Equal(CommandCompletionStatus.Rejected, e.Status);
             Assert.Equal(exception, e.InnerException);
         }
@@ -36,6 +37,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var exception = new IsolationThreadPoolRejectedException();
             var pool = new RejectingIsolationThreadPool(exception);
 
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var mockMetrics = new Mock<ICommandMetrics>();
             var mockBreaker = new Mock<ICircuitBreaker>();
             mockBreaker.Setup(m => m.IsAllowing()).Returns(true);
@@ -45,12 +47,14 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 CircuitBreaker = mockBreaker.Object,
                 ThreadPool = pool,
+                MetricEvents = mockMetricEvents.Object,
             };
 
-            var e = await Assert.ThrowsAsync<CommandRejectedException>(() => command.InvokeAsync());
+            var e = await Assert.ThrowsAsync<CommandRejectedException>(command.InvokeAsync);
             Assert.True(e.InnerException is IsolationThreadPoolRejectedException);
             mockMetrics.Verify(m => m.MarkCommandFailure(), Times.Never);
             mockMetrics.Verify(m => m.MarkCommandSuccess(), Times.Never);
+            mockMetricEvents.Verify(m => m.RejectedByBulkhead("rejecting", "test.SuccessfulEchoCommandWithoutFallback"));
         }
 
         [Fact]
@@ -58,14 +62,22 @@ namespace Hudl.Mjolnir.Tests.Command
         {
             var exception = new IsolationThreadPoolRejectedException();
             var pool = new RejectingIsolationThreadPool(exception);
+            var mockMetricEvents = new Mock<IMetricEvents>();
 
             var command = new SuccessfulEchoCommandWithFallback(new { })
             {
                 ThreadPool = pool,
+                MetricEvents = mockMetricEvents.Object,
             };
 
             await command.InvokeAsync(); // Won't throw because there's a successful fallback.
             Assert.True(command.FallbackCalled);
+
+            // Even with fallback, we'd still like to count a rejection for this command. The new
+            // MetricEvents are mainly directed toward the "new" Commands (using SyncCommand and
+            // AsyncCommand), so support on these "older" commands is partial. If necessary, more
+            // work could be done here to fire events for fallbacks. Leaving it out for now, though.
+            mockMetricEvents.Verify(m => m.RejectedByBulkhead("rejecting", "test.SuccessfulEchoCommandWithFallback"));
         }
 
         private class RejectingIsolationThreadPool : IIsolationThreadPool
@@ -86,6 +98,8 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 throw _exceptionToThrow;
             }
+
+            public string Name { get { return "rejecting"; } }
         }
     }
 }

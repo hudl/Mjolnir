@@ -38,7 +38,7 @@ namespace Hudl.Mjolnir.Command
         protected static readonly ConfigurableValue<bool> UseCircuitBreakers = new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
 
         /// <summary>
-        /// If this is set to true then all calls wrapped in a Mjonir command will ignore the default timeout.
+        /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the default timeout.
         /// This is likely to be useful when debugging Command decorated methods, however it is not advisable to use in a production environment since it disables 
         /// some of Mjolnir's key features. 
         /// </summary>
@@ -74,6 +74,7 @@ namespace Hudl.Mjolnir.Command
     /// See https://github.com/hudl/Mjolnir for an overview.
     /// </summary>
     /// <typeparam name="TResult">The type of the result returned by this Command's execution.</typeparam>
+    [Obsolete("Extend AsyncCommand or SyncCommand instead, and invoke with CommandInvoker. This will likely be removed in a future major release.")]
     public abstract class Command<TResult> : Command, ICommand<TResult>
     {
         internal readonly TimeSpan Timeout;
@@ -95,17 +96,24 @@ namespace Hudl.Mjolnir.Command
             set { _stats = value; }
         }
 
+        private IMetricEvents _metricEvents;
+        internal IMetricEvents MetricEvents
+        {
+            private get { return _metricEvents ?? CommandContext.MetricEvents; }
+            set { _metricEvents = value; }
+        }
+
         private ICircuitBreaker _breaker;
         internal ICircuitBreaker CircuitBreaker
         {
-            private get { return _breaker ?? CommandContext.GetCircuitBreaker(_breakerKey); }
+            private get { return _breaker ?? CommandContext.Current.GetCircuitBreaker(_breakerKey); }
             set { _breaker = value; }
         }
 
         private IIsolationThreadPool _pool;
         internal IIsolationThreadPool ThreadPool
         {
-            private get { return _pool ?? CommandContext.GetThreadPool(_poolKey); }
+            private get { return _pool ?? CommandContext.Current.GetThreadPool(_poolKey); }
             set { _pool = value; }
         }
 
@@ -113,7 +121,7 @@ namespace Hudl.Mjolnir.Command
         internal IIsolationSemaphore FallbackSemaphore
         {
             // TODO Consider isolating these per-command instead of per-pool.
-            private get { return _fallbackSemaphore ?? CommandContext.GetFallbackSemaphore(_poolKey); }
+            private get { return _fallbackSemaphore ?? CommandContext.Current.GetFallbackSemaphore(_poolKey); }
             set { _fallbackSemaphore = value; }
         }
 
@@ -302,17 +310,24 @@ namespace Hudl.Mjolnir.Command
             var executeStopwatch = Stopwatch.StartNew();
             var status = CommandCompletionStatus.RanToCompletion;
             var cancellationTokenSource = new CancellationTokenSource(Timeout);
+            var pool = ThreadPool;
+
             try
             {
                 _log.InfoFormat("InvokeAsync Command={0} Breaker={1} Pool={2} Timeout={3}", Name, BreakerKey, PoolKey, Timeout.TotalMilliseconds);
 
                 // Note: this actually awaits the *enqueueing* of the task, not the task execution itself.
-                var result = await ExecuteInIsolation(cancellationTokenSource.Token).ConfigureAwait(false);
+                var result = await ExecuteInIsolation(pool, cancellationTokenSource.Token).ConfigureAwait(false);
                 executeStopwatch.Stop();
                 return result;
             }
             catch (Exception e)
             {
+                if (e is IsolationThreadPoolRejectedException)
+                {
+                    MetricEvents.RejectedByBulkhead(pool.Name, Name);
+                }
+
                 var tokenSourceCancelled = cancellationTokenSource.IsCancellationRequested;
                 executeStopwatch.Stop();
                 var instigator = GetCommandFailedException(e,tokenSourceCancelled, out status).WithData(new
@@ -341,10 +356,12 @@ namespace Hudl.Mjolnir.Command
 
                 Stats.Elapsed(StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
                 Stats.Elapsed(StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
+
+                MetricEvents.CommandInvoked(Name, invokeStopwatch.Elapsed.TotalMilliseconds, executeStopwatch.Elapsed.TotalMilliseconds, status.ToString(), "throw");
             }
         }
 
-        private Task<TResult> ExecuteInIsolation(CancellationToken cancellationToken)
+        private Task<TResult> ExecuteInIsolation(IIsolationThreadPool pool, CancellationToken cancellationToken)
         {
             // Note: Thread pool rejections shouldn't count as failures to the breaker.
             // If a downstream dependency is slow, the pool will fill up, but the
@@ -357,7 +374,7 @@ namespace Hudl.Mjolnir.Command
             // even execute as far as the breaker and downstream dependencies are
             // concerned.
 
-            var workItem = ThreadPool.Enqueue(() =>
+            var workItem = pool.Enqueue(() =>
             {
                 var token = TimeoutsIgnored
                     ? CancellationToken.None
@@ -403,7 +420,7 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                if (CommandContext.IsExceptionIgnored(e.GetType()))
+                if (CommandContext.Current.IsExceptionIgnored(e.GetType()))
                 {
                     CircuitBreaker.Metrics.MarkCommandSuccess();
                 }

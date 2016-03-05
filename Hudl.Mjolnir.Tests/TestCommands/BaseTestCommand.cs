@@ -1,6 +1,5 @@
 ﻿using System;
 using Hudl.Mjolnir.Command;
-using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Tests.Helper;
 
 namespace Hudl.Mjolnir.Tests.TestCommands
@@ -13,7 +12,6 @@ namespace Hudl.Mjolnir.Tests.TestCommands
         internal BaseTestCommand(string group, string name, string isolationKey, TimeSpan? timeout)
             : base(group, name, isolationKey, isolationKey, timeout ?? TimeSpan.FromMilliseconds(10000))
         {
-            Stats = new IgnoringStats();
             CircuitBreaker = new AlwaysSuccessfulCircuitBreaker();
             ThreadPool = new AlwaysSuccessfulIsolationThreadPool();
             FallbackSemaphore = new AlwaysSuccessfulIsolationSemaphore();

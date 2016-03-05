@@ -18,11 +18,13 @@ namespace Hudl.Mjolnir.Tests.Stats
             const long gaugeIntervalMillis = 50;
 
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var pool = new StpIsolationThreadPool(
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<int>(10),
                 new TransientConfigurableValue<int>(20),
                 mockStats.Object,
+                mockMetricEvents.Object,
                 new TransientConfigurableValue<long>(gaugeIntervalMillis));
 
             await Task.Delay(TimeSpan.FromMilliseconds(gaugeIntervalMillis + 50));
@@ -55,11 +57,13 @@ namespace Hudl.Mjolnir.Tests.Stats
         public void Start_Elapsed()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var pool = new StpIsolationThreadPool(
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<int>(10),
                 new TransientConfigurableValue<int>(20),
-                mockStats.Object);
+                mockStats.Object,
+                mockMetricEvents.Object);
 
             pool.Start();
 
@@ -70,11 +74,13 @@ namespace Hudl.Mjolnir.Tests.Stats
         public void Enqueue_Elapsed()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var pool = new StpIsolationThreadPool(
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<int>(10),
                 new TransientConfigurableValue<int>(20),
-                mockStats.Object);
+                mockStats.Object,
+                mockMetricEvents.Object);
             pool.Start();
 
             pool.Enqueue<object>(() => new { });
