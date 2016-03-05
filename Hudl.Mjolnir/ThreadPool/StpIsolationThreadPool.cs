@@ -23,10 +23,12 @@ namespace Hudl.Mjolnir.ThreadPool
         private readonly IConfigurableValue<int> _threadCount;
         private readonly IConfigurableValue<int> _queueLength;
 
+        // Eventually the _statsTimer here will go away. IStats are deprecated and IMetrics are the
+        // way of the future.
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
-        private readonly GaugeTimer _timer;
-        private readonly GaugeTimer _timer2;
+        private readonly GaugeTimer _statsTimer;
+        private readonly GaugeTimer _metricsTimer;
         // ReSharper restore NotAccessedField.Local
 
         internal StpIsolationThreadPool(GroupKey key, IConfigurableValue<int> threadCount, IConfigurableValue<int> queueLength, IStats stats, IMetricEvents metricEvents, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
@@ -62,7 +64,7 @@ namespace Hudl.Mjolnir.ThreadPool
             _pool = new SmartThreadPool(info);
 
             // Old gauge, will be phased out in v3.0 when IStats are removed.
-            _timer = new GaugeTimer((source, args) =>
+            _statsTimer = new GaugeTimer((source, args) =>
             {
                 _stats.Gauge(StatsPrefix + " activeThreads", null, _pool.ActiveThreads);
                 _stats.Gauge(StatsPrefix + " inUseThreads", null, _pool.InUseThreads);
@@ -72,7 +74,7 @@ namespace Hudl.Mjolnir.ThreadPool
                 _stats.Gauge(StatsPrefix + " pendingCompletion", null, _pool.CurrentWorkItemsCount);
             }, gaugeIntervalMillisOverride);
 
-            _timer2 = new GaugeTimer((source, args) =>
+            _metricsTimer = new GaugeTimer((source, args) =>
             {
                 _metricEvents.BulkheadConfigGauge(Name, "pool", queueLength.Value + threadCount.Value);
             }, ConfigGaugeIntervalMillis);
