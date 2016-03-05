@@ -285,6 +285,11 @@ namespace Hudl.Mjolnir.Command
     {
         internal static readonly ICommandContext Current = new CommandContextImpl();
 
+        // If clients want to use this reference instead of constructing a new one every time,
+        // that's fine. More for convenience than anything else. CommandInvoker should be totally
+        // stateless and quick to construct.
+        private static readonly ICommandInvoker _invoker = new CommandInvoker();
+
         /// <summary>
         /// Get/set the Stats implementation that all Mjolnir code should use.
         /// 
@@ -325,6 +330,17 @@ namespace Hudl.Mjolnir.Command
         public static void IgnoreExceptions(HashSet<Type> types)
         {
             Current.IgnoreExceptions(types);
+        }
+
+        /// <summary>
+        /// For convenience, clients can use this CommandInvoker instance instead of constructing
+        /// a new one every time. The invoker is stateless and lightweight, so the overhead for
+        /// constructing per-call is cheap, but using this might help avoid GC in code that would
+        /// potentially create a new CommandInvoker instance on every execution.
+        /// </summary>
+        public static ICommandInvoker CommandInvoker
+        {
+            get { return _invoker; }
         }
     }
 }

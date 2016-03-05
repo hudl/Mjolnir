@@ -42,7 +42,6 @@ namespace Hudl.Mjolnir.Command
             try
             {
                 // Await here so we can catch the Exception and track the state.
-                // I suppose we could do this with a continuation, too. Await's easier.
                 result = await command.ExecuteAsync(ct).ConfigureAwait(false);
                 executionStopwatch.Stop();
 

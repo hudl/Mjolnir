@@ -41,7 +41,8 @@ namespace Hudl.Mjolnir.Command
         // downstream dependency may be just fine, and we want to keep them that way.
 
         // We'll neither mark these as success *nor* failure, since they really didn't even execute
-        // as far as the breaker and downstream dependencies are concerned.
+        // as far as the breaker and downstream dependencies are concerned. That happens naturally
+        // here since the bulkhead won't call the breaker invoker if the bulkhead rejects first.
 
         public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
@@ -105,12 +106,16 @@ namespace Hudl.Mjolnir.Command
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
             var stopwatch = new Stopwatch();
+
+            // If circuit breakers are enabled, the execution will happen down in the circuit
+            // breaker invoker. If they're disabled, it'll happen here. Since we want an accurate
+            // timing of the method execution, we'll use this to track where the execution happens
+            // and then set ExecutionTimeMillis in the finally block conditionally.
             var executedHere = false;
             try
             {
                 if (_useCircuitBreakers.Value)
                 {
-                    executedHere = false;
                     return _breakerInvoker.ExecuteWithBreaker(command, ct);
                 }
 
@@ -124,6 +129,7 @@ namespace Hudl.Mjolnir.Command
 
                 _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
+                // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)
                 {
                     stopwatch.Stop();
