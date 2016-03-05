@@ -125,7 +125,8 @@ namespace Hudl.Mjolnir.Command
         }
 
         // Since creating the Command's name is non-trivial, we'll keep a local
-        // cache of them.
+        // cache of them. They're accessed frequently (at least once per call), so avoiding all
+        // of this string manipulation every time seems like a good idea.
         private string GenerateAndCacheName(GroupKey group)
         {
             var type = GetType();
@@ -148,7 +149,7 @@ namespace Hudl.Mjolnir.Command
         }
 
         /// <summary>
-        /// The generated command name, used for logging and configuration. Follow the form:
+        /// The generated command name, used for logging and configuration. Follows the form:
         /// <code>group-key.CommandClassName</code>. Some normalization is performed before
         /// generating the name, like removing "." characters from group names and truncating
         /// the class name.

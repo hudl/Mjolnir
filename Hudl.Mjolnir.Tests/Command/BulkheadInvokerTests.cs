@@ -14,7 +14,7 @@ namespace Hudl.Mjolnir.Tests.Command
 {
     public class BulkheadInvokerTests
     {
-        public class ExecuteWithinBulkheadAsync : TestFixture
+        public class ExecuteWithBulkheadAsync : TestFixture
         {
             [Fact]
             public void CallsTryEnterAndReleaseOnTheSameBulkheadDuringConfigChange()
@@ -49,7 +49,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(10, bulkhead.CountAvailable);
 
                 // The test - should cause the bulkhead to be used during a config change.
-                var result = invoker.ExecuteWithinBulkheadAsync(command, unusedCancellationToken);
+                var result = invoker.ExecuteWithBulkheadAsync(command, unusedCancellationToken);
 
                 // The bulkhead we used should have its original value. We're making sure that
                 // we didn't TryEnter() and then skip the release because a different bulkhead
@@ -81,7 +81,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object);
                 var command = new ConfigurableKeyAsyncCommand(key);
 
-                await Assert.ThrowsAsync<BulkheadRejectedException>(() => invoker.ExecuteWithinBulkheadAsync(command, CancellationToken.None));
+                await Assert.ThrowsAsync<BulkheadRejectedException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
 
                 mockMetricEvents.Verify(m => m.RejectedByBulkhead(key, command.Name));
             }
@@ -106,7 +106,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyAsyncCommand(key);
 
-                await invoker.ExecuteWithinBulkheadAsync(command, CancellationToken.None);
+                await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
 
                 mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
                 mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
@@ -132,7 +132,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyThrowingAsyncCommand(key);
 
-                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithinBulkheadAsync(command, CancellationToken.None));
+                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
 
                 mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
                 mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
@@ -156,7 +156,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyAsyncCommand(key);
 
-                await invoker.ExecuteWithinBulkheadAsync(command, CancellationToken.None);
+                await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
 
                 Assert.True(command.ExecutionTimeMillis > 0);
             }
@@ -179,7 +179,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyThrowingAsyncCommand(key);
 
-                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithinBulkheadAsync(command, CancellationToken.None));
+                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
 
                 Assert.True(command.ExecutionTimeMillis > 0);
             }
@@ -208,7 +208,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
 
-                await invoker.ExecuteWithinBulkheadAsync(command, CancellationToken.None);
+                await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
 
                 Assert.Equal(0, command.ExecutionTimeMillis);
             }
@@ -237,13 +237,13 @@ namespace Hudl.Mjolnir.Tests.Command
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
                 
-                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithinBulkheadAsync(command, CancellationToken.None));
+                await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None));
 
                 Assert.Equal(0, command.ExecutionTimeMillis);
             }
         }
 
-        public class ExecuteWithinBulkhead : TestFixture
+        public class ExecuteWithBulkhead : TestFixture
         {
             [Fact]
             public void CallsTryEnterAndReleaseOnTheSameBulkheadDuringConfigChange()
@@ -278,7 +278,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(10, bulkhead.CountAvailable);
 
                 // The test - should cause the bulkhead to be used during a config change.
-                var result = invoker.ExecuteWithinBulkhead(command, unusedCancellationToken);
+                var result = invoker.ExecuteWithBulkhead(command, unusedCancellationToken);
 
                 // The bulkhead we used should have its original value. We're making sure that
                 // we didn't TryEnter() and then skip the release because a different bulkhead
@@ -310,7 +310,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object);
                 var command = new ConfigurableKeyCommand(key);
 
-                Assert.Throws<BulkheadRejectedException>(() => invoker.ExecuteWithinBulkhead(command, CancellationToken.None));
+                Assert.Throws<BulkheadRejectedException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
 
                 mockMetricEvents.Verify(m => m.RejectedByBulkhead(key, command.Name));
             }
@@ -335,7 +335,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyCommand(key);
 
-                invoker.ExecuteWithinBulkhead(command, CancellationToken.None);
+                invoker.ExecuteWithBulkhead(command, CancellationToken.None);
 
                 mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
                 mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
@@ -361,7 +361,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyThrowingCommand(key);
 
-                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithinBulkhead(command, CancellationToken.None));
+                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
 
                 mockMetricEvents.Verify(m => m.EnterBulkhead(key, command.Name));
                 mockMetricEvents.Verify(m => m.LeaveBulkhead(key, command.Name));
@@ -385,7 +385,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyCommand(key);
 
-                invoker.ExecuteWithinBulkhead(command, CancellationToken.None);
+                invoker.ExecuteWithBulkhead(command, CancellationToken.None);
 
                 Assert.True(command.ExecutionTimeMillis > 0);
             }
@@ -408,7 +408,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(false));
                 var command = new ConfigurableKeyThrowingCommand(key);
 
-                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithinBulkhead(command, CancellationToken.None));
+                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
 
                 Assert.True(command.ExecutionTimeMillis > 0);
             }
@@ -437,7 +437,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
 
-                invoker.ExecuteWithinBulkhead(command, CancellationToken.None);
+                invoker.ExecuteWithBulkhead(command, CancellationToken.None);
 
                 Assert.Equal(0, command.ExecutionTimeMillis);
             }
@@ -466,7 +466,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockContext.Object, new TransientConfigurableValue<bool>(true));
 
-                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithinBulkhead(command, CancellationToken.None));
+                Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBulkhead(command, CancellationToken.None));
 
                 Assert.Equal(0, command.ExecutionTimeMillis);
             }

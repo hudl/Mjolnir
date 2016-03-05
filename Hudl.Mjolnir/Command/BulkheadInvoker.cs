@@ -12,8 +12,8 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     internal interface IBulkheadInvoker
     {
-        Task<TResult> ExecuteWithinBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
-        TResult ExecuteWithinBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct);
+        Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
+        TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct);
     }
 
     internal class BulkheadInvoker : IBulkheadInvoker
@@ -43,7 +43,7 @@ namespace Hudl.Mjolnir.Command
         // We'll neither mark these as success *nor* failure, since they really didn't even execute
         // as far as the breaker and downstream dependencies are concerned.
 
-        public async Task<TResult> ExecuteWithinBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
+        public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _context.GetBulkhead(command.BulkheadKey);
 
@@ -90,7 +90,7 @@ namespace Hudl.Mjolnir.Command
             }
         }
 
-        public TResult ExecuteWithinBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
+        public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _context.GetBulkhead(command.BulkheadKey);
 

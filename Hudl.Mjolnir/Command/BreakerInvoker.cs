@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Hudl.Mjolnir.Command
 {
+    /// <summary>
+    /// Executes a command on a circuit breaker.
+    /// </summary>
     internal interface IBreakerInvoker
     {
         Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct);
