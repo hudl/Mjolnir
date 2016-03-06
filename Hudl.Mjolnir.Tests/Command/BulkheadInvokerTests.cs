@@ -27,7 +27,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var key = Rand.String();
                 var groupKey = GroupKey.Named(key);
-                var bulkheadConfig = "mjolnir.bulkheads." + key + ".maxConcurrent";
+                var bulkheadConfig = "mjolnir.bulkhead." + key + ".maxConcurrent";
 
                 var context = new CommandContextImpl();
 
@@ -256,7 +256,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var key = Rand.String();
                 var groupKey = GroupKey.Named(key);
-                var bulkheadConfig = "mjolnir.bulkheads." + key + ".maxConcurrent";
+                var bulkheadConfig = "mjolnir.bulkhead." + key + ".maxConcurrent";
 
                 var context = new CommandContextImpl();
 

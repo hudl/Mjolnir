@@ -224,7 +224,7 @@ namespace Hudl.Mjolnir.Command
         {
             // Note: changing the default value at runtime won't trigger a rebuild of the
             // semaphores; that will require an app restart.
-            private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkheads.default.maxConcurrent", 10);
+            private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkhead.default.maxConcurrent", 10);
             private static readonly IConfigurableValue<long> ConfigGaugeIntervalMillis = new ConfigurableValue<long>("mjolnir.bulkheadConfigGaugeIntervalMillis", 60000);
 
             // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
@@ -247,7 +247,7 @@ namespace Hudl.Mjolnir.Command
                 // before we add the semaphore to the dictionary, potentially trying to add two
                 // entries with different values in rapid succession.
 
-                var configKey = "mjolnir.bulkheads." + key + ".maxConcurrent";
+                var configKey = "mjolnir.bulkhead." + key + ".maxConcurrent";
                 _config = new ConfigurableValue<int>(configKey, DefaultBulkheadMaxConcurrent);
 
                 var value = _config.Value;

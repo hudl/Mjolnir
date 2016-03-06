@@ -50,7 +50,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var key = Rand.String();
                 var groupKey = GroupKey.Named(key);
-                var configKey = "mjolnir.bulkheads." + key + ".maxConcurrent";
+                var configKey = "mjolnir.bulkhead." + key + ".maxConcurrent";
                 var context = new CommandContextImpl();
 
                 int initialExpectedCount = 5;
@@ -81,7 +81,7 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 var key = Rand.String();
                 var groupKey = GroupKey.Named(key);
-                var configKey = "mjolnir.bulkheads." + key + ".maxConcurrent";
+                var configKey = "mjolnir.bulkhead." + key + ".maxConcurrent";
                 var context = new CommandContextImpl();
 
                 // Should have a valid default value initially.
