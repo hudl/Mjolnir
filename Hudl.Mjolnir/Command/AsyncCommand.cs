@@ -25,10 +25,9 @@ namespace Hudl.Mjolnir.Command
         /// The provided <code>isolationKey</code> will be used as both the
         /// breaker and bulkhead keys.
         /// 
-        /// Command timeouts can be configured at runtime. Configuration keys
-        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
-        /// (i.e. <code>mjolnir.command.[Command.Name].Timeout</code>). If not
-        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// Command timeouts can be configured at runtime. See the Mjolnir wiki at
+        /// https://github.com/hudl/Mjolnir/wiki for configuration information.
+        /// If not configured, the provided <code>defaultTimeout</code> will be used.
         /// 
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
@@ -44,10 +43,9 @@ namespace Hudl.Mjolnir.Command
         /// The group is used as part of the command's <see cref="Name">Name</see>.
         /// If the group contains dots, they'll be converted to dashes.
         /// 
-        /// Command timeouts can be configured at runtime. Configuration keys
-        /// follow the form: <code>mjolnir.group-key.CommandClassName.Timeout</code>
-        /// (i.e. <code>mjolnir.command.[Command.Name].Timeout</code>). If not
-        /// configured, the provided <code>defaultTimeout</code> will be used.
+        /// Command timeouts can be configured at runtime. See the Mjolnir wiki at
+        /// https://github.com/hudl/Mjolnir/wiki for configuration information.
+        /// If not configured, the provided <code>defaultTimeout</code> will be used.
         /// 
         /// </summary>
         /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
