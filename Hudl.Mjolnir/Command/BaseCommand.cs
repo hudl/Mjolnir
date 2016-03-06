@@ -69,7 +69,9 @@ namespace Hudl.Mjolnir.Command
 
             if (defaultTimeout != null && defaultTimeout.Value.TotalMilliseconds <= 0)
             {
-                throw new ArgumentException("Positive default timeout is required if passed", "defaultTimeout");
+                throw new ArgumentException(
+                    string.Format("Positive default timeout is required if passed (received invalid timeout of {0}ms)", defaultTimeout.Value.TotalMilliseconds),
+                    "defaultTimeout");
             }
 
             _group = GroupKey.Named(group);
@@ -91,14 +93,15 @@ namespace Hudl.Mjolnir.Command
             // are useful for changing the value at runtime, but are (at least in our environment)
             // shared across many services, so they don't permit fine-grained control over
             // individual calls. Invocation timeouts allow that fine-grained control, but require a
-            // deploy to change them.
+            // code deploy to change them.
             //
             // Basically, consider the balance between runtime control and fine-grained per-call
             // control when setting timeouts.
 
+
             // Prefer the invocation timeout first. It's more specific than the Constructor
             // Timeout (which is defined by the command author and is treated as a "catch-all"),
-            // It's also more specific than the Configured Timeout, which is a way to tune
+            // It's also more local than the Configured Timeout, which is a way to tune
             // the Constructor Timeout more specifically (i.e. still "catch-all" behavior).
             if (invocationTimeoutMillis.HasValue && invocationTimeoutMillis.Value >= 0)
             {
