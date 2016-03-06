@@ -35,6 +35,24 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             [Fact]
+            public async Task WhenMjolnirIsDisabled_ExecutesCommandWithoutProtections()
+            {
+                // Mjolnir's global killswitch should prevent timeouts, bulkheads, and breakers
+                // from being used.
+
+                var command = new TokenCapturingAsyncCommand();
+                var isEnabled = new TransientConfigurableValue<bool>(false);
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
+
+                var invoker = new CommandInvoker(null, mockBulkheadInvoker.Object, null, isEnabled);
+                
+                await invoker.InvokeThrowAsync(command);
+
+                // MockBehavior.Strict ensures no interactions with the BulkheadInvoker.
+                Assert.Equal(CancellationToken.None, command.Token);
+            }
+
+            [Fact]
             public async Task ExecuteSuccessful_ReturnsResult()
             {
                 // Successful command execution should return a result.
@@ -281,6 +299,24 @@ namespace Hudl.Mjolnir.Tests.Command
             }
 
             [Fact]
+            public async Task WhenMjolnirIsDisabled_ExecutesCommandWithoutProtections()
+            {
+                // Mjolnir's global killswitch should prevent timeouts, bulkheads, and breakers
+                // from being used.
+
+                var command = new TokenCapturingAsyncCommand();
+                var isEnabled = new TransientConfigurableValue<bool>(false);
+                var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
+
+                var invoker = new CommandInvoker(null, mockBulkheadInvoker.Object, null, isEnabled);
+
+                await invoker.InvokeReturnAsync(command);
+
+                // MockBehavior.Strict ensures no interactions with the BulkheadInvoker.
+                Assert.Equal(CancellationToken.None, command.Token);
+            }
+
+            [Fact]
             public async Task ExecuteSuccessful_ReturnsWrappedResult()
             {
                 // Successful command execution should return a wrapped CommandResult.
@@ -476,6 +512,23 @@ namespace Hudl.Mjolnir.Tests.Command
             // The timeout shouldn't matter. The invoked-once check should be
             // one of the first validations performed.
             Assert.Throws(typeof(InvalidOperationException), () => invoker.InvokeThrow(command));
+        }
+
+        [Fact]
+        public void WhenMjolnirIsDisabled_ExecutesCommandWithoutProtections()
+        {
+            // Mjolnir's global killswitch should prevent timeouts, bulkheads, and breakers
+            // from being used.
+
+            var command = new TokenCapturingCommand();
+            var isEnabled = new TransientConfigurableValue<bool>(false);
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
+
+            var invoker = new CommandInvoker(null, mockBulkheadInvoker.Object, null, isEnabled);
+
+            invoker.InvokeThrow(command);
+
+            Assert.Equal(CancellationToken.None, command.Token);
         }
 
         [Fact]
@@ -699,6 +752,23 @@ namespace Hudl.Mjolnir.Tests.Command
             // The timeout shouldn't matter. The invoked-once check should be
             // one of the first validations performed.
             Assert.Throws(typeof(InvalidOperationException), () => invoker.InvokeReturn(command));
+        }
+
+        [Fact]
+        public void WhenMjolnirIsDisabled_ExecutesCommandWithoutProtections()
+        {
+            // Mjolnir's global killswitch should prevent timeouts, bulkheads, and breakers
+            // from being used.
+
+            var command = new TokenCapturingCommand();
+            var isEnabled = new TransientConfigurableValue<bool>(false);
+            var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
+
+            var invoker = new CommandInvoker(null, mockBulkheadInvoker.Object, null, isEnabled);
+
+            invoker.InvokeReturn(command);
+
+            Assert.Equal(CancellationToken.None, command.Token);
         }
 
         [Fact]
@@ -938,6 +1008,17 @@ namespace Hudl.Mjolnir.Tests.Command
         }
     }
 
+    internal class TokenCapturingAsyncCommand : NoOpAsyncCommand
+    {
+        public CancellationToken Token { get; private set; }
+
+        public override Task<bool> ExecuteAsync(CancellationToken token)
+        {
+            Token = token;
+            return base.ExecuteAsync(token);
+        }
+    }
+
     // Synchronous ommand that does nothing, use this when you don't care what the Command
     // actually does.
     internal class NoOpCommand : SyncCommand<bool>
@@ -950,6 +1031,17 @@ namespace Hudl.Mjolnir.Tests.Command
         public override bool Execute(CancellationToken cancellationToken)
         {
             return true;
+        }
+    }
+
+    internal class TokenCapturingCommand : NoOpCommand
+    {
+        public CancellationToken Token { get; private set; }
+
+        public override bool Execute(CancellationToken cancellationToken)
+        {
+            Token = cancellationToken;
+            return base.Execute(cancellationToken);
         }
     }
 

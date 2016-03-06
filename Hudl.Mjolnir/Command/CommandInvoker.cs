@@ -260,6 +260,15 @@ namespace Hudl.Mjolnir.Command
         private readonly IConfigurableValue<bool> _ignoreCancellation;
 
         /// <summary>
+        /// Global killswitch for Mjolnir. If configured to <code>false</code>, Mjolnir will still
+        /// do some initial work (like ensuring a single invoke per Command), but will then just
+        /// execute the Command instead of passing it through Bulkheads and Circuit Breakers.
+        /// No timeouts will be applied; a CancellationToken.None will be passed to any method
+        /// that supports cancellation.
+        /// </summary>
+        private readonly IConfigurableValue<bool> _isEnabled;
+
+        /// <summary>
         /// Singleton instance. Prefer to inject ICommandInvoker into constructors where possible.
         /// This can be used in older code where it's not as easy to introduce things like DI.
         /// </summary>
@@ -268,7 +277,11 @@ namespace Hudl.Mjolnir.Command
         public CommandInvoker() : this(null, null, null)
         { }
         
-        internal CommandInvoker(ICommandContext context = null, IBulkheadInvoker bulkheadInvoker = null, IConfigurableValue<bool> ignoreTimeouts = null)
+        internal CommandInvoker(
+            ICommandContext context = null,
+            IBulkheadInvoker bulkheadInvoker = null,
+            IConfigurableValue<bool> ignoreTimeouts = null,
+            IConfigurableValue<bool> isEnabled = null)
         {
             _context = context ?? CommandContext.Current;
 
@@ -276,11 +289,17 @@ namespace Hudl.Mjolnir.Command
             _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _context);
 
             _ignoreCancellation = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
+            _isEnabled = isEnabled ?? new ConfigurableValue<bool>("mjolnir.isEnabled", true);
         }
         
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)
         {
             EnsureSingleInvoke(command);
+
+            if (!_isEnabled.Value)
+            {
+                return command.ExecuteAsync(CancellationToken.None);
+            }
 
             var token = GetCancellationTokenForCommand(command);
             return InvokeAsync(command, token, OnFailure.Throw);
@@ -290,6 +309,11 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
+            if (!_isEnabled.Value)
+            {
+                return command.ExecuteAsync(CancellationToken.None);
+            }
+
             var token = GetCancellationTokenForCommand(command, timeoutMillis);
             return InvokeAsync(command, token, OnFailure.Throw);
         }
@@ -297,6 +321,11 @@ namespace Hudl.Mjolnir.Command
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             EnsureSingleInvoke(command);
+
+            if (!_isEnabled.Value)
+            {
+                return command.ExecuteAsync(CancellationToken.None);
+            }
 
             var token = GetCancellationTokenForCommand(ct);
             return InvokeAsync(command, token, OnFailure.Throw);
@@ -328,7 +357,15 @@ namespace Hudl.Mjolnir.Command
 
             try
             {
-                var result = await InvokeAsync(command, ct, OnFailure.Return);
+                TResult result;
+                if (!_isEnabled.Value)
+                {
+                    result = await command.ExecuteAsync(CancellationToken.None);
+                }
+                else
+                {
+                    result = await InvokeAsync(command, ct, OnFailure.Return);
+                }
                 return new CommandResult<TResult>(result);
             }
             catch (Exception e)
@@ -376,6 +413,11 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
+            if (!_isEnabled.Value)
+            {
+                return command.Execute(CancellationToken.None);
+            }
+
             var token = GetCancellationTokenForCommand(command);
             return Invoke(command, OnFailure.Throw, token);
         }
@@ -384,6 +426,11 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
+            if (!_isEnabled.Value)
+            {
+                return command.Execute(CancellationToken.None);
+            }
+
             var token = GetCancellationTokenForCommand(command, timeoutMillis);
             return Invoke(command, OnFailure.Throw, token);
         }
@@ -391,6 +438,11 @@ namespace Hudl.Mjolnir.Command
         public TResult InvokeThrow<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
             EnsureSingleInvoke(command);
+
+            if (!_isEnabled.Value)
+            {
+                return command.Execute(CancellationToken.None);
+            }
 
             var token = GetCancellationTokenForCommand(ct);
             return Invoke(command, OnFailure.Throw, token);
@@ -422,7 +474,16 @@ namespace Hudl.Mjolnir.Command
 
             try
             {
-                var result = Invoke(command, OnFailure.Return, ct);
+                TResult result;
+                if (!_isEnabled.Value)
+                {
+                    result = command.Execute(CancellationToken.None);
+                }
+                else
+                {
+                    result = Invoke(command, OnFailure.Return, ct);
+                }
+                
                 return new CommandResult<TResult>(result);
             }
             catch (Exception e)
@@ -469,6 +530,11 @@ namespace Hudl.Mjolnir.Command
             if (_ignoreCancellation.Value)
             {
                 return InformativeCancellationToken.ForIgnored();
+            }
+
+            if (!_isEnabled.Value)
+            {
+                return InformativeCancellationToken.ForDisabled();
             }
 
             return InformativeCancellationToken.ForOverridingToken(ct);
@@ -642,6 +708,11 @@ namespace Hudl.Mjolnir.Command
         public static InformativeCancellationToken ForIgnored()
         {
             return new InformativeCancellationToken(CancellationToken.None, true);
+        }
+
+        public static InformativeCancellationToken ForDisabled()
+        {
+            return new InformativeCancellationToken(CancellationToken.None, false);
         }
     }
 }
