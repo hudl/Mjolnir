@@ -240,13 +240,20 @@ namespace Hudl.Mjolnir.Command
 
             public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents)
             {
+                if (metricEvents == null)
+                {
+                    throw new ArgumentNullException("metricEvents");
+                }
+
+                _metricEvents = metricEvents;
+
                 // The order of things here is very intentional.
                 // We create the configurable value first, retrieve its current value, and then
                 // initialize the semaphore bulkhead. We register the change handler after that.
                 // That ought to help avoid a situation where we might fire a config change handler
                 // before we add the semaphore to the dictionary, potentially trying to add two
                 // entries with different values in rapid succession.
-
+                
                 var configKey = "mjolnir.bulkhead." + key + ".maxConcurrent";
                 _config = new ConfigurableValue<int>(configKey, DefaultBulkheadMaxConcurrent);
 
