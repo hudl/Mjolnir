@@ -3,6 +3,7 @@ using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Command.Attribute;
 using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
+using Hudl.Config;
 
 namespace Hudl.Mjolnir.Tests.Command.Attribute
 {
@@ -17,7 +18,7 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
         public class CancellableWithTimeoutPreserved : ICancellableTimeoutPreserved
         {
             public const int Timeout = 500;
-            public CancellationToken TokenRecievedFromProxy { get; private set; }
+            public CancellationToken TokenReceivedFromProxy { get; private set; }
             public bool CallMade { get; private set; }
             private readonly string _returnResult;
             public CancellableWithTimeoutPreserved(string returnResult)
@@ -28,16 +29,16 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             public string CancellableMethod(CancellationToken token)
             {
                 CallMade = true;
-                TokenRecievedFromProxy = token;
+                TokenReceivedFromProxy = token;
                 return _returnResult;
             }
         }
 
-        public class CancellableWithOverrunnningMethod : ICancellableTimeoutPreserved
+        public class CancellableWithOverrunningMethod : ICancellableTimeoutPreserved
         {
             public string CancellableMethod(CancellationToken token)
             {
-                Thread.Sleep(CancellableWithTimeoutPreserved.Timeout + 50);
+                Thread.Sleep(CancellableWithTimeoutPreserved.Timeout + 500);
                 token.ThrowIfCancellationRequested();
                 return string.Empty;
             }
@@ -52,18 +53,20 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             var proxy = CommandInterceptor.CreateProxy<ICancellableTimeoutPreserved>(classToProxy);
             // If we pass CancellationToken.None to the proxy then it should pass a timeout tokem to the method call.
             var result = proxy.CancellableMethod(CancellationToken.None);
-            Assert.True(classToProxy.CallMade && classToProxy.TokenRecievedFromProxy != CancellationToken.None);
+            Assert.True(classToProxy.CallMade && classToProxy.TokenReceivedFromProxy != CancellationToken.None);
             // This shouldn't be cancelled yet.
-            Assert.False(classToProxy.TokenRecievedFromProxy.IsCancellationRequested);
+            Assert.False(classToProxy.TokenReceivedFromProxy.IsCancellationRequested);
             // Now sleep past the timeout.
             Thread.Sleep(CancellableWithTimeoutPreserved.Timeout + 50); 
-            Assert.True(classToProxy.TokenRecievedFromProxy.IsCancellationRequested);
+            Assert.True(classToProxy.TokenReceivedFromProxy.IsCancellationRequested);
             Assert.Equal(expectedResult, result);
         }
 
         [Fact]
         public void ProxyPassesOnTokenToMethod_WhenTimeoutsNotIgnored()
         {
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
+
             var expectedResult = "test";
             var classToProxy = new CancellableWithTimeoutPreserved(expectedResult);
             var proxy = CommandInterceptor.CreateProxy<ICancellableTimeoutPreserved>(classToProxy);
@@ -71,14 +74,16 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             var token = new CancellationTokenSource(500).Token;
             var result = proxy.CancellableMethod(token);
             Assert.True(classToProxy.CallMade);
-            Assert.Equal(classToProxy.TokenRecievedFromProxy, token);
+            Assert.Equal(classToProxy.TokenReceivedFromProxy, token);
             Assert.Equal(expectedResult, result);
         }
 
         [Fact]
         public void MethodShouldTimeout_WhenTimeoutsAreNotIgnored()
         {
-            var classToProxy = new CancellableWithOverrunnningMethod();
+            ConfigProvider.Instance.Set(IgnoreTimeoutsKey, false);
+
+            var classToProxy = new CancellableWithOverrunningMethod();
             var proxy = CommandInterceptor.CreateProxy<ICancellableTimeoutPreserved>(classToProxy);
             Assert.Throws<CommandTimeoutException>(() => proxy.CancellableMethod(CancellationToken.None));
         }

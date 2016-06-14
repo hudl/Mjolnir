@@ -32,5 +32,10 @@ namespace Hudl.Mjolnir.Tests.Helper
                     new IgnoringStats());
             }
         }
+
+        public string Name
+        {
+            get { return "always-successful"; }
+        }
     }
 }

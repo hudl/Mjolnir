@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.External;
@@ -17,114 +16,102 @@ namespace Hudl.Mjolnir.Tests.Stats
         public async Task InvokeAsync_Success()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var command = new ImmediatelyReturningCommandWithoutFallback
             {
                 Stats = mockStats.Object,
+                MetricEvents = mockMetricEvents.Object,
             };
 
             await command.InvokeAsync();
 
             mockStats.Verify(m => m.Elapsed("mjolnir command test.ImmediatelyReturningCommandWithoutFallback total", "RanToCompletion", It.IsAny<TimeSpan>()), Times.Once);
             mockStats.Verify(m => m.Elapsed("mjolnir command test.ImmediatelyReturningCommandWithoutFallback execute", "RanToCompletion", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.ImmediatelyReturningCommandWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "RanToCompletion", "throw"));
+            mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
         public async Task InvokeAsync_GeneralExceptionFromReturnedTask()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var command = new FaultingTaskWithoutFallbackCommand
             {
-                Stats = mockStats.Object
+                Stats = mockStats.Object,
+                MetricEvents = mockMetricEvents.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException)
-            {
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback total", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback execute", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
+            await Assert.ThrowsAsync<CommandFailedException>(command.InvokeAsync);
 
-            AssertX.FailExpectedException();
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback total", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithoutFallback execute", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.FaultingTaskWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
+            mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
         public async Task InvokeAsync_GeneralExceptionFromExecute()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var command = new FaultingExecuteWithoutFallbackCommand
             {
-                Stats = mockStats.Object
+                Stats = mockStats.Object,
+                MetricEvents = mockMetricEvents.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException)
-            {
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback total", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback execute", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();
+            await Assert.ThrowsAsync<CommandFailedException>(command.InvokeAsync);
+            
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback total", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteWithoutFallback execute", "Faulted", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.FaultingExecuteWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
+            mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
         public async Task InvokeAsync_OperationCanceledException()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var command = new TimingOutWithoutFallbackCommand(TimeSpan.FromMilliseconds(100))
             {
                 Stats = mockStats.Object,
+                MetricEvents = mockMetricEvents.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.GetBaseException() is OperationCanceledException);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback total", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback execute", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
+            var e = await Assert.ThrowsAsync<CommandTimeoutException>(command.InvokeAsync);
 
-            AssertX.FailExpectedException();
+            Assert.True(e.GetBaseException() is OperationCanceledException);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback total", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.TimingOutWithoutFallback execute", "TimedOut", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.TimingOutWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "TimedOut", "throw"));
+            mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
-        public async Task InvokeAsync_RejectedException()
+        public async Task InvokeAsync_BreakerRejectedException()
         {
             var mockStats = new Mock<IStats>();
-            
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBreaker = new Mock<ICircuitBreaker>();
             mockBreaker.Setup(m => m.IsAllowing()).Returns(false);
 
             var command = new SuccessfulEchoCommandWithoutFallback("Test")
             {
                 Stats = mockStats.Object,
+                MetricEvents = mockMetricEvents.Object,
                 CircuitBreaker = mockBreaker.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.GetBaseException() is CircuitBreakerRejectedException);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback total", "Rejected", It.IsAny<TimeSpan>()), Times.Once);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback execute", "Rejected", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
+            var e = await Assert.ThrowsAsync<CommandRejectedException>(command.InvokeAsync);
 
-            AssertX.FailExpectedException();
+            Assert.True(e.GetBaseException() is CircuitBreakerRejectedException);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback total", "Rejected", It.IsAny<TimeSpan>()), Times.Once);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.SuccessfulEchoCommandWithoutFallback execute", "Rejected", It.IsAny<TimeSpan>()), Times.Once);
+            mockMetricEvents.Verify(m => m.CommandInvoked("test.SuccessfulEchoCommandWithoutFallback", It.IsAny<double>(), It.IsAny<double>(), "Rejected", "throw"));
+            // Since this was a breaker rejection, we don't expect a bulkhead rejection event here.
+            mockMetricEvents.Verify(m => m.RejectedByBulkhead(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -137,18 +124,10 @@ namespace Hudl.Mjolnir.Tests.Stats
                 Stats = mockStats.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (ExpectedTestException e)
-            {
-                if (e != expected) throw;
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithEchoThrowingFallback fallback", "Failure", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
+            var e = await Assert.ThrowsAsync<ExpectedTestException>(command.InvokeAsync);
 
-            AssertX.FailExpectedException();
+            Assert.Equal(expected, e);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithEchoThrowingFallback fallback", "Failure", It.IsAny<TimeSpan>()), Times.Once);
         }
 
         [Fact]
@@ -160,18 +139,10 @@ namespace Hudl.Mjolnir.Tests.Stats
                 Stats = mockStats.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.IsFallbackImplemented);
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithInstigatorRethrowingFallback fallback", "Failure", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
+            var e = await Assert.ThrowsAsync<CommandFailedException>(command.InvokeAsync);
 
-            AssertX.FailExpectedException();
+            Assert.True(e.IsFallbackImplemented);
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskWithInstigatorRethrowingFallback fallback", "Failure", It.IsAny<TimeSpan>()), Times.Once);
         }
 
         [Fact]
@@ -192,9 +163,11 @@ namespace Hudl.Mjolnir.Tests.Stats
         public async Task InvokeAsync_ExecuteFaultsAndFallbackSucceeds()
         {
             var mockStats = new Mock<IStats>();
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var command = new FaultingExecuteWithSuccessfulFallbackCommand
             {
                 Stats = mockStats.Object,
+                MetricEvents = mockMetricEvents.Object,
             };
 
             await command.InvokeAsync();
@@ -212,18 +185,9 @@ namespace Hudl.Mjolnir.Tests.Stats
                 Stats = mockStats.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                if (e.GetBaseException() != exception) throw;
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteEchoCommandWithoutFallback fallback", "NotImplemented", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();   
+            var e = await Assert.ThrowsAsync<CommandFailedException>(command.InvokeAsync);
+            Assert.Equal(exception, e.GetBaseException());
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingExecuteEchoCommandWithoutFallback fallback", "NotImplemented", It.IsAny<TimeSpan>()), Times.Once);
         }
 
         [Fact]
@@ -236,18 +200,10 @@ namespace Hudl.Mjolnir.Tests.Stats
                 Stats = mockStats.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                if (e.GetBaseException() != exception) throw;
-                mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskEchoCommandWithoutFallback fallback", "NotImplemented", It.IsAny<TimeSpan>()), Times.Once);
-                return; // Expected.
-            }
+            var e = await Assert.ThrowsAsync<CommandFailedException>(command.InvokeAsync);
 
-            AssertX.FailExpectedException();
+            Assert.Equal(exception, e.GetBaseException());
+            mockStats.Verify(m => m.Elapsed("mjolnir command test.FaultingTaskEchoCommandWithoutFallback fallback", "NotImplemented", It.IsAny<TimeSpan>()), Times.Once);
         }
 
         [Fact]

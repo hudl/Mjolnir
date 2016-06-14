@@ -63,19 +63,8 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
 
             var task = proxy.InvokeGenericTask();
 
-            try
-            {
-                // Using Assert.Throws(async () => {}) doesn't work right here,
-                // so falling back to the ol' try/catch.
-                await task;
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.Equal(exception, e.InnerException);
-                return;
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => task);
+            Assert.Equal(exception, e.InnerException);
         }
 
         [Fact]
@@ -246,7 +235,10 @@ namespace Hudl.Mjolnir.Tests.Command.Attribute
             Assert.True(instance.ReceivedToken.Value.IsCancellationRequested);
         }
 
-        [Fact]
+        // TODO this behavior (using async to FnF, i.e. async void) is undesirable
+        // and usually an anti-pattern. should we continue to support it, given
+        // that Mjolnir's intent is to make failure faster and more predictable.
+        [Fact(Skip = "Flaky")]
         public void SlowSleepMethod_FireAndForget_ReturnsImmediatelyButStillCompletes()
         {
             var instance = new Sleepy();

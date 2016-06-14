@@ -358,18 +358,23 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             var mockMetrics = CreateMockMetricsWithSnapshot(10, 100); // 10 ops, 100% failing.
             var stats = new InternallyCountingStats();
+            var metricEvents = new Mock<IMetricEvents>();
             var breaker = new BreakerBuilder(1, 1, "Test") // Trip at 1 op, 1% failing.
                 .WithMockMetrics(mockMetrics)
                 .WithWaitMillis(durationMillis)
                 .WithStats(stats)
+                .WithMetricEvents(metricEvents.Object)
                 .Create();
             breaker.IsAllowing(); // Trip the breaker.
             Assert.Equal(1, stats.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
+            metricEvents.Verify(m => m.BreakerTripped("Test"));
+            metricEvents.ResetCalls();
 
             breaker.IsAllowing(); // Make another call, which should bail immediately (and not re-trip).
 
             // Best way to test this right now is to make sure we don't fire a stat for the state change.
             Assert.Equal(1, stats.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
+            metricEvents.Verify(m => m.BreakerTripped(It.IsAny<string>()), Times.Never);
         }
 
         // The following tests compare the metrics to the threshold. The names have been made more concise.
@@ -468,7 +473,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
             {
                 var mockMetrics = CreateMockMetricsWithSnapshot(_metricsTotal, _metricsPercent);
                 var properties = CreateBreakerProperties(_breakerTotal, _breakerPercent, 30000);
-                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringStats(), properties);
+                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringStats(), new IgnoringMetricEvents(), properties);
 
                 Assert.NotEqual(_shouldTrip, breaker.IsAllowing());
             }
@@ -505,6 +510,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
         private IClock _clock = new SystemClock();
         private IMock<ICommandMetrics> _mockMetrics = FailurePercentageCircuitBreakerTests.CreateMockMetricsWithSnapshot(0, 0);
         private IStats _stats = new Mock<IStats>().Object;
+        private IMetricEvents _metricEvents = new Mock<IMetricEvents>().Object;
         private TransientConfigurableValue<long> _gaugeIntervalOverrideMillis;
 
         public BreakerBuilder(long minimumOperations, int failurePercent, string key = null)
@@ -538,6 +544,12 @@ namespace Hudl.Mjolnir.Tests.Breaker
             return this;
         }
 
+        public BreakerBuilder WithMetricEvents(IMetricEvents metricEvents)
+        {
+            _metricEvents = metricEvents;
+            return this;
+        }
+
         public BreakerBuilder WithGaugeIntervalOverride(long intervalMillis)
         {
             _gaugeIntervalOverrideMillis = new TransientConfigurableValue<long>(intervalMillis);
@@ -547,7 +559,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
         public FailurePercentageCircuitBreaker Create()
         {
             var properties = FailurePercentageCircuitBreakerTests.CreateBreakerProperties(_minimumOperations, _failurePercent, _waitMillis);
-            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _stats, properties, _gaugeIntervalOverrideMillis);
+            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _stats, _metricEvents, properties, _gaugeIntervalOverrideMillis);
         }
     }
 

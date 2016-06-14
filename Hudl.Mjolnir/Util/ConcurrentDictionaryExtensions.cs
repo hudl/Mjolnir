@@ -12,5 +12,11 @@ namespace Hudl.Mjolnir.Util
             var lazy = dictionary.GetOrAdd(key, new Lazy<V>(() => valueFactory(key), LazyThreadSafetyMode.PublicationOnly));
             return lazy.Value;
         }
+
+        public static V GetOrAddSafe<K, V>(this ConcurrentDictionary<K, Lazy<V>> dictionary, K key, Func<K, V> valueFactory, LazyThreadSafetyMode mode)
+        {
+            var lazy = dictionary.GetOrAdd(key, new Lazy<V>(() => valueFactory(key), mode));
+            return lazy.Value;
+        }
     }
 }

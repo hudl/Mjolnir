@@ -1,4 +1,8 @@
-﻿## Events sent to `IStats` methods
+﻿**Hey!** Use **`IMetricEvents`** instead. The API is clearer and more targeted at Mjolnir behavior (and less targeted at method profiling).
+
+=====
+
+## Events sent to `IStats` methods
 
 ### Calls to `Event()`
 

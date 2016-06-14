@@ -15,6 +15,8 @@ namespace Hudl.Mjolnir.Tests.Helper
         {
             return new PassThroughWorkItem<TResult>(func());
         }
+
+        public string Name { get { return "always-successful"; } }
     }
 
     internal class PassThroughWorkItem<TResult> : IWorkItem<TResult>

@@ -20,18 +20,9 @@ namespace Hudl.Mjolnir.Tests.Command
             {
                 CircuitBreaker = mockBreaker.Object,
             };
-            
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.InnerException is CircuitBreakerRejectedException);
-                return; // Expected.
-            }
 
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandRejectedException>(() => command.InvokeAsync());
+            Assert.True(e.InnerException is CircuitBreakerRejectedException);
         }
 
         [Fact]
@@ -74,17 +65,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 CircuitBreaker = mockBreaker.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.InnerException == exception);
-                return; // Expected.
-            }
-            
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
+            Assert.True(e.InnerException == exception);
         }
 
         [Fact]
@@ -98,17 +80,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 CircuitBreaker = mockBreaker.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (CommandFailedException e)
-            {
-                Assert.True(e.InnerException == exception);
-                return; // Expected.
-            }
-
-            AssertX.FailExpectedException();
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
+            Assert.True(e.InnerException == exception);
         }
 
         [Fact]
@@ -122,15 +95,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 CircuitBreaker = mockBreaker.Object,
             };
 
-            try
-            {
-                await command.InvokeAsync();
-            }
-            catch (Exception)
-            {
-                // Expected.
-                mockMetrics.Verify(m => m.MarkCommandFailure(), Times.Once);
-            }
+            var e = await Assert.ThrowsAsync<CommandFailedException>(() => command.InvokeAsync());
+            mockMetrics.Verify(m => m.MarkCommandFailure(), Times.Once);
         }
 
         [Fact]

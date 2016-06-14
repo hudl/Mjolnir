@@ -8,5 +8,6 @@ namespace Hudl.Mjolnir.Breaker
         void MarkSuccess(long elapsedMillis);
 
         ICommandMetrics Metrics { get; }
+        string Name { get; }
     }
 }
