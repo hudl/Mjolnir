@@ -23,14 +23,14 @@ namespace Hudl.Mjolnir.Util
         /// <param name="intervalMillisOverride">Interval override (for unit testing)</param>
         internal GaugeTimer(ElapsedEventHandler onTick, IConfigurableValue<long> intervalMillisOverride = null)
         {
-            _gaugeIntervalMillis = intervalMillisOverride ?? new ConfigurableValue<long>("mjolnir.gaugeIntervalMillis", 5000, UpdateStatsGaugeInterval);
+            _gaugeIntervalMillis = intervalMillisOverride ?? new ConfigurableValue<long>("mjolnir.gaugeIntervalMillis", 5000, UpdateGaugeInterval);
 
             _timer = new Timer(_gaugeIntervalMillis.Value) { AutoReset = true };
             _timer.Elapsed += onTick;
             _timer.Enabled = true;
         }
 
-        private void UpdateStatsGaugeInterval(long millis)
+        private void UpdateGaugeInterval(long millis)
         {
             if (_timer == null)
             {

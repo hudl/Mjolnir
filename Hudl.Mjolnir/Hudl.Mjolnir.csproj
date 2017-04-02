@@ -90,9 +90,7 @@
     <Compile Include="Command\SyncCommand.cs" />
     <Compile Include="Command\VoidResult.cs" />
     <Compile Include="External\IgnoringMetricEvents.cs" />
-    <Compile Include="External\IgnoringStats.cs" />
     <Compile Include="External\IMetricEvents.cs" />
-    <Compile Include="External\IStats.cs" />
     <Compile Include="Key\GroupKey.cs" />
     <Compile Include="Metrics\CounterMetric.cs" />
     <Compile Include="Metrics\ICommandMetrics.cs" />
@@ -116,7 +114,6 @@
     <Compile Include="Util\GaugeTimer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="External\stats-list.md" />
     <None Include="Hudl.Mjolnir.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>

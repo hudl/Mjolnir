@@ -113,11 +113,6 @@
     <Compile Include="Metrics\InterlockingLongCounterTests.cs" />
     <Compile Include="Metrics\ResettingNumbersBucketTests.cs" />
     <Compile Include="Metrics\StandardCommandMetricsTests.cs" />
-    <Compile Include="Stats\CommandStatsTests.cs" />
-    <Compile Include="Stats\FailurePercentageCircuitBreakerStatsTests.cs" />
-    <Compile Include="Stats\SemaphoreSlimIsolationSemaphoreStatsTests.cs" />
-    <Compile Include="Stats\StandardCommandMetricsStatsTests.cs" />
-    <Compile Include="Stats\StpIsolationThreadPoolStatsTests.cs" />
     <Compile Include="TestCommands\BaseTestCommand.cs" />
     <Compile Include="TestCommands\FaultingExecuteEchoCommandWithoutFallback.cs" />
     <Compile Include="TestCommands\FaultingExecuteWithoutFallbackCommand.cs" />

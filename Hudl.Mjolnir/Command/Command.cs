@@ -88,14 +88,7 @@ namespace Hudl.Mjolnir.Command
         protected readonly bool TimeoutsIgnored;
         
         // Setters should be used for testing only.
-
-        private IStats _stats;
-        internal IStats Stats
-        {
-            private get { return _stats ?? CommandContext.Stats; }
-            set { _stats = value; }
-        }
-
+        
         private IMetricEvents _metricEvents;
         internal IMetricEvents MetricEvents
         {
@@ -263,12 +256,7 @@ namespace Hudl.Mjolnir.Command
         {
             get { return _poolKey; }
         }
-
-        private string StatsPrefix
-        {
-            get { return "mjolnir command " + Name; }
-        }
-
+        
         /// <summary>
         /// Synchronous pass-through to <see cref="InvokeAsync()"/>.
         /// 
@@ -353,10 +341,7 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 invokeStopwatch.Stop();
-
-                Stats.Elapsed(StatsPrefix + " execute", status.ToString(), executeStopwatch.Elapsed);
-                Stats.Elapsed(StatsPrefix + " total", status.ToString(), invokeStopwatch.Elapsed);
-
+                
                 MetricEvents.CommandInvoked(Name, invokeStopwatch.Elapsed.TotalMilliseconds, executeStopwatch.Elapsed.TotalMilliseconds, status.ToString(), "throw");
             }
         }
@@ -474,8 +459,6 @@ namespace Hudl.Mjolnir.Command
             var semaphore = FallbackSemaphore; // Locally reference in case the property gets updated (highly unlikely).
             if (!semaphore.TryEnter())
             {
-                Stats.Elapsed(StatsPrefix + " fallback", FallbackStatus.Rejected.ToString(), stopwatch.Elapsed);
-
                 instigator.FallbackStatus = FallbackStatus.Rejected;
                 throw instigator;
             }
@@ -508,9 +491,7 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 semaphore.Release();
-
                 stopwatch.Stop();
-                Stats.Elapsed(StatsPrefix + " fallback", fallbackStatus.ToString(), stopwatch.Elapsed);
             }
         }
 

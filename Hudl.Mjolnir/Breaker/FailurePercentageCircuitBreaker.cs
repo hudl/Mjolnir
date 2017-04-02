@@ -31,54 +31,36 @@ namespace Hudl.Mjolnir.Breaker
         private readonly ICommandMetrics _metrics;
 
         private readonly GroupKey _key;
-        private readonly IStats _stats;
         private readonly IMetricEvents _metricEvents;
-
-        // Eventually the _statsTimer here will go away. IStats are deprecated and IMetrics are the
-        // way of the future.
+        
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
-        private readonly GaugeTimer _statsTimer;
         private readonly GaugeTimer _metricsTimer;
         // ReSharper restore NotAccessedField.Local
         
         private volatile State _state;
         private long _lastTrippedTimestamp;
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IStats stats, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties)
-            : this(key, new SystemClock(), metrics, stats, metricEvents, properties) {}
+        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties)
+            : this(key, new SystemClock(), metrics, metricEvents, properties) {}
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IStats stats, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
         {
             _key = key;
             _clock = clock;
             _metrics = metrics;
-
-            if (stats == null)
-            {
-                throw new ArgumentNullException("stats");
-            }
-
+            
             if (metricEvents == null)
             {
                 throw new ArgumentNullException("metricEvents");
             }
-
-            _stats = stats;
+            
             _metricEvents = metricEvents;
 
             Properties = properties;
             _state = State.Fixed; // Start off assuming everything's fixed.
             _lastTrippedTimestamp = 0; // 0 is fine since it'll be far less than the first compared value.
-
-            // Old gauge, will be phased out in v3.0 when IStats are removed.
-            _statsTimer = new GaugeTimer((source, args) =>
-            {
-                var snapshot = _metrics.GetSnapshot();
-                _stats.Gauge(StatsPrefix + " total", snapshot.Total >= properties.MinimumOperations.Value ? "Above" : "Below", snapshot.Total);
-                _stats.Gauge(StatsPrefix + " error", snapshot.ErrorPercentage >= properties.ThresholdPercentage.Value ? "Above" : "Below", snapshot.ErrorPercentage);
-            }, gaugeIntervalMillisOverride);
-
+            
             _metricsTimer = new GaugeTimer((source, args) =>
             {
                 _metricEvents.BreakerConfigGauge(
@@ -93,12 +75,7 @@ namespace Hudl.Mjolnir.Breaker
         {
             get { return _metrics; }
         }
-
-        private string StatsPrefix
-        {
-            get { return "mjolnir breaker " + _key; }
-        }
-
+        
         public string Name
         {
             get { return _key.Name; }
@@ -116,7 +93,6 @@ namespace Hudl.Mjolnir.Breaker
             if (_state != State.Tripped || _clock.GetMillisecondTimestamp() - elapsedMillis < _lastTrippedTimestamp)
             {
                 // Ignore.
-                _stats.Event(StatsPrefix + " MarkSuccess", "Ignored", null);
                 return;
             }
 
@@ -125,7 +101,6 @@ namespace Hudl.Mjolnir.Breaker
             _state = State.Fixed;
             _metrics.Reset();
 
-            _stats.Event(StatsPrefix + " MarkSuccess", "Fixed", null);
             _metricEvents.BreakerFixed(Name);
         }
 
@@ -136,26 +111,19 @@ namespace Hudl.Mjolnir.Breaker
         {
             var stopwatch = Stopwatch.StartNew();
             var result = true;
-            try
+            if (Properties.ForceTripped.Value)
             {
-                if (Properties.ForceTripped.Value)
-                {
-                    result = false;
-                }
-                else if (Properties.ForceFixed.Value)
-                {
-                    // If we're forcing, we still want to keep track of the state in case we remove the force.
-                    CheckAndSetTripped();
-                    result = true;
-                }
-                else
-                {
-                    result = !CheckAndSetTripped() || AllowSingleTest();
-                }
+                result = false;
             }
-            finally
+            else if (Properties.ForceFixed.Value)
             {
-                _stats.Elapsed(StatsPrefix + " IsAllowing", (result ? "Allowed" : "Rejected"), stopwatch.Elapsed);
+                // If we're forcing, we still want to keep track of the state in case we remove the force.
+                CheckAndSetTripped();
+                result = true;
+            }
+            else
+            {
+                result = !CheckAndSetTripped() || AllowSingleTest();
             }
 
             return result;
@@ -167,36 +135,26 @@ namespace Hudl.Mjolnir.Breaker
         private bool AllowSingleTest()
         {
             var stopwatch = Stopwatch.StartNew();
-            var state = "Unknown";
+
+            if (!Monitor.TryEnter(_singleTestLock))
+            {
+                return false;
+            }
+
             try
             {
-                if (!Monitor.TryEnter(_singleTestLock))
+                if (_state == State.Tripped && IsPastWaitDuration())
                 {
-                    state = "MissedLock";
-                    return false;
+                    _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
+                    Log.InfoFormat("Allowing single test operation Breaker={0}", _key);
+                    return true;
                 }
 
-                try
-                {
-                    if (_state == State.Tripped && IsPastWaitDuration())
-                    {
-                        _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
-                        Log.InfoFormat("Allowing single test operation Breaker={0}", _key);
-                        state = "Allowed";
-                        return true;
-                    }
-
-                    state = "NotEligible";
-                    return false;
-                }
-                finally
-                {
-                    Monitor.Exit(_singleTestLock);
-                }
+                return false;
             }
             finally
             {
-                _stats.Elapsed(StatsPrefix + " AllowSingleTest", state, stopwatch.Elapsed);
+                Monitor.Exit(_singleTestLock);
             }
         }
 
@@ -212,61 +170,48 @@ namespace Hudl.Mjolnir.Breaker
         private bool CheckAndSetTripped()
         {
             var stopwatch = Stopwatch.StartNew();
-            var state = "Unknown";
+
+            if (_state == State.Tripped)
+            {
+                return true;
+            }
+
+            if (!Monitor.TryEnter(_stateChangeLock))
+            {
+                return _state == State.Tripped;
+            }
+
             try
             {
-                if (_state == State.Tripped)
+                var snapshot = _metrics.GetSnapshot();
+
+                // If we haven't met the minimum number of operations needed to trip, don't trip.
+                if (snapshot.Total < Properties.MinimumOperations.Value)
                 {
-                    state = "AlreadyTripped";
-                    return true;
+                    return false;
                 }
 
-                if (!Monitor.TryEnter(_stateChangeLock))
+                // If we're within the error threshold, don't trip.
+                if (snapshot.ErrorPercentage < Properties.ThresholdPercentage.Value)
                 {
-                    state = "MissedLock";
-                    return _state == State.Tripped;
+                    return false;
                 }
 
-                try
-                {
-                    var snapshot = _metrics.GetSnapshot();
+                _state = State.Tripped;
+                _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
 
-                    // If we haven't met the minimum number of operations needed to trip, don't trip.
-                    if (snapshot.Total < Properties.MinimumOperations.Value)
-                    {
-                        state = "CriteriaNotMet";
-                        return false;
-                    }
+                _metricEvents.BreakerTripped(Name);
+                Log.ErrorFormat("Tripped Breaker={0} Operations={1} ErrorPercentage={2} Wait={3}",
+                    _key,
+                    snapshot.Total,
+                    snapshot.ErrorPercentage,
+                    Properties.TrippedDurationMillis.Value);
 
-                    // If we're within the error threshold, don't trip.
-                    if (snapshot.ErrorPercentage < Properties.ThresholdPercentage.Value)
-                    {
-                        state = "CriteriaNotMet";
-                        return false;
-                    }
-
-                    _state = State.Tripped;
-                    _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
-                    state = "JustTripped";
-
-                    _stats.Event(StatsPrefix, State.Tripped.ToString(), null);
-                    _metricEvents.BreakerTripped(Name);
-                    Log.ErrorFormat("Tripped Breaker={0} Operations={1} ErrorPercentage={2} Wait={3}",
-                        _key,
-                        snapshot.Total,
-                        snapshot.ErrorPercentage,
-                        Properties.TrippedDurationMillis.Value);
-
-                    return true;
-                }
-                finally
-                {
-                    Monitor.Exit(_stateChangeLock);
-                }
+                return true;
             }
             finally
             {
-                _stats.Elapsed(StatsPrefix + " CheckAndSetTripped", state, stopwatch.Elapsed);
+                Monitor.Exit(_stateChangeLock);
             }
         }
 

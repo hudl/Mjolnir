@@ -16,7 +16,6 @@ namespace Hudl.Mjolnir.Command
 {
     internal interface ICommandContext
     {
-        IStats Stats { get; set; }
         IMetricEvents MetricEvents { get; set; }
         void IgnoreExceptions(HashSet<Type> types);
         bool IsExceptionIgnored(Type type);
@@ -28,7 +27,7 @@ namespace Hudl.Mjolnir.Command
 
     /// <summary>
     /// Manages all of Mjolnir's bulkheads, breakers, and other state. Also handles
-    /// dependency injection for replaceable components (stats, config, etc.).
+    /// dependency injection for replaceable components (metrics, config, etc.).
     /// 
     /// Client code typically doesn't interact with CommandContext other than
     /// to inject dependencies.
@@ -79,21 +78,7 @@ namespace Hudl.Mjolnir.Command
         // This is a Dictionary only because there's no great concurrent Set type available. Just
         // use the keys if checking for a type.
         private readonly ConcurrentDictionary<Type, bool> _ignoredExceptionTypes = new ConcurrentDictionary<Type, bool>();
-
-        private IStats _stats = new IgnoringStats();
-        public IStats Stats
-        {
-            get { return _stats; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentException();
-                }
-                _stats = value;
-            }
-        }
-
+        
         private IMetricEvents _metricEvents = new IgnoringMetricEvents();
         public IMetricEvents MetricEvents
         {
@@ -143,7 +128,7 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", DefaultBreakerForceTripped),
                     new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", DefaultBreakerForceFixed));
 
-                return new FailurePercentageCircuitBreaker(key, metrics, Stats, MetricEvents, properties);
+                return new FailurePercentageCircuitBreaker(key, metrics, MetricEvents, properties);
             }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
@@ -158,8 +143,7 @@ namespace Hudl.Mjolnir.Command
                 new StandardCommandMetrics(
                     key,
                     new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", DefaultMetricsWindowMillis),
-                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", DefaultMetricsSnapshotTtlMillis),
-                    Stats),
+                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", DefaultMetricsSnapshotTtlMillis)),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
@@ -175,7 +159,6 @@ namespace Hudl.Mjolnir.Command
                     key,
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", DefaultPoolThreadCount),
                     new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", DefaultPoolQueueLength),
-                    Stats,
                     MetricEvents),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
@@ -212,7 +195,7 @@ namespace Hudl.Mjolnir.Command
                 // several commands may using the same pool, and we should therefore try to allow for a bit
                 // more concurrent fallback execution.
                 var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", DefaultFallbackMaxConcurrent);
-                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent, Stats);
+                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent);
             }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
         
@@ -293,25 +276,10 @@ namespace Hudl.Mjolnir.Command
         internal static readonly ICommandContext Current = new CommandContextImpl();
         
         /// <summary>
-        /// Get/set the Stats implementation that all Mjolnir code should use.
-        /// 
-        /// This should be set as soon as possible if it's going to be implemented.
-        /// Other parts of Mjolnir will cache their Stats members, so changing
-        /// this after Breakers and Pools have been created won't update the
-        /// client for them.
-        /// </summary>
-        [Obsolete("Use MetricEvents instead")]
-        public static IStats Stats
-        {
-            get { return Current.Stats; }
-            set { Current.Stats = value; }
-        }
-
-        /// <summary>
         /// Get/set the MetricEvents implementation that all Mjolnir code should use.
         /// 
         /// This should be set as soon as possible if it's going to be implemented.
-        /// Other parts of Mjolnir will cache their Stats members, so changing
+        /// Other parts of Mjolnir will cache their MetricEvents members, so changing
         /// this after Breakers and Pools have been created won't update the
         /// client for them.
         /// </summary>

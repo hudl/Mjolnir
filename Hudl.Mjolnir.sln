@@ -1,13 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hudl.Mjolnir", "Hudl.Mjolnir\Hudl.Mjolnir.csproj", "{9BD60F73-17FB-404E-83CC-61982B393E01}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hudl.Mjolnir.Tests", "Hudl.Mjolnir.Tests\Hudl.Mjolnir.Tests.csproj", "{08CAFFC8-7AF8-4E55-ABA3-6B828D246665}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hudl.Mjolnir.SystemTests", "Hudl.Mjolnir.SystemTests\Hudl.Mjolnir.SystemTests.csproj", "{12884247-4362-4F20-87A1-F259213E463C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hudl.Mjolnir.Attributes", "Hudl.Mjolnir.Attributes\Hudl.Mjolnir.Attributes.csproj", "{35789458-34E2-42D2-9FC2-043C56C3D011}"
 EndProject
@@ -30,10 +28,6 @@ Global
 		{08CAFFC8-7AF8-4E55-ABA3-6B828D246665}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08CAFFC8-7AF8-4E55-ABA3-6B828D246665}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08CAFFC8-7AF8-4E55-ABA3-6B828D246665}.Release|Any CPU.Build.0 = Release|Any CPU
-		{12884247-4362-4F20-87A1-F259213E463C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{12884247-4362-4F20-87A1-F259213E463C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12884247-4362-4F20-87A1-F259213E463C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{12884247-4362-4F20-87A1-F259213E463C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{35789458-34E2-42D2-9FC2-043C56C3D011}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{35789458-34E2-42D2-9FC2-043C56C3D011}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{35789458-34E2-42D2-9FC2-043C56C3D011}.Release|Any CPU.ActiveCfg = Release|Any CPU

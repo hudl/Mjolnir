@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Hudl.Common.Clock;
+﻿using Hudl.Common.Clock;
 using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
@@ -357,23 +354,19 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const long durationMillis = 10000;
 
             var mockMetrics = CreateMockMetricsWithSnapshot(10, 100); // 10 ops, 100% failing.
-            var stats = new InternallyCountingStats();
             var metricEvents = new Mock<IMetricEvents>();
             var breaker = new BreakerBuilder(1, 1, "Test") // Trip at 1 op, 1% failing.
                 .WithMockMetrics(mockMetrics)
                 .WithWaitMillis(durationMillis)
-                .WithStats(stats)
                 .WithMetricEvents(metricEvents.Object)
                 .Create();
             breaker.IsAllowing(); // Trip the breaker.
-            Assert.Equal(1, stats.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
             metricEvents.Verify(m => m.BreakerTripped("Test"));
             metricEvents.ResetCalls();
 
             breaker.IsAllowing(); // Make another call, which should bail immediately (and not re-trip).
 
-            // Best way to test this right now is to make sure we don't fire a stat for the state change.
-            Assert.Equal(1, stats.ServicesAndStates.Count(ss => ss.Service == "mjolnir breaker Test" && ss.State == "Tripped"));
+            // Best way to test this right now is to make sure we don't fire a metric event for the state change.
             metricEvents.Verify(m => m.BreakerTripped(It.IsAny<string>()), Times.Never);
         }
 
@@ -473,7 +466,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
             {
                 var mockMetrics = CreateMockMetricsWithSnapshot(_metricsTotal, _metricsPercent);
                 var properties = CreateBreakerProperties(_breakerTotal, _breakerPercent, 30000);
-                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringStats(), new IgnoringMetricEvents(), properties);
+                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringMetricEvents(), properties);
 
                 Assert.NotEqual(_shouldTrip, breaker.IsAllowing());
             }
@@ -509,7 +502,6 @@ namespace Hudl.Mjolnir.Tests.Breaker
         private long _waitMillis = 30000;
         private IClock _clock = new SystemClock();
         private IMock<ICommandMetrics> _mockMetrics = FailurePercentageCircuitBreakerTests.CreateMockMetricsWithSnapshot(0, 0);
-        private IStats _stats = new Mock<IStats>().Object;
         private IMetricEvents _metricEvents = new Mock<IMetricEvents>().Object;
         private TransientConfigurableValue<long> _gaugeIntervalOverrideMillis;
 
@@ -537,13 +529,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
             _clock = clock;
             return this;
         }
-
-        public BreakerBuilder WithStats(IStats stats)
-        {
-            _stats = stats;
-            return this;
-        }
-
+        
         public BreakerBuilder WithMetricEvents(IMetricEvents metricEvents)
         {
             _metricEvents = metricEvents;
@@ -559,38 +545,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
         public FailurePercentageCircuitBreaker Create()
         {
             var properties = FailurePercentageCircuitBreakerTests.CreateBreakerProperties(_minimumOperations, _failurePercent, _waitMillis);
-            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _stats, _metricEvents, properties, _gaugeIntervalOverrideMillis);
-        }
-    }
-
-    internal class InternallyCountingStats : IStats
-    {
-        public List<ServiceAndState> ServicesAndStates { get; set; }
-
-        public InternallyCountingStats()
-        {
-             ServicesAndStates = new List<ServiceAndState>(); 
-        }
-
-        public void Event(string service, string state, long? metric = null)
-        {
-            ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
-        public void Elapsed(string service, string state, TimeSpan elapsed)
-        {
-            ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
-        public void Gauge(string service, string state, long? metric = null)
-        {
-            ServicesAndStates.Add(new ServiceAndState { Service = service, State = state });
-        }
-
-        public class ServiceAndState
-        {
-            public string Service { get; set; }
-            public string State { get; set; }
+            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _metricEvents, properties, _gaugeIntervalOverrideMillis);
         }
     }
 }

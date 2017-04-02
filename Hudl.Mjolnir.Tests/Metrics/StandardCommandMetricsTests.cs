@@ -16,8 +16,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
             var metrics = new StandardCommandMetrics(
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<long>(30000),
-                new TransientConfigurableValue<long>(1000),
-                new IgnoringStats());
+                new TransientConfigurableValue<long>(1000));
             metrics.MarkCommandSuccess();
 
             var snapshot = metrics.GetSnapshot();
@@ -31,8 +30,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
             var metrics = new StandardCommandMetrics(
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<long>(30000),
-                new TransientConfigurableValue<long>(1000),
-                new IgnoringStats());
+                new TransientConfigurableValue<long>(1000));
             metrics.MarkCommandFailure();
 
             var snapshot = metrics.GetSnapshot();
@@ -74,8 +72,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<long>(10000),
                 new TransientConfigurableValue<long>(1000),
-                clock,
-                new IgnoringStats());
+                clock);
 
             metrics.MarkCommandSuccess();
             metrics.GetSnapshot(); // Take the first snapshot to cache it.
@@ -91,8 +88,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
             var metrics = new StandardCommandMetrics(
                 GroupKey.Named("Test"),
                 new TransientConfigurableValue<long>(10000),
-                new TransientConfigurableValue<long>(0),
-                new IgnoringStats()); // Don't cache snapshots.
+                new TransientConfigurableValue<long>(0)); // Don't cache snapshots.
             for (var i = 0; i < success; i++)
             {
                 metrics.MarkCommandSuccess();
