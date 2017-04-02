@@ -54,9 +54,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\log4net.2.0.0\lib\net40-full\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="SmartThreadPool">
-      <HintPath>dll\SmartThreadPool.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -72,23 +69,13 @@
     <Compile Include="Breaker\CircuitBreakerRejectedException.cs" />
     <Compile Include="Breaker\FailurePercentageCircuitBreaker.cs" />
     <Compile Include="Breaker\ICircuitBreaker.cs" />
-    <Compile Include="Command\Attribute\CommandAttribute.cs" />
-    <Compile Include="Command\Attribute\CommandInterceptor.cs" />
-    <Compile Include="Command\Attribute\CommandTimeoutAttribute.cs" />
-    <Compile Include="Command\Attribute\FireAndForgetAttribute.cs" />
-    <Compile Include="Command\Attribute\InvocationCommand.cs" />
     <Compile Include="Command\BaseCommand.cs" />
     <Compile Include="Command\BulkheadInvoker.cs" />
     <Compile Include="Command\Command.cs" />
-    <Compile Include="Command\CommandCancelledException.cs" />
     <Compile Include="Command\CommandContext.cs" />
-    <Compile Include="Command\CommandFailedException.cs" />
     <Compile Include="Command\CommandInvoker.cs" />
-    <Compile Include="Command\CommandRejectedException.cs" />
     <Compile Include="Command\CommandResult.cs" />
-    <Compile Include="Command\CommandTimeoutException.cs" />
     <Compile Include="Command\SyncCommand.cs" />
-    <Compile Include="Command\VoidResult.cs" />
     <Compile Include="External\IgnoringMetricEvents.cs" />
     <Compile Include="External\IMetricEvents.cs" />
     <Compile Include="Key\GroupKey.cs" />
@@ -100,16 +87,8 @@
     <Compile Include="Metrics\MetricsSnapshot.cs" />
     <Compile Include="Metrics\ResettingNumbersBucket.cs" />
     <Compile Include="Metrics\StandardCommandMetrics.cs" />
-    <Compile Include="Command\FallbackStatus.cs" />
     <Compile Include="Command\CommandCompletionStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ThreadPool\IIsolationSemaphore.cs" />
-    <Compile Include="ThreadPool\IIsolationThreadPool.cs" />
-    <Compile Include="ThreadPool\IsolationThreadPoolException.cs" />
-    <Compile Include="ThreadPool\IWorkItem.cs" />
-    <Compile Include="ThreadPool\SemaphoreSlimIsolationSemaphore.cs" />
-    <Compile Include="ThreadPool\StpIsolationThreadPool.cs" />
-    <Compile Include="ThreadPool\StpWorkItem.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensions.cs" />
     <Compile Include="Util\GaugeTimer.cs" />
   </ItemGroup>

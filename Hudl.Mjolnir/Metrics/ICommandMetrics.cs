@@ -11,9 +11,6 @@
         void MarkCommandSuccess(/*TimeSpan duration*/); // TODO rob.hruska 11/8/2013 - Durations?
         void MarkCommandFailure(/*TimeSpan duration*/);
         
-        //void MarkFallbackSuccess();
-        //void MarkFallbackFailure();
-        
         //void MarkExecutionTime(TimeSpan duration);
         //void MarkObservedExecutionTime(TimeSpan duration);
     }

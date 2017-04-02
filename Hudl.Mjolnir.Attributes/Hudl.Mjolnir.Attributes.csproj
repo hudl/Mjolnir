@@ -36,7 +36,6 @@
   <ItemGroup>
     <Compile Include="CommandAttribute.cs" />
     <Compile Include="CommandTimeoutAttribute.cs" />
-    <Compile Include="FireAndForgetAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

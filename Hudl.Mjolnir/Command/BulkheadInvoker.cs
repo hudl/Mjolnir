@@ -35,7 +35,7 @@ namespace Hudl.Mjolnir.Command
         }
 
         // Note: Bulkhead rejections shouldn't count as failures to the breaker. If a downstream
-        // dependency is slow, the pool will fill up, but the breaker + timeouts will already be
+        // dependency is slow, the bulkhead will fill up, but the breaker + timeouts will already be
         // providing protection against that. If the bulkhead is filling up because of a surge of
         // requests, the rejections will just be a way of shedding load - the breaker and
         // downstream dependency may be just fine, and we want to keep them that way.

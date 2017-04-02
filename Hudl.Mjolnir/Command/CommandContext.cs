@@ -6,7 +6,6 @@ using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
-using Hudl.Mjolnir.ThreadPool;
 using Hudl.Mjolnir.Util;
 using Hudl.Mjolnir.Bulkhead;
 using System.Threading;
@@ -20,9 +19,7 @@ namespace Hudl.Mjolnir.Command
         void IgnoreExceptions(HashSet<Type> types);
         bool IsExceptionIgnored(Type type);
         ICircuitBreaker GetCircuitBreaker(GroupKey key);
-        IIsolationThreadPool GetThreadPool(GroupKey key);
         IBulkheadSemaphore GetBulkhead(GroupKey key);
-        IIsolationSemaphore GetFallbackSemaphore(GroupKey key);
     }
 
     /// <summary>
@@ -60,20 +57,11 @@ namespace Hudl.Mjolnir.Command
         // Circuit breaker metrics global defaults.
         private static readonly IConfigurableValue<long> DefaultMetricsWindowMillis = new ConfigurableValue<long>("mjolnir.metrics.default.windowMillis", 30000);
         private static readonly IConfigurableValue<long> DefaultMetricsSnapshotTtlMillis = new ConfigurableValue<long>("mjolnir.metrics.default.snapshotTtlMillis", 1000);
-
-        // Thread pool global defaults.
-        private static readonly IConfigurableValue<int> DefaultPoolThreadCount = new ConfigurableValue<int>("mjolnir.pools.default.threadCount", 10);
-        private static readonly IConfigurableValue<int> DefaultPoolQueueLength = new ConfigurableValue<int>("mjolnir.pools.default.queueLength", 10);
-
-        // Fallback global defaults.
-        private static readonly IConfigurableValue<int> DefaultFallbackMaxConcurrent = new ConfigurableValue<int>("mjolnir.fallback.default.maxConcurrent", 50);
-
+        
         // Instance collections.
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>> _pools = new ConcurrentDictionary<GroupKey, Lazy<IIsolationThreadPool>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
-        private readonly ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>> _fallbackSemaphores = new ConcurrentDictionary<GroupKey, Lazy<IIsolationSemaphore>>();
 
         // This is a Dictionary only because there's no great concurrent Set type available. Just
         // use the keys if checking for a type.
@@ -146,23 +134,7 @@ namespace Hudl.Mjolnir.Command
                     new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", DefaultMetricsSnapshotTtlMillis)),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
-
-        public IIsolationThreadPool GetThreadPool(GroupKey key)
-        {
-            if (key == null)
-            {
-                throw new ArgumentNullException("key");
-            }
-
-            return _pools.GetOrAddSafe(key, k =>
-                new StpIsolationThreadPool(
-                    key,
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".threadCount", DefaultPoolThreadCount),
-                    new ConfigurableValue<int>("mjolnir.pools." + key + ".queueLength", DefaultPoolQueueLength),
-                    MetricEvents),
-                LazyThreadSafetyMode.ExecutionAndPublication);
-        }
-
+        
         /// <summary>
         /// Callers should keep a local reference to the bulkhead object they receive from this
         /// method, ensuring that they call TryEnter and Release on the same object reference.
@@ -180,23 +152,6 @@ namespace Hudl.Mjolnir.Command
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
             return holder.Bulkhead;
-        }
-
-        public IIsolationSemaphore GetFallbackSemaphore(GroupKey key)
-        {
-            if (key == null)
-            {
-                throw new ArgumentNullException("key");
-            }
-
-            return _fallbackSemaphores.GetOrAddSafe(key, k =>
-            {
-                // For now, the default here is 5x the default pool threadCount, with the presumption that
-                // several commands may using the same pool, and we should therefore try to allow for a bit
-                // more concurrent fallback execution.
-                var maxConcurrent = new ConfigurableValue<int>("mjolnir.fallback." + key + ".maxConcurrent", DefaultFallbackMaxConcurrent);
-                return new SemaphoreSlimIsolationSemaphore(key, maxConcurrent);
-            }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
         
         // In order to dynamically change semaphore limits, we replace the semaphore on config
@@ -280,7 +235,7 @@ namespace Hudl.Mjolnir.Command
         /// 
         /// This should be set as soon as possible if it's going to be implemented.
         /// Other parts of Mjolnir will cache their MetricEvents members, so changing
-        /// this after Breakers and Pools have been created won't update the
+        /// this after Breakers and Bulkheads have been created won't update the
         /// client for them.
         /// </summary>
         public static IMetricEvents MetricEvents
