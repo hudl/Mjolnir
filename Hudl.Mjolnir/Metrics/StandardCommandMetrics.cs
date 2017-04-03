@@ -20,7 +20,7 @@ namespace Hudl.Mjolnir.Metrics
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (config == null)

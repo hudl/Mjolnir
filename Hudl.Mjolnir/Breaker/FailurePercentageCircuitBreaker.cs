@@ -51,12 +51,12 @@ namespace Hudl.Mjolnir.Breaker
             
             if (config == null)
             {
-                throw new ArgumentNullException("config");
+                throw new ArgumentNullException(nameof(config));
             }
 
             if (metricEvents == null)
             {
-                throw new ArgumentNullException("metricEvents");
+                throw new ArgumentNullException(nameof(metricEvents));
             }
 
             _config = config;

@@ -105,7 +105,7 @@ namespace Hudl.Mjolnir.Command
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             return _circuitBreakers.GetOrAddSafe(key, k =>
@@ -119,7 +119,7 @@ namespace Hudl.Mjolnir.Command
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             return _metrics.GetOrAddSafe(key, k =>
@@ -136,7 +136,7 @@ namespace Hudl.Mjolnir.Command
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             var holder = _bulkheads.GetOrAddSafe(key,
@@ -166,12 +166,12 @@ namespace Hudl.Mjolnir.Command
             {
                 if (metricEvents == null)
                 {
-                    throw new ArgumentNullException("metricEvents");
+                    throw new ArgumentNullException(nameof(metricEvents));
                 }
 
                 if (config == null)
                 {
-                    throw new ArgumentNullException("config");
+                    throw new ArgumentNullException(nameof(config));
                 }
 
                 _metricEvents = metricEvents;

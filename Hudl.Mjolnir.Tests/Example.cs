@@ -93,7 +93,7 @@ namespace Hudl.Mjolnir.Tests
         public S3FileExistsAsyncCommand(IS3AsyncClient client, string bucketName, string fileName)
             : base("s3", "s3-read", TimeSpan.FromSeconds(5))
         {
-            if (client == null) throw new ArgumentNullException("client");
+            if (client == null) throw new ArgumentNullException(nameof(client));
             // TODO other validation
             _bucketName = bucketName;
             _fileName = fileName;

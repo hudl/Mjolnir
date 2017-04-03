@@ -17,7 +17,7 @@ namespace Hudl.Mjolnir.Attributes
         {
             if (timeout < 0)
             {
-                throw new ArgumentException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             _timeout = timeout;

@@ -54,17 +54,17 @@ namespace Hudl.Mjolnir.Command
         {
             if (string.IsNullOrWhiteSpace(group))
             {
-                throw new ArgumentNullException("group");
+                throw new ArgumentNullException(nameof(group));
             }
 
             if (string.IsNullOrWhiteSpace(breakerKey))
             {
-                throw new ArgumentNullException("breakerKey");
+                throw new ArgumentNullException(nameof(breakerKey));
             }
 
             if (string.IsNullOrWhiteSpace(bulkheadKey))
             {
-                throw new ArgumentNullException("bulkheadKey");
+                throw new ArgumentNullException(nameof(bulkheadKey));
             }
 
             if (defaultTimeout != null && defaultTimeout.Value.TotalMilliseconds <= 0)

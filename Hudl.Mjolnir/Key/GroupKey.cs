@@ -31,7 +31,7 @@ namespace Hudl.Mjolnir.Key
         {
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException("Name cannot be null or empty", "name");
+                throw new ArgumentException($"Name cannot be null or empty", nameof(name));
             }
             return new GroupKey(name);
         }

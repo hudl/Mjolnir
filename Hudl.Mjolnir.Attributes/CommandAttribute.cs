@@ -24,22 +24,22 @@ namespace Hudl.Mjolnir.Attributes
         {
             if (string.IsNullOrWhiteSpace(group))
             {
-                throw new ArgumentException("group");
+                throw new ArgumentNullException(nameof(group));
             }
 
             if (string.IsNullOrWhiteSpace(breakerKey))
             {
-                throw new ArgumentException("breakerKey");
+                throw new ArgumentNullException(nameof(breakerKey));
             }
 
             if (string.IsNullOrWhiteSpace(poolKey))
             {
-                throw new ArgumentNullException("poolKey");
+                throw new ArgumentNullException(nameof(poolKey));
             }
 
             if (timeout < 0)
             {
-                throw new ArgumentException("timeout");
+                throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
             _group = group;

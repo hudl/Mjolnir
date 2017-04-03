@@ -26,7 +26,7 @@ namespace Hudl.Mjolnir.Command
         {
             if (breakerInvoker == null)
             {
-                throw new ArgumentNullException("breakerInvoker");
+                throw new ArgumentNullException(nameof(breakerInvoker));
             }
 
             if (config == null)
