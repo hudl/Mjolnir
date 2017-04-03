@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
-using Hudl.Common.Clock;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Util;
 using log4net;
+using Hudl.Mjolnir.Clock;
 
 namespace Hudl.Mjolnir.Breaker
 {

@@ -1,5 +1,5 @@
-﻿using Hudl.Common.Clock;
-using Hudl.Mjolnir.Breaker;
+﻿using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.Clock;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;

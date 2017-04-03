@@ -1,9 +1,9 @@
 using System;
 using System.Threading;
-using Hudl.Common.Clock;
 using log4net;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Clock;
 
 namespace Hudl.Mjolnir.Metrics
 {
