@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Threading;
 using Hudl.Common.Clock;
-using Hudl.Config;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
@@ -19,10 +18,9 @@ namespace Hudl.Mjolnir.Breaker
     /// </summary>
     internal class FailurePercentageCircuitBreaker : ICircuitBreaker
     {
-        internal readonly FailurePercentageCircuitBreakerProperties Properties;
+        //internal readonly FailurePercentageCircuitBreakerProperties Properties;
 
         private static readonly ILog Log = LogManager.GetLogger(typeof (FailurePercentageCircuitBreaker));
-        private static readonly IConfigurableValue<long> ConfigGaugeIntervalMillis = new ConfigurableValue<long>("mjolnir.breakerConfigGaugeIntervalMillis", 60000);
 
         private readonly object _stateChangeLock = new { };
         private readonly object _singleTestLock = new { };
@@ -32,6 +30,7 @@ namespace Hudl.Mjolnir.Breaker
 
         private readonly GroupKey _key;
         private readonly IMetricEvents _metricEvents;
+        private readonly IFailurePercentageCircuitBreakerConfig _config;
         
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
@@ -41,23 +40,28 @@ namespace Hudl.Mjolnir.Breaker
         private volatile State _state;
         private long _lastTrippedTimestamp;
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties)
-            : this(key, new SystemClock(), metrics, metricEvents, properties) {}
+        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config)
+            : this(key, new SystemClock(), metrics, metricEvents, config) {}
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, FailurePercentageCircuitBreakerProperties properties, IConfigurableValue<long> gaugeIntervalMillisOverride = null)
+        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config)
         {
             _key = key;
             _clock = clock;
             _metrics = metrics;
             
+            if (config == null)
+            {
+                throw new ArgumentNullException("config");
+            }
+
             if (metricEvents == null)
             {
                 throw new ArgumentNullException("metricEvents");
             }
-            
+
+            _config = config;
             _metricEvents = metricEvents;
 
-            Properties = properties;
             _state = State.Fixed; // Start off assuming everything's fixed.
             _lastTrippedTimestamp = 0; // 0 is fine since it'll be far less than the first compared value.
             
@@ -65,10 +69,10 @@ namespace Hudl.Mjolnir.Breaker
             {
                 _metricEvents.BreakerConfigGauge(
                     Name,
-                    Properties.MinimumOperations.Value,
-                    Properties.ThresholdPercentage.Value,
-                    Properties.TrippedDurationMillis.Value);
-            }, ConfigGaugeIntervalMillis);
+                    _config.GetMinimumOperations(_key),
+                    _config.GetThresholdPercentage(_key),
+                    _config.GetTrippedDurationMillis(_key));
+            });
         }
 
         public ICommandMetrics Metrics
@@ -111,11 +115,11 @@ namespace Hudl.Mjolnir.Breaker
         {
             var stopwatch = Stopwatch.StartNew();
             var result = true;
-            if (Properties.ForceTripped.Value)
+            if (_config.GetForceTripped(_key))
             {
                 result = false;
             }
-            else if (Properties.ForceFixed.Value)
+            else if (_config.GetForceFixed(_key))
             {
                 // If we're forcing, we still want to keep track of the state in case we remove the force.
                 CheckAndSetTripped();
@@ -160,7 +164,7 @@ namespace Hudl.Mjolnir.Breaker
 
         private bool IsPastWaitDuration()
         {
-            return _clock.GetMillisecondTimestamp() > _lastTrippedTimestamp + Properties.TrippedDurationMillis.Value;
+            return _clock.GetMillisecondTimestamp() > _lastTrippedTimestamp + _config.GetTrippedDurationMillis(_key);
         }
 
         /// <summary>
@@ -186,13 +190,13 @@ namespace Hudl.Mjolnir.Breaker
                 var snapshot = _metrics.GetSnapshot();
 
                 // If we haven't met the minimum number of operations needed to trip, don't trip.
-                if (snapshot.Total < Properties.MinimumOperations.Value)
+                if (snapshot.Total < _config.GetMinimumOperations(_key))
                 {
                     return false;
                 }
 
                 // If we're within the error threshold, don't trip.
-                if (snapshot.ErrorPercentage < Properties.ThresholdPercentage.Value)
+                if (snapshot.ErrorPercentage < _config.GetThresholdPercentage(_key))
                 {
                     return false;
                 }
@@ -205,7 +209,7 @@ namespace Hudl.Mjolnir.Breaker
                     _key,
                     snapshot.Total,
                     snapshot.ErrorPercentage,
-                    Properties.TrippedDurationMillis.Value);
+                    _config.GetTrippedDurationMillis(_key));
 
                 return true;
             }
@@ -220,34 +224,5 @@ namespace Hudl.Mjolnir.Breaker
             Fixed,
             Tripped,
         }
-    }
-
-    internal class FailurePercentageCircuitBreakerProperties
-    {
-        private readonly IConfigurableValue<long> _minimumOperations;
-        private readonly IConfigurableValue<int> _thresholdPercentage;
-        private readonly IConfigurableValue<long> _trippedDurationMillis;
-        private readonly IConfigurableValue<bool> _forceTripped;
-        private readonly IConfigurableValue<bool> _forceFixed;
-
-        internal FailurePercentageCircuitBreakerProperties(
-            IConfigurableValue<long> minimumOperations,
-            IConfigurableValue<int> thresholdPercentage,
-            IConfigurableValue<long> trippedDurationMillis,
-            IConfigurableValue<bool> forceTripped,
-            IConfigurableValue<bool> forceFixed)
-        {
-            _minimumOperations = minimumOperations;
-            _thresholdPercentage = thresholdPercentage;
-            _trippedDurationMillis = trippedDurationMillis;
-            _forceTripped = forceTripped;
-            _forceFixed = forceFixed;
-        }
-
-        internal IConfigurableValue<long> MinimumOperations { get { return _minimumOperations; } }
-        internal IConfigurableValue<int> ThresholdPercentage { get { return _thresholdPercentage; } }
-        internal IConfigurableValue<long> TrippedDurationMillis { get { return _trippedDurationMillis; } }
-        internal IConfigurableValue<bool> ForceTripped { get { return _forceTripped; } }
-        internal IConfigurableValue<bool> ForceFixed { get { return _forceFixed; } }
     }
 }

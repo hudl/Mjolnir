@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Hudl.Config;
 using Hudl.Mjolnir.Command;
 using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.External;
+using Moq;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -222,15 +223,18 @@ namespace Hudl.Mjolnir.Tests.Command
 
             private void TestTimeouts(TimeSpan expected, long? invocationMs, long configuredMs, long? constructorMs)
             {
-                // The 'configured' value can't be nullable because the Hudl.Config library may pass
-                // along a default(long) (i.e. 0) if the config value isn't set, and we need to be
-                // prepared for that and not treat it as an actual timeout.
+                // The 'configured' value can't be nullable because the injected config
+                // implementation may pass along a default(long) (i.e. 0) if the config value
+                // isn't set, and we need to be prepared for that and not treat it as an actual
+                // timeout.
 
                 var constructorTs = (constructorMs == null ? (TimeSpan?) null : TimeSpan.FromMilliseconds(constructorMs.Value));
                 var command = new TestCommand(AnyString, AnyString, AnyString, constructorTs);
-                ConfigProvider.Instance.Set("mjolnir.command." + command.Name + ".Timeout", configuredMs);
 
-                var determined = command.DetermineTimeout(invocationMs);
+                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                mockConfig.Setup(m => m.GetConfig<long>($"mjolnir.command.{command.Name}.Timeout", It.IsAny<long>())).Returns(configuredMs);
+                
+                var determined = command.DetermineTimeout(mockConfig.Object, invocationMs);
 
                 Assert.Equal(expected, determined);
             }

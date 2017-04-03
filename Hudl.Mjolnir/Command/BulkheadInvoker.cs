@@ -1,5 +1,5 @@
-﻿using Hudl.Config;
-using Hudl.Mjolnir.Bulkhead;
+﻿using Hudl.Mjolnir.Bulkhead;
+using Hudl.Mjolnir.External;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -20,18 +20,23 @@ namespace Hudl.Mjolnir.Command
     {
         private readonly IBreakerInvoker _breakerInvoker;
         private readonly ICommandContext _context;
-        private readonly IConfigurableValue<bool> _useCircuitBreakers; 
+        private readonly IConfig _config;
 
-        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context, IConfigurableValue<bool> useCircuitBreakers = null)
+        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context, IConfig config)
         {
             if (breakerInvoker == null)
             {
                 throw new ArgumentNullException("breakerInvoker");
             }
 
+            if (config == null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
             _breakerInvoker = breakerInvoker;
+            _config = config;
             _context = context ?? CommandContext.Current;
-            _useCircuitBreakers = useCircuitBreakers ?? new ConfigurableValue<bool>("mjolnir.useCircuitBreakers", true);
         }
 
         // Note: Bulkhead rejections shouldn't count as failures to the breaker. If a downstream
@@ -67,7 +72,7 @@ namespace Hudl.Mjolnir.Command
             var executedHere = false;
             try
             {
-                if (_useCircuitBreakers.Value)
+                if (_config.GetConfig("mjolnir.useCircuitBreakers", true))
                 {
                     return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
                 }
@@ -114,7 +119,7 @@ namespace Hudl.Mjolnir.Command
             var executedHere = false;
             try
             {
-                if (_useCircuitBreakers.Value)
+                if (_config.GetConfig("mjolnir.useCircuitBreakers", true))
                 {
                     return _breakerInvoker.ExecuteWithBreaker(command, ct);
                 }

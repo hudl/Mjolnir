@@ -1,4 +1,4 @@
-﻿using Hudl.Config;
+﻿using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using System;
 
@@ -85,7 +85,7 @@ namespace Hudl.Mjolnir.Command
         // Constructor Timeout: Value defined in the Command constructor.
         // Configured Timeout: Value provided by config.
         // Invocation Timeout: Value passed into the Invoke() / InvokeAsync() call.
-        internal TimeSpan DetermineTimeout(long? invocationTimeoutMillis = null)
+        internal TimeSpan DetermineTimeout(IConfig config, long? invocationTimeoutMillis = null)
         {
             // Thoughts on invocation timeout vs. configured timeout:
             //
@@ -107,8 +107,9 @@ namespace Hudl.Mjolnir.Command
             {
                 return TimeSpan.FromMilliseconds(invocationTimeoutMillis.Value);
             }
-            
-            var configured = GetTimeoutConfigurableValue(_name).Value;
+
+            //var configured = GetTimeoutConfigurableValue(_name).Value;
+            var configured = config.GetConfig<long>($"mjolnir.command.{_name}.Timeout", 0);
 
             // We don't want to include 0 here. Since this comes from a potentially non-nullable
             // ConfigurableValue, it's possible (and probably likely) that an unconfigured
@@ -145,12 +146,7 @@ namespace Hudl.Mjolnir.Command
                 return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
             });
         }
-
-        private static IConfigurableValue<long> GetTimeoutConfigurableValue(string commandName)
-        {
-            return TimeoutConfigCache.GetOrAdd(commandName, n => new ConfigurableValue<long>("mjolnir.command." + commandName + ".Timeout"));
-        }
-
+        
         /// <summary>
         /// The generated command name, used for logging and configuration. Follows the form:
         /// <code>group-key.CommandClassName</code>. Some normalization is performed before

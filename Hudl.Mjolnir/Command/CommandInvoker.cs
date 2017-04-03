@@ -1,7 +1,7 @@
 ﻿using Hudl.Common.Extensions;
-using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
+using Hudl.Mjolnir.External;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -251,13 +251,15 @@ namespace Hudl.Mjolnir.Command
         private readonly ICommandContext _context;
         private readonly IBulkheadInvoker _bulkheadInvoker;
 
+        // TODO move these two comments somewhere now that the configs are injected
+
         /// <summary>
         /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the
         /// default timeout. This is likely to be useful when debugging Command-decorated methods,
         /// however it is not advisable to use in a production environment since it disables some
         /// of Mjolnir's key protection features.
         /// </summary>
-        private readonly IConfigurableValue<bool> _ignoreCancellation;
+        
 
         /// <summary>
         /// Global killswitch for Mjolnir. If configured to <code>false</code>, Mjolnir will still
@@ -266,7 +268,9 @@ namespace Hudl.Mjolnir.Command
         /// No timeouts will be applied; a CancellationToken.None will be passed to any method
         /// that supports cancellation.
         /// </summary>
-        private readonly IConfigurableValue<bool> _isEnabled;
+        
+
+        private readonly IConfig _config;
 
         /// <summary>
         /// Singleton instance. Prefer to inject ICommandInvoker into constructors where possible.
@@ -278,25 +282,22 @@ namespace Hudl.Mjolnir.Command
         { }
         
         internal CommandInvoker(
+            IConfig config,
             ICommandContext context = null,
-            IBulkheadInvoker bulkheadInvoker = null,
-            IConfigurableValue<bool> ignoreTimeouts = null,
-            IConfigurableValue<bool> isEnabled = null)
+            IBulkheadInvoker bulkheadInvoker = null)
         {
+            _config = config ?? new DefaultValueConfig(); // TODO this isn't a good default assignment, we want the injected one, whereever it is
             _context = context ?? CommandContext.Current;
-
+            
             var breakerInvoker = new BreakerInvoker(_context);
-            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _context);
-
-            _ignoreCancellation = ignoreTimeouts ?? new ConfigurableValue<bool>("mjolnir.ignoreTimeouts", false);
-            _isEnabled = isEnabled ?? new ConfigurableValue<bool>("mjolnir.isEnabled", true);
+            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _context, _config);
         }
         
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)
         {
             EnsureSingleInvoke(command);
 
-            if (!_isEnabled.Value)
+            if (!IsEnabled())
             {
                 return command.ExecuteAsync(CancellationToken.None);
             }
@@ -309,7 +310,7 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
-            if (!_isEnabled.Value)
+            if (!IsEnabled())
             {
                 return command.ExecuteAsync(CancellationToken.None);
             }
@@ -322,7 +323,7 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
-            if (!_isEnabled.Value)
+            if (!IsEnabled())
             {
                 return command.ExecuteAsync(CancellationToken.None);
             }
@@ -358,7 +359,7 @@ namespace Hudl.Mjolnir.Command
             try
             {
                 TResult result;
-                if (!_isEnabled.Value)
+                if (!IsEnabled())
                 {
                     result = await command.ExecuteAsync(CancellationToken.None);
                 }
@@ -413,7 +414,7 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
-            if (!_isEnabled.Value)
+            if (!IsEnabled())
             {
                 return command.Execute(CancellationToken.None);
             }
@@ -426,7 +427,7 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
-            if (!_isEnabled.Value)
+            if (!IsEnabled())
             {
                 return command.Execute(CancellationToken.None);
             }
@@ -439,7 +440,7 @@ namespace Hudl.Mjolnir.Command
         {
             EnsureSingleInvoke(command);
 
-            if (!_isEnabled.Value)
+            if (!IsEnabled())
             {
                 return command.Execute(CancellationToken.None);
             }
@@ -475,7 +476,7 @@ namespace Hudl.Mjolnir.Command
             try
             {
                 TResult result;
-                if (!_isEnabled.Value)
+                if (!IsEnabled())
                 {
                     result = command.Execute(CancellationToken.None);
                 }
@@ -527,12 +528,12 @@ namespace Hudl.Mjolnir.Command
 
         private InformativeCancellationToken GetCancellationTokenForCommand(CancellationToken ct)
         {
-            if (_ignoreCancellation.Value)
+            if (IgnoreCancellation())
             {
                 return InformativeCancellationToken.ForIgnored();
             }
 
-            if (!_isEnabled.Value)
+            if (!IsEnabled())
             {
                 return InformativeCancellationToken.ForDisabled();
             }
@@ -542,12 +543,12 @@ namespace Hudl.Mjolnir.Command
 
         private InformativeCancellationToken GetCancellationTokenForCommand(BaseCommand command, long? invocationTimeout = null)
         {
-            if (_ignoreCancellation.Value)
+            if (IgnoreCancellation())
             {
                 return InformativeCancellationToken.ForIgnored();
             }
 
-            var timeout = command.DetermineTimeout(invocationTimeout);
+            var timeout = command.DetermineTimeout(_config, invocationTimeout);
             return InformativeCancellationToken.ForTimeout(timeout);
         }
 
@@ -600,6 +601,16 @@ namespace Hudl.Mjolnir.Command
         private static bool IsCancellationException(Exception e)
         {
             return (e is TaskCanceledException || e is OperationCanceledException);
+        }
+
+        private bool IsEnabled()
+        {
+            return _config.GetConfig("mjolnir.isEnabled", true);
+        }
+
+        private bool IgnoreCancellation()
+        {
+            return _config.GetConfig("mjolnir.ignoreTimeouts", false);
         }
 
         // "Failure" means any of [Fault || Timeout || Reject]

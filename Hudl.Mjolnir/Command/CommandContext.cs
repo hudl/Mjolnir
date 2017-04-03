@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
@@ -46,27 +45,30 @@ namespace Hudl.Mjolnir.Command
         // 3. <default value, hard-coded in CommandContext (50)>
         //
         // See the Mjolnir README for some additional information about configuration.
-
-        // Circuit breaker global defaults.
-        private static readonly IConfigurableValue<long> DefaultBreakerMinimumOperations = new ConfigurableValue<long>("mjolnir.breaker.default.minimumOperations", 10);
-        private static readonly IConfigurableValue<int> DefaultBreakerThresholdPercentage = new ConfigurableValue<int>("mjolnir.breaker.default.thresholdPercentage", 50);
-        private static readonly IConfigurableValue<long> DefaultBreakerTrippedDurationMillis = new ConfigurableValue<long>("mjolnir.breaker.default.trippedDurationMillis", 10000);
-        private static readonly IConfigurableValue<bool> DefaultBreakerForceTripped = new ConfigurableValue<bool>("mjolnir.breaker.default.forceTripped", false);
-        private static readonly IConfigurableValue<bool> DefaultBreakerForceFixed = new ConfigurableValue<bool>("mjolnir.breaker.default.forceFixed", false);
-
-        // Circuit breaker metrics global defaults.
-        private static readonly IConfigurableValue<long> DefaultMetricsWindowMillis = new ConfigurableValue<long>("mjolnir.metrics.default.windowMillis", 30000);
-        private static readonly IConfigurableValue<long> DefaultMetricsSnapshotTtlMillis = new ConfigurableValue<long>("mjolnir.metrics.default.snapshotTtlMillis", 1000);
         
         // Instance collections.
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
-
+        
         // This is a Dictionary only because there's no great concurrent Set type available. Just
         // use the keys if checking for a type.
         private readonly ConcurrentDictionary<Type, bool> _ignoredExceptionTypes = new ConcurrentDictionary<Type, bool>();
-        
+
+        // TODO make injectable
+        private readonly IConfig _config;
+        private readonly IFailurePercentageCircuitBreakerConfig _breakerConfig;
+        private readonly IStandardCommandMetricsConfig _metricsConfig;
+        private readonly IBulkheadConfig _bulkheadConfig;
+
+        public CommandContextImpl()
+        {
+            _config = new DefaultValueConfig();
+            _breakerConfig = new FailurePercentageCircuitBreakerConfig(_config);
+            _metricsConfig = new StandardCommandMetricsConfig(_config);
+            _bulkheadConfig = new BulkheadConfig(_config);
+        }
+
         private IMetricEvents _metricEvents = new IgnoringMetricEvents();
         public IMetricEvents MetricEvents
         {
@@ -109,14 +111,7 @@ namespace Hudl.Mjolnir.Command
             return _circuitBreakers.GetOrAddSafe(key, k =>
             {
                 var metrics = GetCommandMetrics(key);
-                var properties = new FailurePercentageCircuitBreakerProperties(
-                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".minimumOperations", DefaultBreakerMinimumOperations),
-                    new ConfigurableValue<int>("mjolnir.breaker." + key + ".thresholdPercentage", DefaultBreakerThresholdPercentage),
-                    new ConfigurableValue<long>("mjolnir.breaker." + key + ".trippedDurationMillis", DefaultBreakerTrippedDurationMillis),
-                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceTripped", DefaultBreakerForceTripped),
-                    new ConfigurableValue<bool>("mjolnir.breaker." + key + ".forceFixed", DefaultBreakerForceFixed));
-
-                return new FailurePercentageCircuitBreaker(key, metrics, MetricEvents, properties);
+                return new FailurePercentageCircuitBreaker(key, metrics, MetricEvents, _breakerConfig);
             }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
@@ -128,10 +123,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             return _metrics.GetOrAddSafe(key, k =>
-                new StandardCommandMetrics(
-                    key,
-                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".windowMillis", DefaultMetricsWindowMillis),
-                    new ConfigurableValue<long>("mjolnir.metrics." + key + ".snapshotTtlMillis", DefaultMetricsSnapshotTtlMillis)),
+                new StandardCommandMetrics(key, _metricsConfig),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
         
@@ -148,7 +140,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             var holder = _bulkheads.GetOrAddSafe(key,
-                k => new SemaphoreBulkheadHolder(key, _metricEvents),
+                k => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig),
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
             return holder.Bulkhead;
@@ -160,54 +152,52 @@ namespace Hudl.Mjolnir.Command
         // app to ensure consistent concurrency.
         private class SemaphoreBulkheadHolder
         {
-            // Note: changing the default value at runtime won't trigger a rebuild of the
-            // semaphores; that will require an app restart.
-            private static readonly IConfigurableValue<int> DefaultBulkheadMaxConcurrent = new ConfigurableValue<int>("mjolnir.bulkhead.default.maxConcurrent", 10);
-            private static readonly IConfigurableValue<long> ConfigGaugeIntervalMillis = new ConfigurableValue<long>("mjolnir.bulkheadConfigGaugeIntervalMillis", 60000);
-
             // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
-            // Keep the reference around, we have a change handler attached.
-            private readonly IConfigurableValue<int> _config;
             private readonly GaugeTimer _timer;
             // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
-
+            
             private IBulkheadSemaphore _bulkhead;
             public IBulkheadSemaphore Bulkhead { get { return _bulkhead; } }
 
             private readonly IMetricEvents _metricEvents;
+            private readonly IBulkheadConfig _config;
 
-            public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents)
+            public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, IBulkheadConfig config)
             {
                 if (metricEvents == null)
                 {
                     throw new ArgumentNullException("metricEvents");
                 }
 
+                if (config == null)
+                {
+                    throw new ArgumentNullException("config");
+                }
+
                 _metricEvents = metricEvents;
+                _config = config;
 
                 // The order of things here is very intentional.
-                // We create the configurable value first, retrieve its current value, and then
-                // initialize the semaphore bulkhead. We register the change handler after that.
-                // That ought to help avoid a situation where we might fire a config change handler
-                // before we add the semaphore to the dictionary, potentially trying to add two
-                // entries with different values in rapid succession.
-                
-                var configKey = "mjolnir.bulkhead." + key + ".maxConcurrent";
-                _config = new ConfigurableValue<int>(configKey, DefaultBulkheadMaxConcurrent);
+                // We get the MaxConcurrent value first and then initialize the semaphore bulkhead.
+                // The change handler is registered after that. The order ought to help avoid a
+                // situation where we might fire a config change handler before we add the
+                // semaphore to the dictionary, potentially trying to add two entries with
+                // different values in rapid succession.
 
-                var value = _config.Value;
+                var value = _config.GetMaxConcurrent(key);
+                
                 _bulkhead = new SemaphoreBulkhead(key, value);
 
                 // On change, we'll replace the bulkhead. The assumption here is that a caller
                 // using the bulkhead will have kept a local reference to the bulkhead that they
                 // acquired a lock on, and will release the lock on that bulkhead and not one that
                 // has been replaced after a config change.
-                _config.AddChangeHandler(newLimit =>
+                _config.AddChangeHandler<int>(key, newLimit =>
                 {
                     if (newLimit < 0)
                     {
                         Log.ErrorFormat("Semaphore bulkhead config {0} changed to an invalid limit of {0}, the bulkhead will not be changed",
-                            configKey,
+                            _config.GetConfigKey(key),
                             newLimit);
                         return;
                     }
@@ -217,8 +207,8 @@ namespace Hudl.Mjolnir.Command
 
                 _timer = new GaugeTimer((source, args) =>
                 {
-                    _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.Value);
-                }, ConfigGaugeIntervalMillis);
+                    _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.GetMaxConcurrent(key));
+                });
             }
         }
     }

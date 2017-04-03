@@ -1,8 +1,9 @@
 using System;
 using System.Threading;
 using Hudl.Common.Clock;
-using Hudl.Config;
 using log4net;
+using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Key;
 
 namespace Hudl.Mjolnir.Metrics
 {
@@ -14,21 +15,38 @@ namespace Hudl.Mjolnir.Metrics
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof (ResettingNumbersBucket));
 
-        /// <summary>
-        /// The length of time to accumulate metrics before resetting.
-        /// </summary>
-        private readonly IConfigurableValue<long> _periodMillis;
+        private readonly IStandardCommandMetricsConfig _config;
         private readonly IClock _clock;
+        private readonly GroupKey _key;
         private readonly object _resetBucketLock = new { };
 
         private ILongCounter[] _counters;
         private long _lastResetAtTime = 0;
 
-        internal ResettingNumbersBucket(IConfigurableValue<long> periodMillis) : this(new SystemClock(), periodMillis) {}
-        internal ResettingNumbersBucket(IClock clock, IConfigurableValue<long> periodMillis)
+        internal ResettingNumbersBucket(GroupKey key, IStandardCommandMetricsConfig config) : this(key, new SystemClock(), config)
+        { }
+
+        internal ResettingNumbersBucket(GroupKey key, IClock clock, IStandardCommandMetricsConfig config)
         {
+            if (key == null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
+            if (clock == null)
+            {
+                throw new ArgumentNullException(nameof(clock));
+            }
+
+            if (config == null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
+            _key = key;
             _clock = clock;
-            _periodMillis = periodMillis;
+            _config = config;
+
             _counters = CreateCounters();
             _lastResetAtTime = clock.GetMillisecondTimestamp();
         }
@@ -41,7 +59,7 @@ namespace Hudl.Mjolnir.Metrics
             //   - Accuracy on Gets isn't 100% and is subject to racing.
             //   - We may write metrics into "old" buckets immediately before resetting at the interval.
 
-            if (_clock.GetMillisecondTimestamp() - _lastResetAtTime > _periodMillis.Value)
+            if (_clock.GetMillisecondTimestamp() - _lastResetAtTime > _config.GetWindowMillis(_key))
             {
                 Reset();
             }

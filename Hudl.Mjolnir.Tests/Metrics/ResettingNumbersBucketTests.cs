@@ -1,7 +1,9 @@
 ﻿using Hudl.Common.Clock;
-using Hudl.Config;
+using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
+using Moq;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Metrics
@@ -39,8 +41,12 @@ namespace Hudl.Mjolnir.Tests.Metrics
         public void Increment_AfterPeriodExceeded_ResetsBeforeIncrementing()
         {
             const long periodMillis = 1000;
+
+            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            mockConfig.Setup(m => m.GetWindowMillis(It.IsAny<GroupKey>())).Returns(periodMillis);
+
             var clock = new ManualTestClock();
-            var bucket = new ResettingNumbersBucket(clock, new TransientConfigurableValue<long>(periodMillis));
+            var bucket = new ResettingNumbersBucket(GroupKey.Named("any"), clock, mockConfig.Object);
 
             bucket.Increment(CounterMetric.CommandSuccess);
 
@@ -53,8 +59,11 @@ namespace Hudl.Mjolnir.Tests.Metrics
 
         private ResettingNumbersBucket CreateBucket()
         {
+            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            mockConfig.Setup(m => m.GetWindowMillis(It.IsAny<GroupKey>())).Returns(10000);
+
             var clock = new ManualTestClock();
-            return new ResettingNumbersBucket(clock, new TransientConfigurableValue<long>(10000));
+            return new ResettingNumbersBucket(GroupKey.Named("any"), clock, mockConfig.Object);
         }
     }
 }

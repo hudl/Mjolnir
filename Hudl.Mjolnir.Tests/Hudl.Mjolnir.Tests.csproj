@@ -45,12 +45,8 @@
       <HintPath>..\packages\Castle.Core.2.5.1\lib\NET35\Castle.Core.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Common.1.4.1\lib\net35\Hudl.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Config, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Config.1.6.0\lib\net40\Hudl.Config.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -100,7 +96,6 @@
     <Compile Include="Metrics\StandardCommandMetricsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\ConcurrentDictionaryExtensionsTests.cs" />
-    <Compile Include="Util\TestConfigProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

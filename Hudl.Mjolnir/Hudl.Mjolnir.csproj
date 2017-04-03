@@ -39,12 +39,8 @@
       <HintPath>..\packages\Castle.Core.2.5.1\lib\NET35\Castle.Core.dll</HintPath>
     </Reference>
     <Reference Include="Hudl.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Hudl.Common.1.4.1\lib\net35\Hudl.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="Hudl.Config, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Hudl.Config.1.6.0\lib\net40\Hudl.Config.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Hudl.Mjolnir.Attributes, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -76,6 +72,7 @@
     <Compile Include="Command\CommandInvoker.cs" />
     <Compile Include="Command\CommandResult.cs" />
     <Compile Include="Command\SyncCommand.cs" />
+    <Compile Include="External\IConfig.cs" />
     <Compile Include="External\IgnoringMetricEvents.cs" />
     <Compile Include="External\IMetricEvents.cs" />
     <Compile Include="Key\GroupKey.cs" />

@@ -1,5 +1,4 @@
 ﻿using Hudl.Common.Clock;
-using Hudl.Config;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
@@ -12,6 +11,8 @@ namespace Hudl.Mjolnir.Tests.Breaker
 {
     public class FailurePercentageCircuitBreakerTests : TestFixture
     {
+        private static readonly GroupKey AnyKey = GroupKey.Named("any"); // TODO random
+
         /// <summary>
         /// The breaker should be created in a good state (fixed).
         /// </summary>
@@ -70,19 +71,39 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // 5. Since breaker is tripped but we haven't hit our wait duration yet,
             //    MarkSuccess() should result in the the breaker remaining tripped.
 
-            var clock = new ManualTestClock();
-            var mockMetrics = CreateMockMetricsWithSnapshot(2, 100); // 2 ops, 100% failing.
-            var breaker = new BreakerBuilder(5, 1)
-                .WithMockMetrics(mockMetrics)
-                .WithClock(clock)
-                .Create(); // 5 ops, 1% failure required to break.
+
+            // Arrange
             
+            var manualClock = new ManualTestClock();
+
+            var mockMetrics = new Mock<ICommandMetrics>();
+            mockMetrics.Setup(m => m.GetSnapshot()).Returns(new MetricsSnapshot(2, 100)); // 2 ops, 100% failing.
+
+            var mockEvents = new Mock<IMetricEvents>();
+
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>();
+            mockConfig.SetupSequence(m => m.GetMinimumOperations(It.IsAny<GroupKey>()))
+                .Returns(5) // First access should be > 1 so that the breaker doesn't trip.
+                .Returns(1); // Second access should be 1, so that we trip the breaker because we have the minimum met.
+            
+            mockConfig.Setup(m => m.GetThresholdPercentage(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
+            mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(false);
+            mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(false);
+
+            // 5 ops, 1% failure required to break.
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            
+
+            // Act / Assert
+
             // #2. Operation A is allowed and begins.
             Assert.True(breaker.IsAllowing()); // Haven't hit the 1-operation threshold yet, should be allowed.
-             
-            // #3a. Operation B errors
-            breaker.Properties.MinimumOperations.Value = 1; // Easier to test by changing the breaker conditions.
 
+            // #3a. Operation B errors. This is easier to simulate by changing the breaker's trip
+            //      conditions. The sequenced Mock (above) has the second MinimumOperations returning
+            //      1, which would now mean we have enough operations to trip (where we didn't before).
+            
             // #3b. Breaker exceeds metrics thresholds, Operation C tries to IsAllowing() and trips breaker.
             Assert.False(breaker.IsAllowing());
 
@@ -112,24 +133,39 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // This is somewhat unlikely since we probably wont have command timeouts
             // that'd allow this. But worth verifying.
 
-            var clock = new ManualTestClock();
-            var mockMetrics = CreateMockMetricsWithSnapshot(2, 100); // 2 ops, 100% failing.
-            var breaker = new BreakerBuilder(1, 1)
-                .WithMockMetrics(mockMetrics)
-                .WithClock(clock)
-                .Create(); // 1 ops, 1% failure required to break.
 
-            var duration = breaker.Properties.TrippedDurationMillis;
+            // Arrange
 
+            var manualClock = new ManualTestClock();
+
+            var mockMetrics = new Mock<ICommandMetrics>();
+            mockMetrics.Setup(m => m.GetSnapshot()).Returns(new MetricsSnapshot(2, 100)); // 2 ops, 100% failing.
+
+            var mockEvents = new Mock<IMetricEvents>();
+
+            const long trippedDurationMillis = 30000;
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>();
+            mockConfig.Setup(m => m.GetMinimumOperations(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetThresholdPercentage(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(trippedDurationMillis);
+            mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(false);
+            mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(false);
+
+            // 1 ops, 1% failure required to break.
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            
+
+            // Act / Assert
+            
             Assert.False(breaker.IsAllowing()); // Should immediately trip.
 
-            clock.AddMilliseconds(duration.Value + 10);
-
+            manualClock.AddMilliseconds(trippedDurationMillis + 10);
+            
             Assert.True(breaker.IsAllowing()); // Single test is allowed.
             Assert.False(breaker.IsAllowing());
 
-            clock.AddMilliseconds(duration.Value * 2);
-            breaker.MarkSuccess(duration.Value * 2);
+            manualClock.AddMilliseconds(trippedDurationMillis * 2);
+            breaker.MarkSuccess(trippedDurationMillis * 2);
 
             // Metrics will have been reset.
             mockMetrics.Setup(m => m.GetSnapshot()).Returns(new MetricsSnapshot(0, 0));
@@ -141,9 +177,27 @@ namespace Hudl.Mjolnir.Tests.Breaker
         [Fact]
         public void IsAllowing_WhenPropertiesForceTripped_Rejects()
         {
+            // Arrange
+
             // Most property values don't matter, IsAllowing() should reject before it tries to use them.
-            var breaker = new BreakerBuilder(0, 0).Create();
-            breaker.Properties.ForceTripped.Value = true;
+            var manualClock = new ManualTestClock();
+
+            var mockMetrics = new Mock<ICommandMetrics>();
+            mockMetrics.Setup(m => m.GetSnapshot()).Returns(new MetricsSnapshot(0, 0));
+
+            var mockEvents = new Mock<IMetricEvents>();
+
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>();
+            mockConfig.Setup(m => m.GetMinimumOperations(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetThresholdPercentage(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
+            mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(true); // The config we're testing here.
+            mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(false);
+
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            
+
+            // Act / Assert
 
             Assert.False(breaker.IsAllowing());
         }
@@ -151,8 +205,27 @@ namespace Hudl.Mjolnir.Tests.Breaker
         [Fact]
         public void IsAllowing_WhenPropertiesForceFixed_Allows()
         {
-            var breaker = new BreakerBuilder(0, 0).Create();
-            breaker.Properties.ForceFixed.Value = true;
+            // Arrange
+
+            // Most property values don't matter, IsAllowing() should reject before it tries to use them.
+            var manualClock = new ManualTestClock();
+
+            var mockMetrics = new Mock<ICommandMetrics>();
+            mockMetrics.Setup(m => m.GetSnapshot()).Returns(new MetricsSnapshot(0, 0));
+
+            var mockEvents = new Mock<IMetricEvents>();
+
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>();
+            mockConfig.Setup(m => m.GetMinimumOperations(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetThresholdPercentage(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
+            mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(false);
+            mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(true);  // The config we're testing here.
+
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+
+
+            // Act / Assert
 
             Assert.True(breaker.IsAllowing());
         }
@@ -160,9 +233,27 @@ namespace Hudl.Mjolnir.Tests.Breaker
         [Fact]
         public void IsAllowing_WhenBothForcePropertiesSet_Rejects()
         {
-            var breaker = new BreakerBuilder(0, 0).Create();
-            breaker.Properties.ForceTripped.Value = true;
-            breaker.Properties.ForceFixed.Value = true;
+            // Arrange
+
+            // Most property values don't matter, IsAllowing() should reject before it tries to use them.
+            var manualClock = new ManualTestClock();
+
+            var mockMetrics = new Mock<ICommandMetrics>();
+            mockMetrics.Setup(m => m.GetSnapshot()).Returns(new MetricsSnapshot(0, 0));
+
+            var mockEvents = new Mock<IMetricEvents>();
+
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>();
+            mockConfig.Setup(m => m.GetMinimumOperations(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetThresholdPercentage(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
+            mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(true); // The config we're testing here.
+            mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(true); // The config we're testing here.
+
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+
+
+            // Act / Assert
 
             Assert.False(breaker.IsAllowing());
         }
@@ -170,16 +261,42 @@ namespace Hudl.Mjolnir.Tests.Breaker
         [Fact]
         public void IsAllowing_WhenPropertiesForceFixedButBreakerWouldNormallyTrip_SilentlyTripsTheBreaker()
         {
-            var mockMetrics = CreateMockMetricsWithSnapshot(2, 50);
-            var breaker = new BreakerBuilder(1, 25).WithMockMetrics(mockMetrics).Create();
-            breaker.Properties.ForceFixed.Value = true;
+            // Arrange
+
+            // Most property values don't matter, IsAllowing() should reject before it tries to use them.
+            var manualClock = new ManualTestClock();
+
+            var mockMetrics = new Mock<ICommandMetrics>();
+            mockMetrics.Setup(m => m.GetSnapshot()).Returns(new MetricsSnapshot(2, 50));
+
+            var mockEvents = new Mock<IMetricEvents>();
+
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>();
+            mockConfig.Setup(m => m.GetMinimumOperations(It.IsAny<GroupKey>())).Returns(1);
+            mockConfig.Setup(m => m.GetThresholdPercentage(It.IsAny<GroupKey>())).Returns(25);
+            mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
+            mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(false);
+            mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(true);
+
+            // We'll call IsAllowing() three times. The first two should force the breaker fixed,
+            // the third should un-force it. The breaker should have tripped by then, so the third
+            // call should show the breaker disallowing the call.
+            mockConfig.SetupSequence(m => m.GetForceFixed(It.IsAny<GroupKey>()))
+                .Returns(true)
+                .Returns(true)
+                .Returns(false);
+
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+
+
+            // Act / Assert
 
             Assert.True(breaker.IsAllowing()); // Will have tripped internally.
             Assert.True(breaker.IsAllowing()); // Continues to allow even when tripped.
 
-            // Test that if we remove the forced fix property, IsAllowing() then rejects.
-
-            breaker.Properties.ForceFixed.Value = false;
+            // Test that when the the forced fix property is no longer true, IsAllowing() then rejects.
+            // The Mock sequencing enables this.
+            
             Assert.False(breaker.IsAllowing());
         }
 
@@ -465,8 +582,8 @@ namespace Hudl.Mjolnir.Tests.Breaker
             public void Run()
             {
                 var mockMetrics = CreateMockMetricsWithSnapshot(_metricsTotal, _metricsPercent);
-                var properties = CreateBreakerProperties(_breakerTotal, _breakerPercent, 30000);
-                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringMetricEvents(), properties);
+                var config = CreateMockBreakerConfig(_breakerTotal, _breakerPercent, 30000);
+                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringMetricEvents(), config.Object);
 
                 Assert.NotEqual(_shouldTrip, breaker.IsAllowing());
             }
@@ -482,14 +599,16 @@ namespace Hudl.Mjolnir.Tests.Breaker
             return mockMetrics;
         }
 
-        internal static FailurePercentageCircuitBreakerProperties CreateBreakerProperties(long minimumOperations, int thresholdPercentage, long brokenDurationMillis, bool forceTripped = false, bool forceFixed = false)
+        internal static Mock<IFailurePercentageCircuitBreakerConfig> CreateMockBreakerConfig(long minimumOperations, int thresholdPercentage, long trippedDurationMillis = 30000, bool forceTripped = false, bool forceFixed = false)
         {
-            return new FailurePercentageCircuitBreakerProperties(
-                new TransientConfigurableValue<long>(minimumOperations),
-                new TransientConfigurableValue<int>(thresholdPercentage),
-                new TransientConfigurableValue<long>(brokenDurationMillis),
-                new TransientConfigurableValue<bool>(forceTripped),
-                new TransientConfigurableValue<bool>(forceFixed));
+
+            var mock = new Mock<IFailurePercentageCircuitBreakerConfig>();
+            mock.Setup(m => m.GetMinimumOperations(It.IsAny<GroupKey>())).Returns(minimumOperations);
+            mock.Setup(m => m.GetThresholdPercentage(It.IsAny<GroupKey>())).Returns(thresholdPercentage);
+            mock.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(trippedDurationMillis);
+            mock.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(forceTripped);
+            mock.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(forceFixed);
+            return mock;
         }
     }
 
@@ -502,8 +621,8 @@ namespace Hudl.Mjolnir.Tests.Breaker
         private long _waitMillis = 30000;
         private IClock _clock = new SystemClock();
         private IMock<ICommandMetrics> _mockMetrics = FailurePercentageCircuitBreakerTests.CreateMockMetricsWithSnapshot(0, 0);
+        private IMock<IFailurePercentageCircuitBreakerConfig> _mockConfig;
         private IMetricEvents _metricEvents = new Mock<IMetricEvents>().Object;
-        private TransientConfigurableValue<long> _gaugeIntervalOverrideMillis;
 
         public BreakerBuilder(long minimumOperations, int failurePercent, string key = null)
         {
@@ -517,7 +636,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
             _mockMetrics = mockMetrics;
             return this;
         }
-
+        
         public BreakerBuilder WithWaitMillis(long waitMillis)
         {
             _waitMillis = waitMillis;
@@ -535,17 +654,11 @@ namespace Hudl.Mjolnir.Tests.Breaker
             _metricEvents = metricEvents;
             return this;
         }
-
-        public BreakerBuilder WithGaugeIntervalOverride(long intervalMillis)
-        {
-            _gaugeIntervalOverrideMillis = new TransientConfigurableValue<long>(intervalMillis);
-            return this;
-        }
-
+        
         public FailurePercentageCircuitBreaker Create()
         {
-            var properties = FailurePercentageCircuitBreakerTests.CreateBreakerProperties(_minimumOperations, _failurePercent, _waitMillis);
-            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _metricEvents, properties, _gaugeIntervalOverrideMillis);
+            var config = FailurePercentageCircuitBreakerTests.CreateMockBreakerConfig(_minimumOperations, _failurePercent, _waitMillis);
+            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _metricEvents, config.Object);
         }
     }
 }

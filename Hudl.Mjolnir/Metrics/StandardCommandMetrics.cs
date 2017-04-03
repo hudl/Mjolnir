@@ -1,8 +1,8 @@
 using System;
 using System.Threading;
 using Hudl.Common.Clock;
-using Hudl.Config;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.External;
 
 namespace Hudl.Mjolnir.Metrics
 {
@@ -10,23 +10,28 @@ namespace Hudl.Mjolnir.Metrics
     {
         private readonly IClock _clock;
         private readonly ResettingNumbersBucket _resettingNumbersBucket;
-        private readonly IConfigurableValue<long> _snapshotTtlMillis;
         private readonly GroupKey _key;
+        private readonly IStandardCommandMetricsConfig _config;
 
-        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis)
-            : this(key, windowMillis, snapshotTtlMillis, new SystemClock()) {}
+        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config)
+            : this(key, config, new SystemClock()) {}
 
-        internal StandardCommandMetrics(GroupKey key, IConfigurableValue<long> windowMillis, IConfigurableValue<long> snapshotTtlMillis, IClock clock)
+        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IClock clock)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
             }
 
+            if (config == null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
             _key = key;
+            _config = config;
             _clock = clock;
-            _snapshotTtlMillis = snapshotTtlMillis;
-            _resettingNumbersBucket = new ResettingNumbersBucket(_clock, windowMillis);
+            _resettingNumbersBucket = new ResettingNumbersBucket(_key, _clock, _config);
         }
         
         public void MarkCommandSuccess()
@@ -47,7 +52,7 @@ namespace Hudl.Mjolnir.Metrics
             var lastSnapshotTime = _lastSnapshotTimestamp;
             var currentTime = _clock.GetMillisecondTimestamp();
 
-            if (_lastSnapshot == null || currentTime - lastSnapshotTime > _snapshotTtlMillis.Value)
+            if (_lastSnapshot == null || currentTime - lastSnapshotTime > _config.GetSnapshotTtlMillis(_key))
             {
                 // Try to update the _lastSnapshotTimestamp. If we update it, this thread will take on the authority of updating
                 // the snapshot. CompareExchange returns the original result, so if it's different from currentTime, we successfully exchanged.
