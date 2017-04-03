@@ -256,7 +256,10 @@ namespace Hudl.Mjolnir.Command
         
         // TODO document that the singleton CommandInvoker.Instance was removed; clients can re-implement at their discretion, but it's an anti-pattern
 
-        public CommandInvoker() : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory())
+        public CommandInvoker() : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), null, null)
+        { }
+        
+        public CommandInvoker(IMjolnirConfig config, IMjolnirLogFactory logFactory) : this(config, logFactory, null, null)
         { }
         
         internal CommandInvoker(
