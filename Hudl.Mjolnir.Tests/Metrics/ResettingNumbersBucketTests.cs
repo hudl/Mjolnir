@@ -1,5 +1,5 @@
-﻿using Hudl.Mjolnir.External;
-using Hudl.Mjolnir.Key;
+﻿using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;

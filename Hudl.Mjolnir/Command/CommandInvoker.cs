@@ -1,6 +1,8 @@
 ﻿using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
+using Hudl.Mjolnir.Config;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Log;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -267,7 +269,7 @@ namespace Hudl.Mjolnir.Command
         /// that supports cancellation.
         /// </summary>
         
-        private readonly IConfig _config;
+        private readonly IMjolnirConfig _config;
         private readonly IMjolnirLogFactory _logFactory;
 
         /// <summary>
@@ -280,7 +282,7 @@ namespace Hudl.Mjolnir.Command
         { }
         
         internal CommandInvoker(
-            IConfig config,
+            IMjolnirConfig config,
             ICommandContext context = null,
             IBulkheadInvoker bulkheadInvoker = null,
             IMjolnirLogFactory logFactory = null)

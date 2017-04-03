@@ -231,7 +231,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var constructorTs = (constructorMs == null ? (TimeSpan?) null : TimeSpan.FromMilliseconds(constructorMs.Value));
                 var command = new TestCommand(AnyString, AnyString, AnyString, constructorTs);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig<long>($"mjolnir.command.{command.Name}.Timeout", It.IsAny<long>())).Returns(configuredMs);
                 
                 var determined = command.DetermineTimeout(mockConfig.Object, invocationMs);

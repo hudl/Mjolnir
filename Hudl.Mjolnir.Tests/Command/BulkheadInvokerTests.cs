@@ -31,7 +31,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var context = new CommandContextImpl();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // Use a real breaker invoker instead of a mocked one so that we actually
@@ -79,7 +79,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
@@ -106,7 +106,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
@@ -135,7 +135,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
@@ -164,7 +164,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
@@ -190,7 +190,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
@@ -223,7 +223,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreakerAsync(command, It.IsAny<CancellationToken>()))
                     .Returns(Task.FromResult(true));
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
@@ -255,7 +255,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreakerAsync(command, It.IsAny<CancellationToken>()))
                     .Throws(new ExpectedTestException(command.Name));
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
@@ -285,7 +285,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var context = new CommandContextImpl();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // Use a real breaker invoker instead of a mocked one so that we actually
@@ -333,7 +333,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
@@ -360,7 +360,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
@@ -389,7 +389,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
@@ -418,7 +418,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
@@ -444,7 +444,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBulkhead.SetupGet(m => m.Name).Returns(key);
                 mockContext.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(false);
 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
@@ -477,7 +477,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreaker(command, It.IsAny<CancellationToken>()))
                     .Returns(true);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
@@ -509,7 +509,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreaker(command, It.IsAny<CancellationToken>()))
                     .Throws(new ExpectedTestException(command.Name));
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.

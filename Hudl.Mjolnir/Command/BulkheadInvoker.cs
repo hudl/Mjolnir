@@ -20,9 +20,9 @@ namespace Hudl.Mjolnir.Command
     {
         private readonly IBreakerInvoker _breakerInvoker;
         private readonly ICommandContext _context;
-        private readonly IConfig _config;
+        private readonly IMjolnirConfig _config;
 
-        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context, IConfig config)
+        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context, IMjolnirConfig config)
         {
             if (breakerInvoker == null)
             {

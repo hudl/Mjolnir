@@ -83,7 +83,7 @@ namespace Hudl.Mjolnir.Command
         // Constructor Timeout: Value defined in the Command constructor.
         // Configured Timeout: Value provided by config.
         // Invocation Timeout: Value passed into the Invoke() / InvokeAsync() call.
-        internal TimeSpan DetermineTimeout(IConfig config, long? invocationTimeoutMillis = null)
+        internal TimeSpan DetermineTimeout(IMjolnirConfig config, long? invocationTimeoutMillis = null)
         {
             // Thoughts on invocation timeout vs. configured timeout:
             //

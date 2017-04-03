@@ -8,6 +8,9 @@ using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Util;
 using Hudl.Mjolnir.Bulkhead;
 using System.Threading;
+using Hudl.Mjolnir.Config;
+using Hudl.Mjolnir.Events;
+using Hudl.Mjolnir.Log;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -53,7 +56,7 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<Type, bool> _ignoredExceptionTypes = new ConcurrentDictionary<Type, bool>();
 
         // TODO make injectable
-        private readonly IConfig _config;
+        private readonly IMjolnirConfig _config;
         private readonly IFailurePercentageCircuitBreakerConfig _breakerConfig;
         private readonly IStandardCommandMetricsConfig _metricsConfig;
         private readonly IBulkheadConfig _bulkheadConfig;

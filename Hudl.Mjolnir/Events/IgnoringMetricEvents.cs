@@ -1,8 +1,7 @@
-﻿namespace Hudl.Mjolnir.External
+﻿using Hudl.Mjolnir.External;
+
+namespace Hudl.Mjolnir.Events
 {
-    // TODO move into a separate directory (i.e. not External)
-
-
     /// <summary>
     /// Default implementation for IMetricEvents that ignores all method calls.
     /// </summary>

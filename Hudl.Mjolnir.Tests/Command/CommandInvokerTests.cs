@@ -40,7 +40,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // from being used.
 
                 var command = new TokenCapturingAsyncCommand();
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 
@@ -64,7 +64,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var mockContext = new Mock<ICommandContext>();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
@@ -95,7 +95,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var mockContext = new Mock<ICommandContext>();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -134,7 +134,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var mockContext = new Mock<ICommandContext>();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -172,7 +172,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new DelayAsyncCommand(1);
                 var expiredToken = new CancellationToken(true);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
@@ -200,7 +200,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
@@ -228,7 +228,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
@@ -255,7 +255,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
@@ -289,7 +289,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new CircuitBreakerRejectedException();
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
@@ -346,7 +346,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new TokenCapturingAsyncCommand();
                 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.TokenCapturingAsync.Timeout", It.IsAny<long>())).Returns(10000);
@@ -369,7 +369,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 const bool expectedResultValue = true;
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
@@ -403,7 +403,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -447,7 +447,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 
                 var command = new DelayAsyncCommand(1);
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -488,7 +488,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
@@ -528,7 +528,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new BulkheadRejectedException();
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
@@ -590,7 +590,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new TokenCapturingCommand();
             
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -611,7 +611,7 @@ namespace Hudl.Mjolnir.Tests.Command
             const bool expectedResultValue = true;
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
@@ -642,7 +642,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -680,7 +680,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new SleepCommand(1);
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -719,7 +719,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SleepCommand(1);
             var expiredToken = new CancellationToken(true);
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
@@ -748,7 +748,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
@@ -775,7 +775,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
@@ -808,7 +808,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new CircuitBreakerRejectedException();
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
@@ -865,7 +865,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new TokenCapturingCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.TokenCapturing.Timeout", It.IsAny<long>())).Returns(10000);
@@ -887,7 +887,7 @@ namespace Hudl.Mjolnir.Tests.Command
             const bool expectedResultValue = true;
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
@@ -922,7 +922,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -967,7 +967,7 @@ namespace Hudl.Mjolnir.Tests.Command
             
             var command = new SleepCommand(1);
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
@@ -1010,7 +1010,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
@@ -1039,7 +1039,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
@@ -1079,7 +1079,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new BulkheadRejectedException();
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
             mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
             mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);

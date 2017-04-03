@@ -13,7 +13,7 @@ namespace Hudl.Mjolnir.Bulkhead
         {
             if (maxConcurrent < 0)
             {
-                throw new ArgumentOutOfRangeException("maxConcurrent", maxConcurrent, "Semaphore bulkhead must have a limit >= 0");
+                throw new ArgumentOutOfRangeException(nameof(maxConcurrent), maxConcurrent, "Semaphore bulkhead must have a limit >= 0");
             }
 
             _key = key;

@@ -1,8 +1,8 @@
 ﻿using Hudl.Mjolnir.Breaker;
-using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Config;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Metrics;
-using Moq;
 
 namespace Hudl.Mjolnir.Tests.Helper
 {
