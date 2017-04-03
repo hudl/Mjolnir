@@ -1,5 +1,4 @@
-﻿using Hudl.Common.Extensions;
-using Hudl.Mjolnir.Breaker;
+﻿using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.External;
 using log4net;
@@ -587,15 +586,12 @@ namespace Hudl.Mjolnir.Command
         {
             // Use namespaced keys here to avoid clobbering data that the application might've
             // already attached (or will attach later).
-            exception.WithData(new
-            {
-                MjolnirCommand = command.Name,
-                MjolnirStatus = status,
-                MjolnirBreaker = command.BreakerKey,
-                MjolnirBulkhead = command.BulkheadKey,
-                MjolnirTimeoutMillis = ct.DescriptionForLog,
-                MjolnirExecuteMillis = command.ExecutionTimeMillis,
-            });
+            exception.Data["MjolnirCommand"] = command.Name;
+            exception.Data["MjolnirStatus"] = status;
+            exception.Data["MjolnirBreaker"] = command.BreakerKey;
+            exception.Data["MjolnirBulkhead"] = command.BulkheadKey;
+            exception.Data["MjolnirTimeoutMillis"] = ct.DescriptionForLog;
+            exception.Data["MjolnirExecuteMillis"] = command.ExecutionTimeMillis;
         }
 
         private static bool IsCancellationException(Exception e)
