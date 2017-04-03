@@ -248,47 +248,36 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     public class CommandInvoker : ICommandInvoker
     {
-        private readonly ICommandContext _context;
-        private readonly IBulkheadInvoker _bulkheadInvoker;
-
-        // TODO move these two comments somewhere now that the configs are injected
-
-        /// <summary>
-        /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the
-        /// default timeout. This is likely to be useful when debugging Command-decorated methods,
-        /// however it is not advisable to use in a production environment since it disables some
-        /// of Mjolnir's key protection features.
-        /// </summary>
-        
-
-        /// <summary>
-        /// Global killswitch for Mjolnir. If configured to <code>false</code>, Mjolnir will still
-        /// do some initial work (like ensuring a single invoke per Command), but will then just
-        /// execute the Command instead of passing it through Bulkheads and Circuit Breakers.
-        /// No timeouts will be applied; a CancellationToken.None will be passed to any method
-        /// that supports cancellation.
-        /// </summary>
-        
         private readonly IMjolnirConfig _config;
         private readonly IMjolnirLogFactory _logFactory;
 
-        /// <summary>
-        /// Singleton instance. Prefer to inject ICommandInvoker into constructors where possible.
-        /// This can be used in older code where it's not as easy to introduce things like DI.
-        /// </summary>
-        public static readonly ICommandInvoker Instance = new CommandInvoker();
+        private readonly ICommandContext _context;
+        private readonly IBulkheadInvoker _bulkheadInvoker;
+        
+        // TODO document that the singleton CommandInvoker.Instance was removed; clients can re-implement at their discretion, but it's an anti-pattern
 
-        public CommandInvoker() : this(null, null, null)
+        public CommandInvoker() : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory())
         { }
         
         internal CommandInvoker(
             IMjolnirConfig config,
+            IMjolnirLogFactory logFactory,
             ICommandContext context = null,
-            IBulkheadInvoker bulkheadInvoker = null,
-            IMjolnirLogFactory logFactory = null)
+            IBulkheadInvoker bulkheadInvoker = null)
         {
-            _config = config ?? new DefaultValueConfig(); // TODO this isn't a good default assignment, we want the injected one, whereever it is
-            _logFactory = logFactory ?? new DefaultMjolnirLogFactory(); // TODO this isn't a good default assignment, we want the injected one, whereever it is
+            if (config == null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
+            if (logFactory == null)
+            {
+                throw new ArgumentNullException(nameof(logFactory));
+            }
+
+            _config = config;
+            _logFactory = logFactory;
+
             _context = context ?? CommandContext.Current;
             
             var breakerInvoker = new BreakerInvoker(_context);
@@ -606,11 +595,24 @@ namespace Hudl.Mjolnir.Command
             return (e is TaskCanceledException || e is OperationCanceledException);
         }
 
+        /// <summary>
+        /// Global killswitch for Mjolnir. If configured to <code>false</code>, Mjolnir will still
+        /// do some initial work (like ensuring a single invoke per Command), but will then just
+        /// execute the Command instead of passing it through Bulkheads and Circuit Breakers.
+        /// No timeouts will be applied; a CancellationToken.None will be passed to any method
+        /// that supports cancellation.
+        /// </summary>
         private bool IsEnabled()
         {
             return _config.GetConfig("mjolnir.isEnabled", true);
         }
 
+        /// <summary>
+        /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the
+        /// default timeout. This is likely to be useful when debugging Command-decorated methods,
+        /// however it is not advisable to use in a production environment since it disables some
+        /// of Mjolnir's key protection features.
+        /// </summary>
         private bool IgnoreCancellation()
         {
             return _config.GetConfig("mjolnir.ignoreTimeouts", false);
