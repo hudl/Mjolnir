@@ -41,7 +41,7 @@ namespace Hudl.Mjolnir.Breaker
         private long _lastTrippedTimestamp;
 
         internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config)
-            : this(key, new SystemClock(), metrics, metricEvents, config) {}
+            : this(key, new UtcSystemClock(), metrics, metricEvents, config) {}
 
         internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config)
         {
@@ -100,7 +100,7 @@ namespace Hudl.Mjolnir.Breaker
                 return;
             }
 
-            Log.InfoFormat("Fixed Breaker={0}", _key);
+            Log.Info($"Fixed Breaker={_key}");
 
             _state = State.Fixed;
             _metrics.Reset();
@@ -150,7 +150,7 @@ namespace Hudl.Mjolnir.Breaker
                 if (_state == State.Tripped && IsPastWaitDuration())
                 {
                     _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
-                    Log.InfoFormat("Allowing single test operation Breaker={0}", _key);
+                    Log.Info($"Allowing single test operation Breaker={_key}");
                     return true;
                 }
 
@@ -205,11 +205,7 @@ namespace Hudl.Mjolnir.Breaker
                 _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
 
                 _metricEvents.BreakerTripped(Name);
-                Log.ErrorFormat("Tripped Breaker={0} Operations={1} ErrorPercentage={2} Wait={3}",
-                    _key,
-                    snapshot.Total,
-                    snapshot.ErrorPercentage,
-                    _config.GetTrippedDurationMillis(_key));
+                Log.Error($"Tripped Breaker={_key} Operations={snapshot.Total} ErrorPercentage={snapshot.ErrorPercentage} Wait={_config.GetTrippedDurationMillis(_key)}");
 
                 return true;
             }

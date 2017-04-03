@@ -79,7 +79,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
 
             // Within the metrics, the last snapshot timestamp will probably be zero.
             // Let's start our clock with something far away from zero.
-            clock.AddMilliseconds(new SystemClock().GetMillisecondTimestamp());
+            clock.AddMilliseconds(new UtcSystemClock().GetMillisecondTimestamp());
             var metrics = new StandardCommandMetrics(key, mockConfig.Object, clock);
 
             metrics.MarkCommandSuccess();

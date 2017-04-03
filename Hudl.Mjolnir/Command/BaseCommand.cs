@@ -69,9 +69,7 @@ namespace Hudl.Mjolnir.Command
 
             if (defaultTimeout != null && defaultTimeout.Value.TotalMilliseconds <= 0)
             {
-                throw new ArgumentException(
-                    string.Format("Positive default timeout is required if passed (received invalid timeout of {0}ms)", defaultTimeout.Value.TotalMilliseconds),
-                    "defaultTimeout");
+                throw new ArgumentException($"Positive default timeout is required if passed (received invalid timeout of {defaultTimeout.Value.TotalMilliseconds}ms)", nameof(defaultTimeout));
             }
 
             _group = GroupKey.Named(group);

@@ -14,7 +14,7 @@ namespace Hudl.Mjolnir.Metrics
         private readonly IStandardCommandMetricsConfig _config;
 
         internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config)
-            : this(key, config, new SystemClock()) {}
+            : this(key, config, new UtcSystemClock()) {}
 
         internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IClock clock)
         {

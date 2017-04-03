@@ -23,7 +23,7 @@ namespace Hudl.Mjolnir.Metrics
         private ILongCounter[] _counters;
         private long _lastResetAtTime = 0;
 
-        internal ResettingNumbersBucket(GroupKey key, IStandardCommandMetricsConfig config) : this(key, new SystemClock(), config)
+        internal ResettingNumbersBucket(GroupKey key, IStandardCommandMetricsConfig config) : this(key, new UtcSystemClock(), config)
         { }
 
         internal ResettingNumbersBucket(GroupKey key, IClock clock, IStandardCommandMetricsConfig config)

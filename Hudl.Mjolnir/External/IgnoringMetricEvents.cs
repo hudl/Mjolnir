@@ -1,5 +1,11 @@
 ﻿namespace Hudl.Mjolnir.External
 {
+    // TODO move into a separate directory (i.e. not External)
+
+
+    /// <summary>
+    /// Default implementation for IMetricEvents that ignores all method calls.
+    /// </summary>
     internal sealed class IgnoringMetricEvents : IMetricEvents
     {
         public void BreakerConfigGauge(string breakerName, long minimumOps, int thresholdPercent, long tripForMillis)

@@ -55,9 +55,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bulkhead\BulkheadRejectedException.cs" />
+    <Compile Include="Bulkhead\IBulkheadSemaphore.cs" />
     <Compile Include="Bulkhead\SemaphoreBulkhead.cs" />
     <Compile Include="Clock\IClock.cs" />
-    <Compile Include="Clock\SystemClock.cs" />
+    <Compile Include="Clock\UtcSystemClock.cs" />
     <Compile Include="Command\AsyncCommand.cs" />
     <Compile Include="Command\BreakerInvoker.cs" />
     <Compile Include="Breaker\CircuitBreakerRejectedException.cs" />

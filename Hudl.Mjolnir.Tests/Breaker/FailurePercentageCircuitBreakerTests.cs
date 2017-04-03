@@ -619,7 +619,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
         private readonly string _key;
         
         private long _waitMillis = 30000;
-        private IClock _clock = new SystemClock();
+        private IClock _clock = new UtcSystemClock();
         private IMock<ICommandMetrics> _mockMetrics = FailurePercentageCircuitBreakerTests.CreateMockMetricsWithSnapshot(0, 0);
         private IMetricEvents _metricEvents = new Mock<IMetricEvents>().Object;
 

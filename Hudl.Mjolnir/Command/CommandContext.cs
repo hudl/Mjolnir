@@ -196,9 +196,7 @@ namespace Hudl.Mjolnir.Command
                 {
                     if (newLimit < 0)
                     {
-                        Log.ErrorFormat("Semaphore bulkhead config {0} changed to an invalid limit of {0}, the bulkhead will not be changed",
-                            _config.GetConfigKey(key),
-                            newLimit);
+                        Log.Error($"Semaphore bulkhead config {_config.GetConfigKey(key)} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
                         return;
                     }
                     

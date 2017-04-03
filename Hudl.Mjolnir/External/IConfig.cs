@@ -13,6 +13,8 @@ namespace Hudl.Mjolnir.External
         void AddChangeHandler<T>(string key, Action<T> onConfigChange);
     }
 
+    // TODO split out the implementations and internal classes and move them over to a `Config` directory (i.e. not in External)
+
     internal class DefaultValueConfig : IConfig
     {
         public T GetConfig<T>(string key, T defaultValue)

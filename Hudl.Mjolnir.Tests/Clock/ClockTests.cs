@@ -9,15 +9,15 @@ namespace Hudl.Mjolnir.Tests.Clock
     public class ClockTests
     {
         [Fact]
-        public void SystemClock_GetMillisecondTimestamp_IsCloseToUtcNow()
+        public void UtcSystemClock_GetMillisecondTimestamp_IsCloseToUtcNow()
         {
             const long epsilonMillis = 10;
-            var clock = new SystemClock();
+            var clock = new UtcSystemClock();
             var now = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
 
             // Just make sure they're close.
             var difference = Math.Abs(clock.GetMillisecondTimestamp() - now);
-            Assert.True(difference < epsilonMillis, "SystemClock difference (" + difference + ") exceeded epsilon (" + epsilonMillis + ")");
+            Assert.True(difference < epsilonMillis, "UtcSystemClock difference (" + difference + ") exceeded epsilon (" + epsilonMillis + ")");
         }
         
         [Fact]

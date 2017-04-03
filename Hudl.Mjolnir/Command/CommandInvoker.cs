@@ -385,11 +385,7 @@ namespace Hudl.Mjolnir.Command
 
             try
             {
-                log.InfoFormat("Invoke Command={0} Breaker={1} Bulkhead={2} Timeout={3}",
-                    command.Name,
-                    command.BreakerKey,
-                    command.BulkheadKey,
-                    ct.DescriptionForLog);
+                log.Info($"Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
@@ -496,16 +492,12 @@ namespace Hudl.Mjolnir.Command
         {
             var stopwatch = Stopwatch.StartNew();
 
-            var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
+            var log = LogManager.GetLogger($"Hudl.Mjolnir.Command.{command.Name}");
             var status = CommandCompletionStatus.RanToCompletion;
             
             try
             {
-                log.InfoFormat("Invoke Command={0} Breaker={1} Bulkhead={2} Timeout={3}",
-                    command.Name,
-                    command.BreakerKey,
-                    command.BulkheadKey,
-                    ct.DescriptionForLog);
+                log.Info($"Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
