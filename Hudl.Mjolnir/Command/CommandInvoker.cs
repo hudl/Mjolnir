@@ -1,7 +1,6 @@
 ﻿using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.External;
-using log4net;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -268,8 +267,8 @@ namespace Hudl.Mjolnir.Command
         /// that supports cancellation.
         /// </summary>
         
-
         private readonly IConfig _config;
+        private readonly IMjolnirLogFactory _logFactory;
 
         /// <summary>
         /// Singleton instance. Prefer to inject ICommandInvoker into constructors where possible.
@@ -283,9 +282,11 @@ namespace Hudl.Mjolnir.Command
         internal CommandInvoker(
             IConfig config,
             ICommandContext context = null,
-            IBulkheadInvoker bulkheadInvoker = null)
+            IBulkheadInvoker bulkheadInvoker = null,
+            IMjolnirLogFactory logFactory = null)
         {
             _config = config ?? new DefaultValueConfig(); // TODO this isn't a good default assignment, we want the injected one, whereever it is
+            _logFactory = logFactory ?? new DefaultMjolnirLogFactory(); // TODO this isn't a good default assignment, we want the injected one, whereever it is
             _context = context ?? CommandContext.Current;
             
             var breakerInvoker = new BreakerInvoker(_context);
@@ -380,7 +381,13 @@ namespace Hudl.Mjolnir.Command
         {
             var stopwatch = Stopwatch.StartNew();
 
-            var log = LogManager.GetLogger("Hudl.Mjolnir.Command." + command.Name);
+            var logName = $"Hudl.Mjolnir.Command.{command.Name}";
+            var log = _logFactory.CreateLog(logName);
+            if (log == null)
+            {
+                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for name {logName}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
+            }
+
             var status = CommandCompletionStatus.RanToCompletion;
 
             try
@@ -492,7 +499,13 @@ namespace Hudl.Mjolnir.Command
         {
             var stopwatch = Stopwatch.StartNew();
 
-            var log = LogManager.GetLogger($"Hudl.Mjolnir.Command.{command.Name}");
+            var logName = $"Hudl.Mjolnir.Command.{command.Name}";
+            var log = _logFactory.CreateLog(logName);
+            if (log == null)
+            {
+                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for name {logName}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
+            }
+
             var status = CommandCompletionStatus.RanToCompletion;
             
             try

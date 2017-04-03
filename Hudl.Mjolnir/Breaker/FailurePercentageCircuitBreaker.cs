@@ -5,7 +5,6 @@ using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Util;
-using log4net;
 using Hudl.Mjolnir.Clock;
 
 namespace Hudl.Mjolnir.Breaker
@@ -18,10 +17,6 @@ namespace Hudl.Mjolnir.Breaker
     /// </summary>
     internal class FailurePercentageCircuitBreaker : ICircuitBreaker
     {
-        //internal readonly FailurePercentageCircuitBreakerProperties Properties;
-
-        private static readonly ILog Log = LogManager.GetLogger(typeof (FailurePercentageCircuitBreaker));
-
         private readonly object _stateChangeLock = new { };
         private readonly object _singleTestLock = new { };
 
@@ -31,6 +26,7 @@ namespace Hudl.Mjolnir.Breaker
         private readonly GroupKey _key;
         private readonly IMetricEvents _metricEvents;
         private readonly IFailurePercentageCircuitBreakerConfig _config;
+        private readonly IMjolnirLog _log;
         
         // ReSharper disable NotAccessedField.Local
         // Don't let these get garbage collected.
@@ -40,10 +36,10 @@ namespace Hudl.Mjolnir.Breaker
         private volatile State _state;
         private long _lastTrippedTimestamp;
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config)
-            : this(key, new UtcSystemClock(), metrics, metricEvents, config) {}
+        internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory)
+            : this(key, new UtcSystemClock(), metrics, metricEvents, config, logFactory) {}
 
-        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config)
+        internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory)
         {
             _key = key;
             _clock = clock;
@@ -59,8 +55,19 @@ namespace Hudl.Mjolnir.Breaker
                 throw new ArgumentNullException(nameof(metricEvents));
             }
 
+            if (logFactory == null)
+            {
+                throw new ArgumentNullException(nameof(logFactory));
+            }
+
             _config = config;
             _metricEvents = metricEvents;
+            _log = logFactory.CreateLog(typeof(FailurePercentageCircuitBreaker));
+
+            if (_log == null)
+            {
+                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(FailurePercentageCircuitBreaker)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
+            }
 
             _state = State.Fixed; // Start off assuming everything's fixed.
             _lastTrippedTimestamp = 0; // 0 is fine since it'll be far less than the first compared value.
@@ -100,7 +107,7 @@ namespace Hudl.Mjolnir.Breaker
                 return;
             }
 
-            Log.Info($"Fixed Breaker={_key}");
+            _log.Info($"Fixed Breaker={_key}");
 
             _state = State.Fixed;
             _metrics.Reset();
@@ -150,7 +157,7 @@ namespace Hudl.Mjolnir.Breaker
                 if (_state == State.Tripped && IsPastWaitDuration())
                 {
                     _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
-                    Log.Info($"Allowing single test operation Breaker={_key}");
+                    _log.Info($"Allowing single test operation Breaker={_key}");
                     return true;
                 }
 
@@ -205,7 +212,7 @@ namespace Hudl.Mjolnir.Breaker
                 _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
 
                 _metricEvents.BreakerTripped(Name);
-                Log.Error($"Tripped Breaker={_key} Operations={snapshot.Total} ErrorPercentage={snapshot.ErrorPercentage} Wait={_config.GetTrippedDurationMillis(_key)}");
+                _log.Error($"Tripped Breaker={_key} Operations={snapshot.Total} ErrorPercentage={snapshot.ErrorPercentage} Wait={_config.GetTrippedDurationMillis(_key)}");
 
                 return true;
             }

@@ -18,8 +18,8 @@ namespace Hudl.Mjolnir.Tests.Metrics
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(30000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(1000);
-
-            var metrics = new StandardCommandMetrics(key, mockConfig.Object);
+            
+            var metrics = new StandardCommandMetrics(key, mockConfig.Object, new DefaultMjolnirLogFactory());
             metrics.MarkCommandSuccess();
 
             var snapshot = metrics.GetSnapshot();
@@ -35,8 +35,8 @@ namespace Hudl.Mjolnir.Tests.Metrics
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(30000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(1000);
-
-            var metrics = new StandardCommandMetrics(key, mockConfig.Object);
+            
+            var metrics = new StandardCommandMetrics(key, mockConfig.Object, new DefaultMjolnirLogFactory());
             metrics.MarkCommandFailure();
 
             var snapshot = metrics.GetSnapshot();
@@ -76,11 +76,11 @@ namespace Hudl.Mjolnir.Tests.Metrics
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(10000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(1000);
-
+            
             // Within the metrics, the last snapshot timestamp will probably be zero.
             // Let's start our clock with something far away from zero.
             clock.AddMilliseconds(new UtcSystemClock().GetMillisecondTimestamp());
-            var metrics = new StandardCommandMetrics(key, mockConfig.Object, clock);
+            var metrics = new StandardCommandMetrics(key, mockConfig.Object, clock, new DefaultMjolnirLogFactory());
 
             metrics.MarkCommandSuccess();
             metrics.GetSnapshot(); // Take the first snapshot to cache it.
@@ -98,8 +98,8 @@ namespace Hudl.Mjolnir.Tests.Metrics
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(10000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(0); // Don't cache snapshots.
-
-            var metrics = new StandardCommandMetrics(key, mockConfig.Object);
+            
+            var metrics = new StandardCommandMetrics(key, mockConfig.Object, new DefaultMjolnirLogFactory());
 
             for (var i = 0; i < success; i++)
             {

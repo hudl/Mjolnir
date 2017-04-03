@@ -1,6 +1,5 @@
 using System;
 using System.Threading;
-using log4net;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Clock;
@@ -13,20 +12,20 @@ namespace Hudl.Mjolnir.Metrics
     /// </summary>
     internal class ResettingNumbersBucket
     {
-        private static readonly ILog Log = LogManager.GetLogger(typeof (ResettingNumbersBucket));
-
         private readonly IStandardCommandMetricsConfig _config;
         private readonly IClock _clock;
+        private readonly IMjolnirLog _log;
+
         private readonly GroupKey _key;
         private readonly object _resetBucketLock = new { };
 
         private ILongCounter[] _counters;
         private long _lastResetAtTime = 0;
 
-        internal ResettingNumbersBucket(GroupKey key, IStandardCommandMetricsConfig config) : this(key, new UtcSystemClock(), config)
+        internal ResettingNumbersBucket(GroupKey key, IStandardCommandMetricsConfig config, IMjolnirLogFactory logFactory) : this(key, new UtcSystemClock(), config, logFactory)
         { }
 
-        internal ResettingNumbersBucket(GroupKey key, IClock clock, IStandardCommandMetricsConfig config)
+        internal ResettingNumbersBucket(GroupKey key, IClock clock, IStandardCommandMetricsConfig config, IMjolnirLogFactory logFactory)
         {
             if (key == null)
             {
@@ -43,9 +42,21 @@ namespace Hudl.Mjolnir.Metrics
                 throw new ArgumentNullException(nameof(config));
             }
 
+            if (logFactory == null)
+            {
+                throw new ArgumentNullException(nameof(logFactory));
+            }
+            
             _key = key;
             _clock = clock;
             _config = config;
+
+            _log = logFactory.CreateLog(typeof(ResettingNumbersBucket));
+
+            if (_log == null)
+            {
+                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(ResettingNumbersBucket)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
+            }
 
             _counters = CreateCounters();
             _lastResetAtTime = clock.GetMillisecondTimestamp();
@@ -117,7 +128,7 @@ namespace Hudl.Mjolnir.Metrics
             {
                 // If there's an exception, _lastResetAtTime won't get updated - the next
                 // Increment() will try a Reset() again, which is good. 
-                Log.Error("Error resetting metrics", e);
+                _log.Error("Error resetting metrics", e);
             }
             finally
             {

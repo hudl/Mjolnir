@@ -8,7 +8,6 @@ using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Util;
 using Hudl.Mjolnir.Bulkhead;
 using System.Threading;
-using log4net;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -30,8 +29,6 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     internal class CommandContextImpl : ICommandContext
     {
-        private static readonly ILog Log = LogManager.GetLogger(typeof(CommandContextImpl));
-
         // Many properties in Mjolnir use a chain of possible configuration values, typically:
         // - Explicitly-configured group value
         // - Explicitly-configured default value
@@ -60,6 +57,7 @@ namespace Hudl.Mjolnir.Command
         private readonly IFailurePercentageCircuitBreakerConfig _breakerConfig;
         private readonly IStandardCommandMetricsConfig _metricsConfig;
         private readonly IBulkheadConfig _bulkheadConfig;
+        private readonly IMjolnirLogFactory _logFactory;
 
         public CommandContextImpl()
         {
@@ -67,6 +65,7 @@ namespace Hudl.Mjolnir.Command
             _breakerConfig = new FailurePercentageCircuitBreakerConfig(_config);
             _metricsConfig = new StandardCommandMetricsConfig(_config);
             _bulkheadConfig = new BulkheadConfig(_config);
+            _logFactory = new DefaultMjolnirLogFactory();
         }
 
         private IMetricEvents _metricEvents = new IgnoringMetricEvents();
@@ -111,7 +110,7 @@ namespace Hudl.Mjolnir.Command
             return _circuitBreakers.GetOrAddSafe(key, k =>
             {
                 var metrics = GetCommandMetrics(key);
-                return new FailurePercentageCircuitBreaker(key, metrics, MetricEvents, _breakerConfig);
+                return new FailurePercentageCircuitBreaker(key, metrics, MetricEvents, _breakerConfig, _logFactory);
             }, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
@@ -123,7 +122,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             return _metrics.GetOrAddSafe(key, k =>
-                new StandardCommandMetrics(key, _metricsConfig),
+                new StandardCommandMetrics(key, _metricsConfig, _logFactory),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
         
@@ -140,7 +139,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             var holder = _bulkheads.GetOrAddSafe(key,
-                k => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig),
+                k => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig, _logFactory),
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
             return holder.Bulkhead;
@@ -161,8 +160,9 @@ namespace Hudl.Mjolnir.Command
 
             private readonly IMetricEvents _metricEvents;
             private readonly IBulkheadConfig _config;
+            private readonly IMjolnirLog _log;
 
-            public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, IBulkheadConfig config)
+            public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, IBulkheadConfig config, IMjolnirLogFactory logFactory)
             {
                 if (metricEvents == null)
                 {
@@ -174,8 +174,20 @@ namespace Hudl.Mjolnir.Command
                     throw new ArgumentNullException(nameof(config));
                 }
 
+                if (logFactory == null)
+                {
+                    throw new ArgumentNullException(nameof(logFactory));
+                }
+
                 _metricEvents = metricEvents;
                 _config = config;
+
+                _log = logFactory.CreateLog(typeof(SemaphoreBulkheadHolder));
+
+                if (_log == null)
+                {
+                    throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(SemaphoreBulkheadHolder)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
+                }
 
                 // The order of things here is very intentional.
                 // We get the MaxConcurrent value first and then initialize the semaphore bulkhead.
@@ -196,7 +208,7 @@ namespace Hudl.Mjolnir.Command
                 {
                     if (newLimit < 0)
                     {
-                        Log.Error($"Semaphore bulkhead config {_config.GetConfigKey(key)} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
+                        _log.Error($"Semaphore bulkhead config {_config.GetConfigKey(key)} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
                         return;
                     }
                     

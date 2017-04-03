@@ -2,6 +2,7 @@
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
+using Moq;
 
 namespace Hudl.Mjolnir.Tests.Helper
 {
@@ -26,8 +27,8 @@ namespace Hudl.Mjolnir.Tests.Helper
             {
                 var config = new DefaultValueConfig();
                 var metricsConfig = new StandardCommandMetricsConfig(config);
-
-                return new StandardCommandMetrics(GroupKey.Named("Test"), metricsConfig);
+                
+                return new StandardCommandMetrics(GroupKey.Named("Test"), metricsConfig, new DefaultMjolnirLogFactory());
             }
         }
 

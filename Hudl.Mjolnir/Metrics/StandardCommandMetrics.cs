@@ -13,10 +13,10 @@ namespace Hudl.Mjolnir.Metrics
         private readonly GroupKey _key;
         private readonly IStandardCommandMetricsConfig _config;
 
-        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config)
-            : this(key, config, new UtcSystemClock()) {}
+        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IMjolnirLogFactory logFactory)
+            : this(key, config, new UtcSystemClock(), logFactory) {}
 
-        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IClock clock)
+        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IClock clock, IMjolnirLogFactory logFactory)
         {
             if (key == null)
             {
@@ -31,7 +31,7 @@ namespace Hudl.Mjolnir.Metrics
             _key = key;
             _config = config;
             _clock = clock;
-            _resettingNumbersBucket = new ResettingNumbersBucket(_key, _clock, _config);
+            _resettingNumbersBucket = new ResettingNumbersBucket(_key, _clock, _config, logFactory);
         }
         
         public void MarkCommandSuccess()

@@ -90,9 +90,9 @@ namespace Hudl.Mjolnir.Tests.Breaker
             mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
             mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(false);
             mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(false);
-
+            
             // 5 ops, 1% failure required to break.
-            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object, new DefaultMjolnirLogFactory());
             
 
             // Act / Assert
@@ -150,9 +150,9 @@ namespace Hudl.Mjolnir.Tests.Breaker
             mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(trippedDurationMillis);
             mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(false);
             mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(false);
-
+            
             // 1 ops, 1% failure required to break.
-            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object, new DefaultMjolnirLogFactory());
             
 
             // Act / Assert
@@ -193,8 +193,8 @@ namespace Hudl.Mjolnir.Tests.Breaker
             mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
             mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(true); // The config we're testing here.
             mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(false);
-
-            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object, new DefaultMjolnirLogFactory());
             
 
             // Act / Assert
@@ -221,8 +221,8 @@ namespace Hudl.Mjolnir.Tests.Breaker
             mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
             mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(false);
             mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(true);  // The config we're testing here.
-
-            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object, new DefaultMjolnirLogFactory());
 
 
             // Act / Assert
@@ -249,8 +249,8 @@ namespace Hudl.Mjolnir.Tests.Breaker
             mockConfig.Setup(m => m.GetTrippedDurationMillis(It.IsAny<GroupKey>())).Returns(30000);
             mockConfig.Setup(m => m.GetForceTripped(It.IsAny<GroupKey>())).Returns(true); // The config we're testing here.
             mockConfig.Setup(m => m.GetForceFixed(It.IsAny<GroupKey>())).Returns(true); // The config we're testing here.
-
-            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object, new DefaultMjolnirLogFactory());
 
 
             // Act / Assert
@@ -286,7 +286,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
                 .Returns(true)
                 .Returns(false);
 
-            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object);
+            var breaker = new FailurePercentageCircuitBreaker(AnyKey, manualClock, mockMetrics.Object, mockEvents.Object, mockConfig.Object, new DefaultMjolnirLogFactory());
 
 
             // Act / Assert
@@ -583,7 +583,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
             {
                 var mockMetrics = CreateMockMetricsWithSnapshot(_metricsTotal, _metricsPercent);
                 var config = CreateMockBreakerConfig(_breakerTotal, _breakerPercent, 30000);
-                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringMetricEvents(), config.Object);
+                var breaker = new FailurePercentageCircuitBreaker(GroupKey.Named("Test"), mockMetrics.Object, new IgnoringMetricEvents(), config.Object, new DefaultMjolnirLogFactory());
 
                 Assert.NotEqual(_shouldTrip, breaker.IsAllowing());
             }
@@ -657,7 +657,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
         public FailurePercentageCircuitBreaker Create()
         {
             var config = FailurePercentageCircuitBreakerTests.CreateMockBreakerConfig(_minimumOperations, _failurePercent, _waitMillis);
-            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _metricEvents, config.Object);
+            return new FailurePercentageCircuitBreaker(GroupKey.Named(_key), _clock, _mockMetrics.Object, _metricEvents, config.Object, new DefaultMjolnirLogFactory());
         }
     }
 }
