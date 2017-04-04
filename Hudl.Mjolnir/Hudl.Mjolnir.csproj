@@ -51,8 +51,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Breaker\FailurePercentageCircuitBreakerConfig.cs" />
+    <Compile Include="Breaker\ICircuitBreakerFactory.cs" />
     <Compile Include="Bulkhead\BulkheadConfig.cs" />
     <Compile Include="Bulkhead\BulkheadRejectedException.cs" />
+    <Compile Include="Bulkhead\IBulkheadFactory.cs" />
     <Compile Include="Bulkhead\IBulkheadSemaphore.cs" />
     <Compile Include="Breaker\IBreakerExceptionHandler.cs" />
     <Compile Include="Bulkhead\SemaphoreBulkhead.cs" />
@@ -66,7 +68,6 @@
     <Compile Include="Command\BaseCommand.cs" />
     <Compile Include="Command\BulkheadInvoker.cs" />
     <Compile Include="Command\Command.cs" />
-    <Compile Include="Command\CommandContext.cs" />
     <Compile Include="Command\CommandInvoker.cs" />
     <Compile Include="Command\CommandResult.cs" />
     <Compile Include="Command\SyncCommand.cs" />

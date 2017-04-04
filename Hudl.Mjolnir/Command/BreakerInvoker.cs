@@ -1,5 +1,5 @@
 ﻿using Hudl.Mjolnir.Breaker;
-using Hudl.Mjolnir.Bulkhead;
+using Hudl.Mjolnir.External;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -18,28 +18,39 @@ namespace Hudl.Mjolnir.Command
 
     internal class BreakerInvoker : IBreakerInvoker
     {
-        private readonly ICommandContext _context;
+        private readonly ICircuitBreakerFactory _circuitBreakerFactory;
+        private readonly IMetricEvents _metricEvents;
         private readonly IBreakerExceptionHandler _ignoredExceptions;
 
-        public BreakerInvoker(ICommandContext context, IBreakerExceptionHandler ignoredExceptions)
+        public BreakerInvoker(ICircuitBreakerFactory circuitBreakerFactory, IMetricEvents metricEvents, IBreakerExceptionHandler ignoredExceptions)
         {
-            _context = context ?? CommandContext.Current;
+            if (circuitBreakerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(circuitBreakerFactory));
+            }
+
+            if (metricEvents == null)
+            {
+                throw new ArgumentNullException(nameof(metricEvents));
+            }
 
             if (ignoredExceptions == null)
             {
                 throw new ArgumentNullException(nameof(ignoredExceptions));
             }
 
+            _circuitBreakerFactory = circuitBreakerFactory;
+            _metricEvents = metricEvents;
             _ignoredExceptions = ignoredExceptions;
         }
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            var breaker = _context.GetCircuitBreaker(command.BreakerKey);
+            var breaker = _circuitBreakerFactory.GetCircuitBreaker(command.BreakerKey);
 
             if (!breaker.IsAllowing())
             {
-                _context.MetricEvents.RejectedByBreaker(breaker.Name, command.Name);
+                _metricEvents.RejectedByBreaker(breaker.Name, command.Name);
                 throw new CircuitBreakerRejectedException();
             }
 
@@ -81,11 +92,11 @@ namespace Hudl.Mjolnir.Command
 
                 if (success)
                 {
-                    _context.MetricEvents.BreakerSuccessCount(breaker.Name, command.Name);
+                    _metricEvents.BreakerSuccessCount(breaker.Name, command.Name);
                 }
                 else
                 {
-                    _context.MetricEvents.BreakerFailureCount(breaker.Name, command.Name);
+                    _metricEvents.BreakerFailureCount(breaker.Name, command.Name);
                 }
             }
 
@@ -94,11 +105,11 @@ namespace Hudl.Mjolnir.Command
 
         public TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
-            var breaker = _context.GetCircuitBreaker(command.BreakerKey);
+            var breaker = _circuitBreakerFactory.GetCircuitBreaker(command.BreakerKey);
 
             if (!breaker.IsAllowing())
             {
-                _context.MetricEvents.RejectedByBreaker(breaker.Name, command.Name);
+                _metricEvents.RejectedByBreaker(breaker.Name, command.Name);
                 throw new CircuitBreakerRejectedException();
             }
 
@@ -139,11 +150,11 @@ namespace Hudl.Mjolnir.Command
 
                 if (success)
                 {
-                    _context.MetricEvents.BreakerSuccessCount(breaker.Name, command.Name);
+                    _metricEvents.BreakerSuccessCount(breaker.Name, command.Name);
                 }
                 else
                 {
-                    _context.MetricEvents.BreakerFailureCount(breaker.Name, command.Name);
+                    _metricEvents.BreakerFailureCount(breaker.Name, command.Name);
                 }
             }
 

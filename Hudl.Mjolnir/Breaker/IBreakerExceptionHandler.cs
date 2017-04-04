@@ -6,13 +6,18 @@ namespace Hudl.Mjolnir.Breaker
     /// <summary>
     /// Ignored exception types won't count toward breakers tripping or other error counters.
     /// Useful for things like validation, where the system isn't having any problems and the
-    /// caller needs to validate before invoking. This list is most applicable when using
-    /// [Command] attributes, since extending Command offers the ability to catch these types
-    /// specifically within Execute() - though there may still be some benefit in extended
-    /// Commands for validation-like situations where throwing is still desired.
+    /// caller needs to validate before invoking.
+    /// 
+    /// Note that ignored exceptions will still be thrown back through Execute/ExecuteAsync.
+    /// They simply won't count toward circuit breaker errors.
     /// </summary>
     public interface IBreakerExceptionHandler
     {
+        /// <summary>
+        /// Returns true if the exception should be ignored by circuit breakers when counting
+        /// errors. Useful for excluding things like ArgumentExceptions, where the error is likely
+        /// not a downstream system error and instead more likely an error/bug on the calling side.
+        /// </summary>
         bool IsExceptionIgnored(Type type);
     }
 

@@ -71,11 +71,11 @@
   </Choose>
   <ItemGroup>
     <Compile Include="Breaker\FailurePercentageCircuitBreakerTests.cs" />
+    <Compile Include="Bulkhead\BulkheadFactoryTests.cs" />
     <Compile Include="Clock\ClockTests.cs" />
     <Compile Include="Helper\ManualTestClock.cs" />
     <Compile Include="Command\BreakerInvokerTests.cs" />
     <Compile Include="Command\BulkheadInvokerTests.cs" />
-    <Compile Include="Command\CommandContextTests.cs" />
     <Compile Include="Command\CommandInvokerTests.cs" />
     <Compile Include="Command\CommandResultTests.cs" />
     <Compile Include="Command\BaseCommandTests.cs" />

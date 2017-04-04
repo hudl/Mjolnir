@@ -1,8 +1,10 @@
 ﻿using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.Config;
+using Hudl.Mjolnir.Events;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Log;
+using Hudl.Mjolnir.Metrics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -251,47 +253,52 @@ namespace Hudl.Mjolnir.Command
     {
         private readonly IMjolnirConfig _config;
         private readonly IMjolnirLogFactory _logFactory;
-
-        private readonly ICommandContext _context;
+        
+        private readonly IMetricEvents _metricEvents;
+        private readonly IBreakerExceptionHandler _breakerExceptionHandler;
         private readonly IBulkheadInvoker _bulkheadInvoker;
 
-        private readonly IBreakerExceptionHandler _breakerExceptionHandler;
-        
-        public CommandInvoker() : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), null, null)
-        { }
-        
-        public CommandInvoker(IBreakerExceptionHandler breakerExceptionHandler) : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), breakerExceptionHandler, null)
-        { }
+        private readonly ICircuitBreakerFactory _circuitBreakerFactory;
+        private readonly IBulkheadFactory _bulkheadFactory;
 
-        public CommandInvoker(IMjolnirConfig config, IMjolnirLogFactory logFactory, IBreakerExceptionHandler breakerExceptionHandler) : this(config, logFactory, breakerExceptionHandler, null, null)
+        public CommandInvoker()
+            : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null, null)
+        { }
+        
+        public CommandInvoker(
+            IMjolnirConfig config = null,
+            IMjolnirLogFactory logFactory = null,
+            IMetricEvents metricEvents = null,
+            IBreakerExceptionHandler breakerExceptionHandler = null)
+            : this(config, logFactory, metricEvents, breakerExceptionHandler, null)
         { }
         
         // Internal constructor with a few extra arguments used by tests to inject mocks.
         internal CommandInvoker(
-            IMjolnirConfig config,
-            IMjolnirLogFactory logFactory,
+            IMjolnirConfig config = null,
+            IMjolnirLogFactory logFactory = null,
+            IMetricEvents metricEvents = null,
             IBreakerExceptionHandler breakerExceptionHandler = null,
-            ICommandContext context = null,
             IBulkheadInvoker bulkheadInvoker = null)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            if (logFactory == null)
-            {
-                throw new ArgumentNullException(nameof(logFactory));
-            }
-            
-            _config = config;
-            _logFactory = logFactory;
-
+            _config = config ?? new DefaultValueConfig();
+            _logFactory = logFactory ?? new DefaultMjolnirLogFactory();
+            _metricEvents = metricEvents ?? new IgnoringMetricEvents();
             _breakerExceptionHandler = breakerExceptionHandler ?? new BreakerExceptionHandler(new HashSet<Type>());
-            _context = context ?? CommandContext.Current;
             
-            var breakerInvoker = new BreakerInvoker(_context, _breakerExceptionHandler);
-            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _context, _config);
+            _circuitBreakerFactory = new CircuitBreakerFactory(
+                _metricEvents,
+                new FailurePercentageCircuitBreakerConfig(_config),
+                new StandardCommandMetricsConfig(_config),
+                _logFactory);
+
+            _bulkheadFactory = new BulkheadFactory(
+                _metricEvents,
+                new BulkheadConfig(_config),
+                _logFactory);
+
+            var breakerInvoker = new BreakerInvoker(_circuitBreakerFactory, _metricEvents, _breakerExceptionHandler);
+            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _bulkheadFactory, _metricEvents, _config);
         }
         
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)
@@ -409,7 +416,7 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 stopwatch.Stop();
-                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureModeForMetrics.ToString().ToLowerInvariant());
+                _metricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureModeForMetrics.ToString().ToLowerInvariant());
             }
         }
 
@@ -527,7 +534,7 @@ namespace Hudl.Mjolnir.Command
             finally
             {
                 stopwatch.Stop();
-                _context.MetricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
+                _metricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
             }
         }
 

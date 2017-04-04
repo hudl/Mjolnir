@@ -19,14 +19,25 @@ namespace Hudl.Mjolnir.Command
     internal class BulkheadInvoker : IBulkheadInvoker
     {
         private readonly IBreakerInvoker _breakerInvoker;
-        private readonly ICommandContext _context;
+        private readonly IBulkheadFactory _bulkheadFactory;
+        private readonly IMetricEvents _metricEvents;
         private readonly IMjolnirConfig _config;
 
-        public BulkheadInvoker(IBreakerInvoker breakerInvoker, ICommandContext context, IMjolnirConfig config)
+        public BulkheadInvoker(IBreakerInvoker breakerInvoker, IBulkheadFactory bulkheadFactory, IMetricEvents metricEvents, IMjolnirConfig config)
         {
             if (breakerInvoker == null)
             {
                 throw new ArgumentNullException(nameof(breakerInvoker));
+            }
+
+            if (bulkheadFactory == null)
+            {
+                throw new ArgumentNullException(nameof(bulkheadFactory));
+            }
+
+            if (metricEvents == null)
+            {
+                throw new ArgumentNullException(nameof(metricEvents));
             }
 
             if (config == null)
@@ -35,8 +46,9 @@ namespace Hudl.Mjolnir.Command
             }
 
             _breakerInvoker = breakerInvoker;
+            _bulkheadFactory = bulkheadFactory;
+            _metricEvents = metricEvents;
             _config = config;
-            _context = context ?? CommandContext.Current;
         }
 
         // Note: Bulkhead rejections shouldn't count as failures to the breaker. If a downstream
@@ -51,15 +63,15 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            var bulkhead = _context.GetBulkhead(command.BulkheadKey);
+            var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
 
             if (!bulkhead.TryEnter())
             {
-                _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
+                _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
                 throw new BulkheadRejectedException();
             }
 
-            _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+            _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -85,7 +97,7 @@ namespace Hudl.Mjolnir.Command
             {
                 bulkhead.Release();
 
-                _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
                 // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)
@@ -98,15 +110,15 @@ namespace Hudl.Mjolnir.Command
 
         public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
-            var bulkhead = _context.GetBulkhead(command.BulkheadKey);
+            var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
 
             if (!bulkhead.TryEnter())
             {
-                _context.MetricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
+                _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
                 throw new BulkheadRejectedException();
             }
 
-            _context.MetricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+            _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -132,7 +144,7 @@ namespace Hudl.Mjolnir.Command
             {
                 bulkhead.Release();
 
-                _context.MetricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
                 // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)

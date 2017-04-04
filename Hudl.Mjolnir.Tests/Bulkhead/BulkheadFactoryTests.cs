@@ -1,13 +1,18 @@
-﻿using Hudl.Mjolnir.Command;
+﻿using Hudl.Mjolnir.Bulkhead;
+using Hudl.Mjolnir.Config;
+using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
+using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Tests.Helper;
+using Moq;
+using System;
 using Xunit;
 
-namespace Hudl.Mjolnir.Tests.Command
+namespace Hudl.Mjolnir.Tests.Bulkhead
 {
-    public class CommandContextTests
+    public class BulkheadFactoryTests
     {
-        public class GetBulkhead : TestFixture
+        public class GetBulkhead
         {
             [Fact]
             public void ReturnsSameBulkheadForKey()
@@ -16,11 +21,17 @@ namespace Hudl.Mjolnir.Tests.Command
                 // of any configuration changes, we should be using the same one through the
                 // lifetime of the app.
 
-                var key = GroupKey.Named(Rand.String());
-                var context = new CommandContextImpl();
+                var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+                var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+                mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
-                var bulkhead = context.GetBulkhead(key);
-                Assert.Equal(bulkhead, context.GetBulkhead(key));
+                var bulkheadConfig = new BulkheadConfig(new DefaultValueConfig());
+
+                var key = GroupKey.Named(Rand.String());
+                var factory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+
+                var bulkhead = factory.GetBulkhead(key);
+                Assert.Equal(bulkhead, factory.GetBulkhead(key));
             }
 
             [Fact]
@@ -29,10 +40,16 @@ namespace Hudl.Mjolnir.Tests.Command
                 // This is mainly to ensure we don't introduce a breaking change for clients
                 // who rely on the default configs. 
                 
-                var key = GroupKey.Named(Rand.String());
-                var context = new CommandContextImpl();
+                var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+                var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+                mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
-                var bulkhead = context.GetBulkhead(key);
+                var bulkheadConfig = new BulkheadConfig(new DefaultValueConfig());
+
+                var key = GroupKey.Named(Rand.String());
+                var factory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+
+                var bulkhead = factory.GetBulkhead(key);
                 Assert.Equal(10, bulkhead.CountAvailable);
             }
 
