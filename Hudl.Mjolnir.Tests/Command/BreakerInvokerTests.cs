@@ -9,6 +9,7 @@ using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
 using Xunit;
+using Hudl.Mjolnir.Bulkhead;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -31,8 +32,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockCommandContext.Setup(m => m.GetCircuitBreaker(It.IsAny<GroupKey>())).Returns(mockBreaker.Object);
                 mockCommandContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 var command = new NoOpAsyncCommand();
-                var invoker = new BreakerInvoker(mockCommandContext.Object);
+                var invoker = new BreakerInvoker(mockCommandContext.Object, mockBreakerExceptionHandler.Object);
 
                 await Assert.ThrowsAsync<CircuitBreakerRejectedException>(() => invoker.ExecuteWithBreakerAsync(command, CancellationToken.None));
 
@@ -54,8 +58,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockCommandContext.Setup(m => m.GetCircuitBreaker(It.IsAny<GroupKey>())).Returns(mockBreaker.Object);
                 mockCommandContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 var command = new NoOpFailingAsyncCommand();
-                var invoker = new BreakerInvoker(mockCommandContext.Object);
+                var invoker = new BreakerInvoker(mockCommandContext.Object, mockBreakerExceptionHandler.Object);
 
                 await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.ExecuteWithBreakerAsync(command, CancellationToken.None));
 
@@ -77,8 +84,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockCommandContext.Setup(m => m.GetCircuitBreaker(It.IsAny<GroupKey>())).Returns(mockBreaker.Object);
                 mockCommandContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 var command = new NoOpAsyncCommand(); // Should be successful.
-                var invoker = new BreakerInvoker(mockCommandContext.Object);
+                var invoker = new BreakerInvoker(mockCommandContext.Object, mockBreakerExceptionHandler.Object);
 
                 await invoker.ExecuteWithBreakerAsync(command, CancellationToken.None);
 
@@ -103,8 +113,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockCommandContext.Setup(m => m.GetCircuitBreaker(It.IsAny<GroupKey>())).Returns(mockBreaker.Object);
                 mockCommandContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 var command = new NoOpCommand();
-                var invoker = new BreakerInvoker(mockCommandContext.Object);
+                var invoker = new BreakerInvoker(mockCommandContext.Object, mockBreakerExceptionHandler.Object);
 
                 Assert.Throws<CircuitBreakerRejectedException>(() => invoker.ExecuteWithBreaker(command, CancellationToken.None));
 
@@ -126,8 +139,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockCommandContext.Setup(m => m.GetCircuitBreaker(It.IsAny<GroupKey>())).Returns(mockBreaker.Object);
                 mockCommandContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 var command = new NoOpFailingCommand();
-                var invoker = new BreakerInvoker(mockCommandContext.Object);
+                var invoker = new BreakerInvoker(mockCommandContext.Object, mockBreakerExceptionHandler.Object);
 
                 Assert.Throws<ExpectedTestException>(() => invoker.ExecuteWithBreaker(command, CancellationToken.None));
 
@@ -149,8 +165,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockCommandContext.Setup(m => m.GetCircuitBreaker(It.IsAny<GroupKey>())).Returns(mockBreaker.Object);
                 mockCommandContext.SetupGet(m => m.MetricEvents).Returns(mockMetricEvents.Object);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 var command = new NoOpCommand(); // Should be successful.
-                var invoker = new BreakerInvoker(mockCommandContext.Object);
+                var invoker = new BreakerInvoker(mockCommandContext.Object, mockBreakerExceptionHandler.Object);
 
                 invoker.ExecuteWithBreaker(command, CancellationToken.None);
 

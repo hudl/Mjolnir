@@ -17,8 +17,6 @@ namespace Hudl.Mjolnir.Command
     internal interface ICommandContext
     {
         IMetricEvents MetricEvents { get; set; }
-        void IgnoreExceptions(HashSet<Type> types);
-        bool IsExceptionIgnored(Type type);
         ICircuitBreaker GetCircuitBreaker(GroupKey key);
         IBulkheadSemaphore GetBulkhead(GroupKey key);
     }
@@ -51,10 +49,6 @@ namespace Hudl.Mjolnir.Command
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>> _bulkheads = new ConcurrentDictionary<GroupKey, Lazy<SemaphoreBulkheadHolder>>();
         
-        // This is a Dictionary only because there's no great concurrent Set type available. Just
-        // use the keys if checking for a type.
-        private readonly ConcurrentDictionary<Type, bool> _ignoredExceptionTypes = new ConcurrentDictionary<Type, bool>();
-
         // TODO make injectable
         private readonly IMjolnirConfig _config;
         private readonly IFailurePercentageCircuitBreakerConfig _breakerConfig;
@@ -84,25 +78,7 @@ namespace Hudl.Mjolnir.Command
                 _metricEvents = value;
             }
         }
-
-        public void IgnoreExceptions(HashSet<Type> types)
-        {
-            if (types == null || types.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var type in types)
-            {
-                _ignoredExceptionTypes.TryAdd(type, true);
-            }
-        }
-
-        public bool IsExceptionIgnored(Type type)
-        {
-            return _ignoredExceptionTypes.ContainsKey(type);
-        }
-
+        
         public ICircuitBreaker GetCircuitBreaker(GroupKey key)
         {
             if (key == null)
@@ -245,19 +221,6 @@ namespace Hudl.Mjolnir.Command
         {
             get { return Current.MetricEvents; }
             set { Current.MetricEvents = value; }
-        }
-
-        /// <summary>
-        /// Ignored exception types won't count toward breakers tripping or other error counters.
-        /// Useful for things like validation, where the system isn't having any problems and the
-        /// caller needs to validate before invoking. This list is most applicable when using
-        /// [Command] attributes, since extending Command offers the ability to catch these types
-        /// specifically within Execute() - though there may still be some benefit in extended
-        /// Commands for validation-like situations where throwing is still desired.
-        /// </summary>
-        public static void IgnoreExceptions(HashSet<Type> types)
-        {
-            Current.IgnoreExceptions(types);
         }
     }
 }

@@ -54,6 +54,7 @@
     <Compile Include="Bulkhead\BulkheadConfig.cs" />
     <Compile Include="Bulkhead\BulkheadRejectedException.cs" />
     <Compile Include="Bulkhead\IBulkheadSemaphore.cs" />
+    <Compile Include="Breaker\IBreakerExceptionHandler.cs" />
     <Compile Include="Bulkhead\SemaphoreBulkhead.cs" />
     <Compile Include="Clock\IClock.cs" />
     <Compile Include="Clock\UtcSystemClock.cs" />

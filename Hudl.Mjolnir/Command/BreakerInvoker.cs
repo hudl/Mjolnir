@@ -1,4 +1,5 @@
 ﻿using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.Bulkhead;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -18,10 +19,18 @@ namespace Hudl.Mjolnir.Command
     internal class BreakerInvoker : IBreakerInvoker
     {
         private readonly ICommandContext _context;
+        private readonly IBreakerExceptionHandler _ignoredExceptions;
 
-        public BreakerInvoker(ICommandContext context)
+        public BreakerInvoker(ICommandContext context, IBreakerExceptionHandler ignoredExceptions)
         {
             _context = context ?? CommandContext.Current;
+
+            if (ignoredExceptions == null)
+            {
+                throw new ArgumentNullException(nameof(ignoredExceptions));
+            }
+
+            _ignoredExceptions = ignoredExceptions;
         }
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
@@ -53,7 +62,7 @@ namespace Hudl.Mjolnir.Command
                 executionStopwatch.Stop();
                 success = false;
 
-                if (_context.IsExceptionIgnored(e.GetType()))
+                if (_ignoredExceptions.IsExceptionIgnored(e.GetType()))
                 {
                     success = true;
                     breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
@@ -111,7 +120,7 @@ namespace Hudl.Mjolnir.Command
                 executionStopwatch.Stop();
                 success = false;
 
-                if (_context.IsExceptionIgnored(e.GetType()))
+                if (_ignoredExceptions.IsExceptionIgnored(e.GetType()))
                 {
                     success = true;
                     breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);

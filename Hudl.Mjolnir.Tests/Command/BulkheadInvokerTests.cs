@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Xunit;
+using Hudl.Mjolnir.Breaker;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -34,9 +35,12 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 // Use a real breaker invoker instead of a mocked one so that we actually
                 // invoke the command (to change the config).
-                var breakerInvoker = new BreakerInvoker(context);
+                var breakerInvoker = new BreakerInvoker(context, mockBreakerExceptionHandler.Object);
                 var command = new ChangeBulkheadLimitAsyncCommand(key, bulkheadConfig, 15); // Limit needs to be different from default.
 
                 // This is the bulkhead that should be used for both TryEnter and Release.
@@ -288,9 +292,12 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
                 mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
 
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+
                 // Use a real breaker invoker instead of a mocked one so that we actually
                 // invoke the command (to change the config).
-                var breakerInvoker = new BreakerInvoker(context);
+                var breakerInvoker = new BreakerInvoker(context, mockBreakerExceptionHandler.Object);
                 var command = new ChangeBulkheadLimitSyncCommand(key, bulkheadConfig, 15); // Limit needs to be different from default.
 
                 // This is the bulkhead that should be used for both TryEnter and Release.

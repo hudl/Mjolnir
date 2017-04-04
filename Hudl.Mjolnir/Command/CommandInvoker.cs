@@ -4,6 +4,7 @@ using Hudl.Mjolnir.Config;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Log;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -253,18 +254,23 @@ namespace Hudl.Mjolnir.Command
 
         private readonly ICommandContext _context;
         private readonly IBulkheadInvoker _bulkheadInvoker;
-        
-        // TODO document that the singleton CommandInvoker.Instance was removed; clients can re-implement at their discretion, but it's an anti-pattern
 
+        private readonly IBreakerExceptionHandler _breakerExceptionHandler;
+        
         public CommandInvoker() : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), null, null)
         { }
         
-        public CommandInvoker(IMjolnirConfig config, IMjolnirLogFactory logFactory) : this(config, logFactory, null, null)
+        public CommandInvoker(IBreakerExceptionHandler breakerExceptionHandler) : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), breakerExceptionHandler, null)
+        { }
+
+        public CommandInvoker(IMjolnirConfig config, IMjolnirLogFactory logFactory, IBreakerExceptionHandler breakerExceptionHandler) : this(config, logFactory, breakerExceptionHandler, null, null)
         { }
         
+        // Internal constructor with a few extra arguments used by tests to inject mocks.
         internal CommandInvoker(
             IMjolnirConfig config,
             IMjolnirLogFactory logFactory,
+            IBreakerExceptionHandler breakerExceptionHandler = null,
             ICommandContext context = null,
             IBulkheadInvoker bulkheadInvoker = null)
         {
@@ -277,13 +283,14 @@ namespace Hudl.Mjolnir.Command
             {
                 throw new ArgumentNullException(nameof(logFactory));
             }
-
+            
             _config = config;
             _logFactory = logFactory;
 
+            _breakerExceptionHandler = breakerExceptionHandler ?? new BreakerExceptionHandler(new HashSet<Type>());
             _context = context ?? CommandContext.Current;
             
-            var breakerInvoker = new BreakerInvoker(_context);
+            var breakerInvoker = new BreakerInvoker(_context, _breakerExceptionHandler);
             _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _context, _config);
         }
         
