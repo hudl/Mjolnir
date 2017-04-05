@@ -7,8 +7,9 @@
 
         MetricsSnapshot GetSnapshot();
         void Reset();
-
-        void MarkCommandSuccess(/*TimeSpan duration*/); // TODO rob.hruska 11/8/2013 - Durations?
+        
+        // Could also track durations in the future if needed.
+        void MarkCommandSuccess(/*TimeSpan duration*/);
         void MarkCommandFailure(/*TimeSpan duration*/);
         
         //void MarkExecutionTime(TimeSpan duration);

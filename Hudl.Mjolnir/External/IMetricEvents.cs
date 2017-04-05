@@ -6,18 +6,13 @@
     /// likely forwarding them onto a collector for aggregation and analysis.
     /// 
     /// Each method has a "recommended metric" in its doc comments. These are suggestions if you're
-    /// using a "Coda Hale" style metrics collector like statsd or Metrics.NET.
+    /// using a metrics collector like statsd or Metrics.NET.
     /// </summary>
     public interface IMetricEvents
     {
         /// <summary>
         /// When a command is invoked. Fires on completion.
-        /// 
-        /// IMPORTANT: On "old" commands (i.e. inheriting from Command), the difference between
-        /// the invoke and execute times is probably insignificant - the execute time will likely
-        /// still contain a bit of Mjolnir overhead. The difference is more accurate on "newer"
-        /// commands that inherit from AsyncCommand or SyncCommand.
-        /// 
+        ///
         /// Recommended metric: Timer, with fields like "status" and "failureAction" as dimensions.
         /// </summary>
         /// <param name="commandName">The name of the command.</param>
@@ -36,10 +31,7 @@
 
         /// <summary>
         /// When an operation acquires a lock/thread on its bulkhead.
-        /// 
-        /// IMPORTANT: Does not fire for "old" commands (i.e. inheriting from Command). Only fires
-        /// for SyncCommand and AsyncCommand implementations that pass through CommandInvoker.
-        /// 
+        ///
         /// Recommended metric: Counter (increment, opposite LeaveBulkhead).
         /// </summary>
         /// <param name="bulkheadName">Name of the bulkhead being entered.</param>
@@ -48,10 +40,7 @@
 
         /// <summary>
         /// When an operation releases the lock/thread it acquired on its bulkhead.
-        /// 
-        /// IMPORTANT: does not fire for "old" commands (i.e. inheriting from Command). Only fires
-        /// for SyncCommand and AsyncCommand implementations that pass through CommandInvoker.
-        /// 
+        ///
         /// Recommended metric: Counter (decrement, opposite EnterBulkhead).
         /// </summary>
         /// <param name="bulkheadName">Name of the bulkhead being left.</param>
@@ -68,8 +57,10 @@
         void RejectedByBulkhead(string bulkheadName, string commandName);
 
         /// <summary>
-        /// Fires at (configurable) intervals, providing the current configuration state of the
-        /// bulkhead. The default interval is 60 seconds.
+        /// Fires at one second intervals, providing the current configuration state of the
+        /// bulkhead. The interval isn't configurable, but the implementation of this callback
+        /// can debounce the event and pass it to their own metrics collector at the resolution
+        /// desired.
         /// 
         /// Recommended metric: Gauge
         /// </summary>
@@ -123,8 +114,10 @@
         void BreakerFailureCount(string breakerName, string commandName);
 
         /// <summary>
-        /// Fires at (configurable) intervals, providing the current configuration state of the
-        /// breaker.
+        /// Fires at one second intervals, providing the current configuration state of the
+        /// breaker. The interval isn't configurable, but the implementation of this callback
+        /// can debounce the event and pass it to their own metrics collector at the resolution
+        /// desired.
         /// 
         /// Recommended metric: Gauge
         /// </summary>
