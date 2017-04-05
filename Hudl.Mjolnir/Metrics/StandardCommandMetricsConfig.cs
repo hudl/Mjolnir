@@ -16,12 +16,7 @@ namespace Hudl.Mjolnir.Metrics
 
         public StandardCommandMetricsConfig(IMjolnirConfig config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _config = config;
+            _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         /// <summary>

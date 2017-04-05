@@ -18,19 +18,10 @@ namespace Hudl.Mjolnir.Metrics
 
         internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IClock clock, IMjolnirLogFactory logFactory)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
 
             _key = key;
-            _config = config;
-            _clock = clock;
             _resettingNumbersBucket = new ResettingNumbersBucket(_key, _clock, _config, logFactory);
         }
         

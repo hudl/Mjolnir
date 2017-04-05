@@ -20,12 +20,7 @@ namespace Hudl.Mjolnir.Bulkhead
 
         public BulkheadConfig(IMjolnirConfig config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _config = config;
+            _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         public int GetMaxConcurrent(GroupKey key)

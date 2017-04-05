@@ -25,30 +25,10 @@ namespace Hudl.Mjolnir.Command
 
         public BulkheadInvoker(IBreakerInvoker breakerInvoker, IBulkheadFactory bulkheadFactory, IMetricEvents metricEvents, IMjolnirConfig config)
         {
-            if (breakerInvoker == null)
-            {
-                throw new ArgumentNullException(nameof(breakerInvoker));
-            }
-
-            if (bulkheadFactory == null)
-            {
-                throw new ArgumentNullException(nameof(bulkheadFactory));
-            }
-
-            if (metricEvents == null)
-            {
-                throw new ArgumentNullException(nameof(metricEvents));
-            }
-
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _breakerInvoker = breakerInvoker;
-            _bulkheadFactory = bulkheadFactory;
-            _metricEvents = metricEvents;
-            _config = config;
+            _breakerInvoker = breakerInvoker ?? throw new ArgumentNullException(nameof(breakerInvoker));
+            _bulkheadFactory = bulkheadFactory ?? throw new ArgumentNullException(nameof(bulkheadFactory));
+            _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         // Note: Bulkhead rejections shouldn't count as failures to the breaker. If a downstream

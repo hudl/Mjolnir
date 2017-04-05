@@ -19,12 +19,7 @@ namespace Hudl.Mjolnir.Breaker
 
         public FailurePercentageCircuitBreakerConfig(IMjolnirConfig config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _config = config;
+            _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         public long GetMinimumOperations(GroupKey key)

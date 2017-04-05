@@ -36,11 +36,6 @@ namespace Hudl.Mjolnir.Breaker
 
         public ICircuitBreaker GetCircuitBreaker(GroupKey key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             return _circuitBreakers.GetOrAddSafe(key, k =>
             {
                 var metrics = GetCommandMetrics(key);
@@ -50,11 +45,6 @@ namespace Hudl.Mjolnir.Breaker
 
         private ICommandMetrics GetCommandMetrics(GroupKey key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             return _metrics.GetOrAddSafe(key, k =>
                 new StandardCommandMetrics(key, _metricsConfig, _logFactory),
                 LazyThreadSafetyMode.ExecutionAndPublication);

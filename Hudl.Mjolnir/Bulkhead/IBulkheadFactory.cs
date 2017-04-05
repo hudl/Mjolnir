@@ -37,11 +37,6 @@ namespace Hudl.Mjolnir.Bulkhead
         /// </summary>
         public IBulkheadSemaphore GetBulkhead(GroupKey key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
             var holder = _bulkheads.GetOrAddSafe(key,
                 k => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig, _logFactory),
                 LazyThreadSafetyMode.ExecutionAndPublication);
@@ -68,26 +63,15 @@ namespace Hudl.Mjolnir.Bulkhead
 
             public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, IBulkheadConfig config, IMjolnirLogFactory logFactory)
             {
-                if (metricEvents == null)
-                {
-                    throw new ArgumentNullException(nameof(metricEvents));
-                }
-
-                if (config == null)
-                {
-                    throw new ArgumentNullException(nameof(config));
-                }
+                _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
+                _config = config ?? throw new ArgumentNullException(nameof(config));
 
                 if (logFactory == null)
                 {
                     throw new ArgumentNullException(nameof(logFactory));
                 }
-
-                _metricEvents = metricEvents;
-                _config = config;
-
+                
                 _log = logFactory.CreateLog(typeof(SemaphoreBulkheadHolder));
-
                 if (_log == null)
                 {
                     throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(SemaphoreBulkheadHolder)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");

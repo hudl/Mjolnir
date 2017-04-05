@@ -24,24 +24,9 @@ namespace Hudl.Mjolnir.Command
 
         public BreakerInvoker(ICircuitBreakerFactory circuitBreakerFactory, IMetricEvents metricEvents, IBreakerExceptionHandler ignoredExceptions)
         {
-            if (circuitBreakerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(circuitBreakerFactory));
-            }
-
-            if (metricEvents == null)
-            {
-                throw new ArgumentNullException(nameof(metricEvents));
-            }
-
-            if (ignoredExceptions == null)
-            {
-                throw new ArgumentNullException(nameof(ignoredExceptions));
-            }
-
-            _circuitBreakerFactory = circuitBreakerFactory;
-            _metricEvents = metricEvents;
-            _ignoredExceptions = ignoredExceptions;
+            _circuitBreakerFactory = circuitBreakerFactory ?? throw new ArgumentNullException(nameof(circuitBreakerFactory));
+            _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
+            _ignoredExceptions = ignoredExceptions ?? throw new ArgumentNullException(nameof(ignoredExceptions));
         }
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)

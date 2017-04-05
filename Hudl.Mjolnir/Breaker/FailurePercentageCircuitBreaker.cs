@@ -41,29 +41,19 @@ namespace Hudl.Mjolnir.Breaker
 
         internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory)
         {
-            _key = key;
-            _clock = clock;
-            _metrics = metrics;
+            _metrics = metrics ?? throw new ArgumentNullException(nameof(metrics));
+            _clock = clock ?? throw new ArgumentNullException(nameof(config));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
             
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            if (metricEvents == null)
-            {
-                throw new ArgumentNullException(nameof(metricEvents));
-            }
-
             if (logFactory == null)
             {
                 throw new ArgumentNullException(nameof(logFactory));
             }
 
-            _config = config;
-            _metricEvents = metricEvents;
+            _key = key;
+            
             _log = logFactory.CreateLog(typeof(FailurePercentageCircuitBreaker));
-
             if (_log == null)
             {
                 throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(FailurePercentageCircuitBreaker)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
