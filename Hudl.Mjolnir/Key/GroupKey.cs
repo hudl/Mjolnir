@@ -2,7 +2,6 @@
 
 namespace Hudl.Mjolnir.Key
 {
-    [Serializable]
     public struct GroupKey
     {
         private readonly string _name;

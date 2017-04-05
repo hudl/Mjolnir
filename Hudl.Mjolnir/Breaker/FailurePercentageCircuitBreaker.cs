@@ -72,7 +72,7 @@ namespace Hudl.Mjolnir.Breaker
             _state = State.Fixed; // Start off assuming everything's fixed.
             _lastTrippedTimestamp = 0; // 0 is fine since it'll be far less than the first compared value.
             
-            _metricsTimer = new GaugeTimer((source, args) =>
+            _metricsTimer = new GaugeTimer(state =>
             {
                 _metricEvents.BreakerConfigGauge(
                     Name,

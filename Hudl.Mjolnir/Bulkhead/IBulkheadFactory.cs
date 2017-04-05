@@ -119,7 +119,7 @@ namespace Hudl.Mjolnir.Bulkhead
                     _bulkhead = new SemaphoreBulkhead(key, newLimit);
                 });
 
-                _timer = new GaugeTimer((source, args) =>
+                _timer = new GaugeTimer(state =>
                 {
                     _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.GetMaxConcurrent(key));
                 });

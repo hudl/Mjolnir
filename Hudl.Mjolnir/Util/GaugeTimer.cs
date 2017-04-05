@@ -1,4 +1,4 @@
-﻿using System.Timers;
+﻿using System.Threading;
 
 namespace Hudl.Mjolnir.Util
 {
@@ -13,11 +13,9 @@ namespace Hudl.Mjolnir.Util
         /// Constructs a new GaugeTimer that invokes the provided handler.
         /// </summary>
         /// <param name="onTick">Event handler to invoke on tick</param>
-        internal GaugeTimer(ElapsedEventHandler onTick)
+        internal GaugeTimer(TimerCallback onTick)
         {
-            _timer = new Timer(1000) { AutoReset = true };
-            _timer.Elapsed += onTick;
-            _timer.Enabled = true;
+            _timer = new Timer(onTick, null, 1000, 1000);
         }
     }
 }

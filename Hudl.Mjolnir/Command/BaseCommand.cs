@@ -136,9 +136,9 @@ namespace Hudl.Mjolnir.Command
             return GeneratedNameCache.GetOrAdd(cacheKey, t =>
             {
                 var className = cacheKey.Item1.Name;
-                if (className.EndsWith("Command", StringComparison.InvariantCulture))
+                if (className.EndsWith("Command", StringComparison.OrdinalIgnoreCase))
                 {
-                    className = className.Substring(0, className.LastIndexOf("Command", StringComparison.InvariantCulture));
+                    className = className.Substring(0, className.LastIndexOf("Command", StringComparison.OrdinalIgnoreCase));
                 }
 
                 return cacheKey.Item2.Name.Replace(".", "-") + "." + className;
