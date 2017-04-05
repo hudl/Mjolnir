@@ -3,8 +3,6 @@ using System;
 
 namespace Hudl.Mjolnir.Log
 {
-    // TODO is ignoring the right default? maybe a console log instead?
-
     internal class DefaultMjolnirLog : IMjolnirLog
     {
         public void Error(string message)

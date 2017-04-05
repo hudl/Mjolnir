@@ -623,7 +623,7 @@ namespace Hudl.Mjolnir.Command
         {
             return _config.GetConfig("mjolnir.isEnabled", true);
         }
-
+        
         /// <summary>
         /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the
         /// default timeout. This is likely to be useful when debugging Command-decorated methods,

@@ -13,7 +13,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
 {
     public class FailurePercentageCircuitBreakerTests : TestFixture
     {
-        private static readonly GroupKey AnyKey = GroupKey.Named("any"); // TODO random
+        private static readonly GroupKey AnyKey = GroupKey.Named(Rand.String());
 
         /// <summary>
         /// The breaker should be created in a good state (fixed).
