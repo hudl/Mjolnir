@@ -14,35 +14,66 @@ namespace Hudl.Mjolnir.Tests.Helper
               .Select(s => s[ThreadSafeRandom.Next(s.Length)])
               .ToArray());
         }
-    }
 
-    /// <summary>
-    /// Thread-safe random number provider.
-    /// 
-    /// System.Random is not thread safe, and may return zeroes if accessed
-    /// under high contention. Use this instead if you're sharing a number
-    /// generator across threads.
-    /// 
-    /// From http://csharpindepth.com/Articles/Chapter12/Random.aspx
-    /// </summary>
-    internal static class ThreadSafeRandom
-    {
-        private static int _seed = Environment.TickCount;
-        private static readonly ThreadLocal<Random> Random = new ThreadLocal<Random>(() => new Random(Interlocked.Increment(ref _seed)));
-
-        internal static int Next()
+        public static int Int()
         {
-            return Random.Value.Next();
+            return ThreadSafeRandom.Next(int.MinValue, int.MaxValue);
         }
 
-        internal static int Next(int maxValue)
+        // From http://stackoverflow.com/a/6651661/29995
+        public static long Long()
         {
-            return Random.Value.Next(maxValue);
+            byte[] buffer = new byte[8];
+            ThreadSafeRandom.NextBytes(buffer);
+            return BitConverter.ToInt64(buffer, 0);
         }
 
-        internal static int Next(int minValue, int maxValue)
+        // From http://stackoverflow.com/a/609529/29995
+        public static decimal Decimal()
         {
-            return Random.Value.Next(minValue, maxValue);
+            byte scale = (byte)ThreadSafeRandom.Next(29);
+            bool sign = ThreadSafeRandom.Next(2) == 1;
+            return new decimal(ThreadSafeRandom.Next(), ThreadSafeRandom.Next(), ThreadSafeRandom.Next(), sign, scale);
+        }
+
+        public static bool Bool()
+        {
+            return ThreadSafeRandom.Next(2) == 0;
+        }
+
+        /// <summary>
+        /// Thread-safe random number provider.
+        /// 
+        /// System.Random is not thread safe, and may return zeroes if accessed
+        /// under high contention. Use this instead if you're sharing a number
+        /// generator across threads.
+        /// 
+        /// From http://csharpindepth.com/Articles/Chapter12/Random.aspx
+        /// </summary>
+        private static class ThreadSafeRandom
+        {
+            private static int _seed = Environment.TickCount;
+            private static readonly ThreadLocal<Random> Random = new ThreadLocal<Random>(() => new Random(Interlocked.Increment(ref _seed)));
+
+            internal static int Next()
+            {
+                return Random.Value.Next();
+            }
+
+            internal static int Next(int maxValue)
+            {
+                return Random.Value.Next(maxValue);
+            }
+
+            internal static int Next(int minValue, int maxValue)
+            {
+                return Random.Value.Next(minValue, maxValue);
+            }
+
+            internal static void NextBytes(byte[] buffer)
+            {
+                Random.Value.NextBytes(buffer);
+            }
         }
     }
 }

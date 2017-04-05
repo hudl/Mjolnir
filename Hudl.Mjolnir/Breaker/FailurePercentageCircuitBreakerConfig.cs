@@ -31,7 +31,7 @@ namespace Hudl.Mjolnir.Breaker
         public int GetThresholdPercentage(GroupKey key)
         {
             // TODO verify null is returned by config impl if not set
-            return _config.GetConfig<int?>($"mjolnir.breaker.{key}.thresholdPercentage", null) ?? _config.GetConfig<int>("mjolnir.breaker.default.thresholdPercentage", 50);
+            return _config.GetConfig<int?>($"mjolnir.breaker.{key}.thresholdPercentage", null) ?? _config.GetConfig("mjolnir.breaker.default.thresholdPercentage", 50);
         }
 
         public long GetTrippedDurationMillis(GroupKey key)
@@ -43,13 +43,13 @@ namespace Hudl.Mjolnir.Breaker
         public bool GetForceTripped(GroupKey key)
         {
             // TODO verify null is returned by config impl if not set
-            return _config.GetConfig<bool?>($"mjolnir.breaker.{key}.forceTripped", null) ?? _config.GetConfig<bool>("mjolnir.breaker.default.forceTripped", false);
+            return _config.GetConfig<bool?>($"mjolnir.breaker.{key}.forceTripped", null) ?? _config.GetConfig("mjolnir.breaker.default.forceTripped", false);
         }
 
         public bool GetForceFixed(GroupKey key)
         {
             // TODO verify null is returned by config impl if not set
-            return _config.GetConfig<bool?>($"mjolnir.breaker.{key}.forceFixed", null) ?? _config.GetConfig<bool>("mjolnir.breaker.default.forceFixed", false);
+            return _config.GetConfig<bool?>($"mjolnir.breaker.{key}.forceFixed", null) ?? _config.GetConfig("mjolnir.breaker.default.forceFixed", false);
         }
     }
 }
