@@ -284,7 +284,7 @@ namespace Hudl.Mjolnir.Command
             _config = config ?? new DefaultValueConfig();
             _logFactory = logFactory ?? new DefaultMjolnirLogFactory();
             _metricEvents = metricEvents ?? new IgnoringMetricEvents();
-            _breakerExceptionHandler = breakerExceptionHandler ?? new BreakerExceptionHandler(new HashSet<Type>());
+            _breakerExceptionHandler = breakerExceptionHandler ?? new IgnoredExceptionHandler(new HashSet<Type>());
             
             _circuitBreakerFactory = new CircuitBreakerFactory(
                 _metricEvents,

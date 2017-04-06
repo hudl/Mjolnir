@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 
-namespace Hudl.Mjolnir.Breaker
+namespace Hudl.Mjolnir.External
 {
     /// <summary>
     /// Ignored exception types won't count toward breakers tripping or other error counters.
@@ -19,30 +18,5 @@ namespace Hudl.Mjolnir.Breaker
         /// not a downstream system error and instead more likely an error/bug on the calling side.
         /// </summary>
         bool IsExceptionIgnored(Type type);
-    }
-
-    /// <summary>
-    /// Default implementation for IBreakerExceptionHandler that uses a set of ignored
-    /// Exception Types.
-    /// </summary>
-    public class BreakerExceptionHandler : IBreakerExceptionHandler
-    {
-        private readonly HashSet<Type> _ignored;
-        
-        public BreakerExceptionHandler(HashSet<Type> ignored)
-        {
-            // Defensive copy to avoid caller modifying the set after passing.
-            _ignored = (ignored == null ? new HashSet<Type>() : new HashSet<Type>(ignored));
-        }
-
-        public bool IsExceptionIgnored(Type type)
-        {
-            if (type == null)
-            {
-                return false;
-            }
-
-            return _ignored.Contains(type);
-        }
     }
 }
