@@ -100,8 +100,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -139,8 +139,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new DelayAsyncCommand(1);
                 
                 var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -179,8 +179,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expiredToken = new CancellationToken(true);
 
                 var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -208,8 +208,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new NoOpAsyncCommand();
 
                 var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -709,8 +709,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SleepCommand(1);
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -749,8 +749,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var expiredToken = new CancellationToken(true);
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -779,8 +779,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -962,8 +962,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new NoOpCommand();
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1008,8 +1008,8 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SleepCommand(1);
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig<bool>("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
+            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();

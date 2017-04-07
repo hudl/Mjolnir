@@ -45,7 +45,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
             mockConfig.Setup(m => m.GetWindowMillis(It.IsAny<GroupKey>())).Returns(periodMillis);
             
             var clock = new ManualTestClock();
-            var bucket = new ResettingNumbersBucket(GroupKey.Named("any"), clock, mockConfig.Object, new DefaultMjolnirLogFactory());
+            var bucket = new ResettingNumbersBucket(AnyGroupKey, clock, mockConfig.Object, new DefaultMjolnirLogFactory());
 
             bucket.Increment(CounterMetric.CommandSuccess);
 
@@ -62,7 +62,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
             mockConfig.Setup(m => m.GetWindowMillis(It.IsAny<GroupKey>())).Returns(10000);
             
             var clock = new ManualTestClock();
-            return new ResettingNumbersBucket(GroupKey.Named("any"), clock, mockConfig.Object, new DefaultMjolnirLogFactory());
+            return new ResettingNumbersBucket(AnyGroupKey, clock, mockConfig.Object, new DefaultMjolnirLogFactory());
         }
     }
 }

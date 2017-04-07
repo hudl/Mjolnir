@@ -7,7 +7,7 @@
     /// (connections, memory, etc.). Bulkheads will reject calls commands if the concurrency limit
     /// is exceeded.
     /// </summary>
-    internal interface IBulkheadSemaphore
+    internal interface ISemaphoreBulkhead
     {
 
         /// <summary>

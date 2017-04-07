@@ -4,20 +4,12 @@ using System;
 
 namespace Hudl.Mjolnir.Bulkhead
 {
-    internal interface IBulkheadConfig
-    {
-        int GetMaxConcurrent(GroupKey key);
-
-        void AddChangeHandler<T>(GroupKey key, Action<T> onConfigChange);
-
-        // Only really exists so we can log it in a validation error message.
-        string GetConfigKey(GroupKey key);
-    }
-
     internal class BulkheadConfig : IBulkheadConfig
     {
-        private readonly IMjolnirConfig _config;
+        private const int DefaultMaxConcurrent = 10;
 
+        private readonly IMjolnirConfig _config;
+        
         public BulkheadConfig(IMjolnirConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -26,7 +18,7 @@ namespace Hudl.Mjolnir.Bulkhead
         public int GetMaxConcurrent(GroupKey key)
         {
             // TODO verify null is returned by config impl if not set
-            return _config.GetConfig<int?>(GetConfigKey(key), null) ?? _config.GetConfig<int>("mjolnir.bulkhead.default.maxConcurrent", 10);
+            return _config.GetConfig<int?>(GetConfigKey(key), null) ?? _config.GetConfig("mjolnir.bulkhead.default.maxConcurrent", DefaultMaxConcurrent);
         }
 
         public void AddChangeHandler<T>(GroupKey key, Action<T> onConfigChange)

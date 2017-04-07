@@ -20,6 +20,11 @@ namespace Hudl.Mjolnir.Tests.Helper
             return ThreadSafeRandom.Next(int.MinValue, int.MaxValue);
         }
 
+        public static int PositiveInt()
+        {
+            return ThreadSafeRandom.Next(1, int.MaxValue);
+        }
+
         // From http://stackoverflow.com/a/6651661/29995
         public static long Long()
         {
@@ -27,7 +32,7 @@ namespace Hudl.Mjolnir.Tests.Helper
             ThreadSafeRandom.NextBytes(buffer);
             return BitConverter.ToInt64(buffer, 0);
         }
-
+        
         // From http://stackoverflow.com/a/609529/29995
         public static decimal Decimal()
         {

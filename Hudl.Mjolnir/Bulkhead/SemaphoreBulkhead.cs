@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace Hudl.Mjolnir.Bulkhead
 {
-    internal class SemaphoreBulkhead : IBulkheadSemaphore
+    internal class SemaphoreBulkhead : ISemaphoreBulkhead
     {
         private readonly SemaphoreSlim _semaphore;
         private readonly GroupKey _key;

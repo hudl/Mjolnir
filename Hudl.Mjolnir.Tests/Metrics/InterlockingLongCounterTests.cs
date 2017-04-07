@@ -11,17 +11,30 @@ namespace Hudl.Mjolnir.Tests.Metrics
         [Fact]
         public void Increment_Increments()
         {
+            // Arrange
+
             var counter = new InterlockingLongCounter();
+
+            // Act
+
             counter.Increment();
+
+            // Assert
+
             Assert.Equal(1, counter.Get());
         }
 
         [Fact]
         public void Stress_Increment_RetainsAccuracy()
         {
+            // Arrange
+
             const int iterations = 100000;
             var counter = new InterlockingLongCounter();
             var tasks = new List<Task>();
+
+            // Act
+
             for (var i = 0; i < iterations; i++)
             {
                 var task = Task.Run(() => counter.Increment());
@@ -29,6 +42,9 @@ namespace Hudl.Mjolnir.Tests.Metrics
             }
 
             Task.WaitAll(tasks.ToArray());
+
+            // Assert
+
             Assert.Equal(iterations, counter.Get());
         }
     }

@@ -1,5 +1,4 @@
 ﻿using Hudl.Mjolnir.Clock;
-using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
@@ -13,7 +12,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         [Fact]
         public void MarkCommandSuccess_BeforeFirstSnapshot_GetsIncludedInSnapshot()
         {
-            var key = GroupKey.Named("Test");
+            var key = AnyGroupKey;
 
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(30000);
@@ -30,7 +29,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         [Fact]
         public void MarkCommandFailure_BeforeFirstSnapshot_GetsIncludedInSnapshot()
         {
-            var key = GroupKey.Named("Test");
+            var key = AnyGroupKey;
 
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(30000);
@@ -71,7 +70,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         {
             var clock = new ManualTestClock();
 
-            var key = GroupKey.Named("Test");
+            var key = AnyGroupKey;
 
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(10000);
@@ -93,7 +92,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
 
         private MetricsSnapshot SnapshotFor(int success, int failure)
         {
-            var key = GroupKey.Named("Test");
+            var key = AnyGroupKey;
 
             var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(10000);

@@ -17,63 +17,44 @@ namespace Hudl.Mjolnir.Tests.Command
 
         public class Constructor : TestFixture
         {
-            [Fact]
-            public void NullOrEmptyGroup_Throws()
+            [Theory]
+            [InlineData(null)]
+            [InlineData("")]
+            [InlineData(" ")]
+            public void NullOrEmptyGroup_Throws(string group)
             {
-                ArgumentNullException e;
                 
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(null, AnyString, AnyString, ValidTimeout));
-                Assert.Equal("group", e.ParamName);
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand("", AnyString, AnyString, ValidTimeout));
-                Assert.Equal("group", e.ParamName);
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(" ", AnyString, AnyString, ValidTimeout));
+                var e = Assert.Throws<ArgumentNullException>(() => new TestCommand(group, AnyString, AnyString, ValidTimeout));
                 Assert.Equal("group", e.ParamName);
             }
 
-            [Fact]
-            public void NullOrEmptyBreakerKey_Throws()
+            [Theory]
+            [InlineData(null)]
+            [InlineData("")]
+            [InlineData(" ")]
+            public void NullOrEmptyBreakerKey_Throws(string breakerKey)
             {
-                ArgumentNullException e;
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, null, AnyString, ValidTimeout));
-                Assert.Equal("breakerKey", e.ParamName);
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, "", AnyString, ValidTimeout));
-                Assert.Equal("breakerKey", e.ParamName);
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, " ", AnyString, ValidTimeout));
+                var e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, breakerKey, AnyString, ValidTimeout));
                 Assert.Equal("breakerKey", e.ParamName);
             }
 
-            [Fact]
-            public void NullOrEmptyBulkheadKey_Throws()
+            [Theory]
+            [InlineData(null)]
+            [InlineData("")]
+            [InlineData(" ")]
+            public void NullOrEmptyBulkheadKey_Throws(string bulkheadKey)
             {
-                ArgumentNullException e;
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, AnyString, null, ValidTimeout));
-                Assert.Equal("bulkheadKey", e.ParamName);
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, AnyString, "", ValidTimeout));
-                Assert.Equal("bulkheadKey", e.ParamName);
-
-                e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, AnyString, " ", ValidTimeout));
+                var e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, AnyString, bulkheadKey, ValidTimeout));
                 Assert.Equal("bulkheadKey", e.ParamName);
             }
 
-            [Fact]
-            public void NegativeOrZeroTimeout_Throws()
+            [Theory]
+            [InlineData(0)]
+            [InlineData(-1)]
+            public void NegativeOrZeroTimeout_Throws(long timeoutMillis)
             {
-                TimeSpan invalidTimeout;
-                ArgumentException e;
-
-                invalidTimeout = TimeSpan.FromMilliseconds(0);
-                e = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, AnyString, AnyString, invalidTimeout));
-                Assert.Equal("defaultTimeout", e.ParamName);
-
-                invalidTimeout = TimeSpan.FromMilliseconds(-1);
-                e = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, AnyString, AnyString, invalidTimeout));
+                var invalidTimeout = TimeSpan.FromMilliseconds(timeoutMillis);
+                var e = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, AnyString, AnyString, invalidTimeout));
                 Assert.Equal("defaultTimeout", e.ParamName);
             }
 

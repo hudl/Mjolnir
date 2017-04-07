@@ -15,17 +15,19 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             // Act + Assert
+
             var exception = Assert.Throws<ArgumentNullException>(() => new FailurePercentageCircuitBreakerConfig(null));
             Assert.Equal("config", exception.ParamName);
         }
 
         [Fact]
-        public void GetMinimumOperations_UsesBreakerValueIfConfigured()
+        public void GetMinimumOperations_UsesSpecificValueIfConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.minimumOperations";
-            var expectedConfigValue = AnyLong;
+            var expectedConfigValue = AnyPositiveInt;
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns(expectedConfigValue);
@@ -42,13 +44,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetMinimumOperations_UsesDefaultValueIfNoBreakerValueConfigured()
+        public void GetMinimumOperations_UsesDefaultValueIfNoSpecificValueConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.minimumOperations";
             const string defaultConfigKey = "mjolnir.breaker.default.minimumOperations";
-            var expectedConfigValue = AnyLong;
+            var expectedConfigValue = AnyPositiveInt;
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
@@ -66,17 +69,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetMinimumOperations_UsesDefaultValueIfNoBreakerValueOrDefaultValueConfigured()
+        public void GetMinimumOperations_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs10()
         {
             // Arrange
+
+            const long expectedDefaultMinimumOperations = 10;
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.minimumOperations";
             const string defaultConfigKey = "mjolnir.breaker.default.minimumOperations";
-            const long expectedConfigValue = 10; // Default hard-coded fallback.
+            
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedConfigValue)).Returns(expectedConfigValue);
+            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultMinimumOperations)).Returns(expectedDefaultMinimumOperations);
 
             var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
 
@@ -86,16 +92,17 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
+            Assert.Equal(expectedDefaultMinimumOperations, value);
         }
 
         [Fact]
-        public void GetThresholdPercentage_UsesBreakerValueIfConfigured()
+        public void GetThresholdPercentage_UsesSpecificValueIfConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.thresholdPercentage";
-            var expectedConfigValue = AnyInt;
+            var expectedConfigValue = AnyPositiveInt;
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns(expectedConfigValue);
@@ -112,13 +119,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetThresholdPercentage_UsesDefaultValueIfNoBreakerValueConfigured()
+        public void GetThresholdPercentage_UsesDefaultValueIfNoSpecificValueConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.thresholdPercentage";
             const string defaultConfigKey = "mjolnir.breaker.default.thresholdPercentage";
-            var expectedConfigValue = AnyInt;
+            var expectedConfigValue = AnyPositiveInt;
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns((int?)null);
@@ -136,17 +144,19 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetThresholdPercentage_UsesDefaultValueIfNoBreakerValueOrDefaultValueConfigured()
+        public void GetThresholdPercentage_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs50()
         {
             // Arrange
+
+            const int expectedDefaultThresholdPercentage = 50;
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.thresholdPercentage";
             const string defaultConfigKey = "mjolnir.breaker.default.thresholdPercentage";
-            const int expectedConfigValue = 50; // Default hard-coded fallback.
-
+            
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns((int?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedConfigValue)).Returns(expectedConfigValue);
+            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultThresholdPercentage)).Returns(expectedDefaultThresholdPercentage);
 
             var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
 
@@ -156,16 +166,17 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
+            Assert.Equal(expectedDefaultThresholdPercentage, value);
         }
 
         [Fact]
-        public void GetTrippedDurationMillis_UsesBreakerValueIfConfigured()
+        public void GetTrippedDurationMillis_UsesSpecificValueIfConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.trippedDurationMillis";
-            var expectedConfigValue = AnyLong;
+            var expectedConfigValue = AnyPositiveInt;
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns(expectedConfigValue);
@@ -182,13 +193,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetTrippedDurationMillis_UsesDefaultValueIfNoBreakerValueConfigured()
+        public void GetTrippedDurationMillis_UsesDefaultValueIfNoSpecificValueConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.trippedDurationMillis";
             const string defaultConfigKey = "mjolnir.breaker.default.trippedDurationMillis";
-            var expectedConfigValue = AnyLong;
+            var expectedConfigValue = AnyPositiveInt;
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
@@ -206,17 +218,19 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetTrippedDurationMillis_UsesDefaultValueIfNoBreakerValueOrDefaultValueConfigured()
+        public void GetTrippedDurationMillis_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs10000()
         {
             // Arrange
+
+            const long expectedDefaultTrippedDurationMillis = 10000;
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.trippedDurationMillis";
             const string defaultConfigKey = "mjolnir.breaker.default.trippedDurationMillis";
-            const long expectedConfigValue = 10000; // Default hard-coded fallback.
-
+            
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedConfigValue)).Returns(expectedConfigValue);
+            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultTrippedDurationMillis)).Returns(expectedDefaultTrippedDurationMillis);
 
             var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
 
@@ -226,13 +240,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
+            Assert.Equal(expectedDefaultTrippedDurationMillis, value);
         }
 
         [Fact]
-        public void GetForceTripped_UsesBreakerValueIfConfigured()
+        public void GetForceTripped_UsesSpecificValueIfConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceTripped";
             var expectedConfigValue = AnyBool;
@@ -252,9 +267,10 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetForceTripped_UsesDefaultValueIfNoBreakerValueConfigured()
+        public void GetForceTripped_UsesDefaultValueIfNoSpecificValueConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceTripped";
             const string defaultConfigKey = "mjolnir.breaker.default.forceTripped";
@@ -276,17 +292,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetForceTripped_UsesDefaultValueIfNoBreakerValueOrDefaultValueConfigured()
+        public void GetForceTripped_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIsFalse()
         {
             // Arrange
+
+            const bool expectedDefaultForceTripped = false;
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceTripped";
             const string defaultConfigKey = "mjolnir.breaker.default.forceTripped";
-            const bool expectedConfigValue = false; // Default hard-coded fallback.
+            
 
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns((bool?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedConfigValue)).Returns(expectedConfigValue);
+            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultForceTripped)).Returns(expectedDefaultForceTripped);
 
             var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
 
@@ -296,13 +315,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
+            Assert.Equal(expectedDefaultForceTripped, value);
         }
 
         [Fact]
-        public void GetForceFixed_UsesBreakerValueIfConfigured()
+        public void GetForceFixed_UsesSpecificValueIfConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceFixed";
             var expectedConfigValue = AnyBool;
@@ -322,9 +342,10 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetForceFixed_UsesDefaultValueIfNoBreakerValueConfigured()
+        public void GetForceFixed_UsesDefaultValueIfNoSpecificValueConfigured()
         {
             // Arrange
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceFixed";
             const string defaultConfigKey = "mjolnir.breaker.default.forceFixed";
@@ -346,17 +367,19 @@ namespace Hudl.Mjolnir.Tests.Breaker
         }
 
         [Fact]
-        public void GetForceFixed_UsesDefaultValueIfNoBreakerValueOrDefaultValueConfigured()
+        public void GetForceFixed_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIsFalse()
         {
             // Arrange
+
+            const bool expectedDefaultForceFixed = false;
+
             var groupKey = AnyGroupKey;
             var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceFixed";
             const string defaultConfigKey = "mjolnir.breaker.default.forceFixed";
-            const bool expectedConfigValue = false; // Default hard-coded fallback.
-
+            
             var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns((bool?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedConfigValue)).Returns(expectedConfigValue);
+            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultForceFixed)).Returns(expectedDefaultForceFixed);
 
             var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
 
@@ -366,7 +389,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
+            Assert.Equal(expectedDefaultForceFixed, value);
         }
     }
 }

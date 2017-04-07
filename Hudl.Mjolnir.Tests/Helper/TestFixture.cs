@@ -11,16 +11,11 @@ namespace Hudl.Mjolnir.Tests.Helper
             get { return Rand.String(); }
         }
 
-        protected static int AnyInt
+        protected static int AnyPositiveInt
         {
-            get { return Rand.Int(); }
+            get { return Rand.PositiveInt(); }
         }
-
-        protected static long AnyLong
-        {
-            get { return Rand.Long(); }
-        }
-
+        
         protected static bool AnyBool
         {
             get { return Rand.Bool(); }

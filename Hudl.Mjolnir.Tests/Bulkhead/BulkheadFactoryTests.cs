@@ -1,7 +1,5 @@
 ﻿using Hudl.Mjolnir.Bulkhead;
-using Hudl.Mjolnir.Config;
 using Hudl.Mjolnir.External;
-using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
@@ -12,7 +10,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 {
     public class BulkheadFactoryTests
     {
-        public class GetBulkhead
+        public class GetBulkhead : TestFixture
         {
             [Fact]
             public void ReturnsSameBulkheadForKey()
@@ -21,38 +19,29 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
                 // of any configuration changes, we should be using the same one through the
                 // lifetime of the app.
 
+                // Arrange
+
+                var key = AnyGroupKey;
+
                 var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+                var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+                mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
+                mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
                 var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
                 mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
-                var bulkheadConfig = new BulkheadConfig(new DefaultValueConfig());
+                
+                var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
 
-                var key = GroupKey.Named(Rand.String());
-                var factory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+                // Act
 
                 var bulkhead = factory.GetBulkhead(key);
+
+                // Assert
+
                 Assert.Equal(bulkhead, factory.GetBulkhead(key));
             }
-
-            [Fact]
-            public void DefaultBulkheadSizeIs10()
-            {
-                // This is mainly to ensure we don't introduce a breaking change for clients
-                // who rely on the default configs. 
-                
-                var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-                var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-                mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
-                var bulkheadConfig = new BulkheadConfig(new DefaultValueConfig());
-
-                var key = GroupKey.Named(Rand.String());
-                var factory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
-
-                var bulkhead = factory.GetBulkhead(key);
-                Assert.Equal(10, bulkhead.CountAvailable);
-            }
-
+            
             // TODO rewrite this test now that config is mock-able and change handlers have changed
             //[Fact]
             //public void ReturnsNewBulkheadWhenConfigChanges()

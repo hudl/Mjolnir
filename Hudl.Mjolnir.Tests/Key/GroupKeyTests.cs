@@ -31,44 +31,36 @@ namespace Hudl.Mjolnir.Tests.Key
             Assert.Equal("Foo", GroupKey.Named("Foo").ToString());
         }
 
-
-        [Fact]
-        public void Construct_Validation()
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(null)]
+        public void Construct_ValidationInvalid(string name)
         {
-            AssertInvalidName(""); // Cannot be empty.
-            AssertInvalidName(" "); // Cannot be empty.
-            AssertInvalidName(null); // Cannot be null.
-
-            AssertValidName("a");
-            AssertValidName("A");
-            AssertValidName("0");
-            AssertValidName("_");
-            AssertValidName(".");
-            AssertValidName("_ab");
-            AssertValidName("0ab");
-            AssertValidName("abc.");
-            AssertValidName("abc#");
-            AssertValidName("abc-");
-            AssertValidName("abc$");
-            AssertValidName("abc/");
-            AssertValidName("abc");
-            AssertValidName("Abc");
-            AssertValidName("ABC");
-            AssertValidName("o_o");
+            Assert.Throws<ArgumentException>(() => GroupKey.Named(name));
         }
 
-        private static void AssertValidName(string name)
+        [Theory]
+        [InlineData("a")]
+        [InlineData("A")]
+        [InlineData("0")]
+        [InlineData("_")]
+        [InlineData(".")]
+        [InlineData("_ab")]
+        [InlineData("0ab")]
+        [InlineData("abc.")]
+        [InlineData("abc#")]
+        [InlineData("abc-")]
+        [InlineData("abc$")]
+        [InlineData("abc/")]
+        [InlineData("abc")]
+        [InlineData("Abc")]
+        [InlineData("ABC")]
+        [InlineData("o_o")]
+        public void Construct_ValidationValid(string name)
         {
             GroupKey.Named(name);
             Assert.True(true); // Didn't throw exception.
-        }
-
-        private static void AssertInvalidName(string name)
-        {
-            Assert.Throws<ArgumentException>(() =>
-            {
-                GroupKey.Named(name);
-            });
         }
     }
 }
