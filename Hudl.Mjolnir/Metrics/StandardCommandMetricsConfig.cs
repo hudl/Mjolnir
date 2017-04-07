@@ -24,13 +24,11 @@ namespace Hudl.Mjolnir.Metrics
         /// </summary>
         public long GetWindowMillis(GroupKey key)
         {
-            // TODO verify null is returned by config impl if not set
             return _config.GetConfig<long?>($"mjolnir.metrics.{key}.windowMillis", null) ?? _config.GetConfig<long>("mjolnir.metrics.default.windowMillis", 30000);
         }
 
         public long GetSnapshotTtlMillis(GroupKey key)
         {
-            // TODO verify null is returned by config impl if not set
             return _config.GetConfig<long?>($"mjolnir.metrics.{key}.snapshotTtlMillis", null) ?? _config.GetConfig<long>("mjolnir.metrics.default.snapshotTtlMillis", 1000);
         }
     }

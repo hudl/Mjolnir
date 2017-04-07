@@ -17,7 +17,6 @@ namespace Hudl.Mjolnir.Bulkhead
 
         public int GetMaxConcurrent(GroupKey key)
         {
-            // TODO verify null is returned by config impl if not set
             return _config.GetConfig<int?>(GetConfigKey(key), null) ?? _config.GetConfig("mjolnir.bulkhead.default.maxConcurrent", DefaultMaxConcurrent);
         }
 
