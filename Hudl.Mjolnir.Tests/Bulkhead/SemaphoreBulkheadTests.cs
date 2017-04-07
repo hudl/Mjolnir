@@ -1,8 +1,6 @@
 ﻿using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.Tests.Helper;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Bulkhead

@@ -44,11 +44,13 @@ namespace Hudl.Mjolnir.Bulkhead
         // change events. We should never destroy the holder once it's been created - we may
         // replace its internal members, but the holder should remain for the lifetime of the
         // app to ensure consistent concurrency.
-        private class SemaphoreBulkheadHolder
+        internal class SemaphoreBulkheadHolder
         {
             // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
             private readonly GaugeTimer _timer;
             // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
+
+            private readonly GroupKey _key;
 
             private ISemaphoreBulkhead _bulkhead;
             public ISemaphoreBulkhead Bulkhead { get { return _bulkhead; } }
@@ -59,6 +61,7 @@ namespace Hudl.Mjolnir.Bulkhead
 
             public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, IBulkheadConfig config, IMjolnirLogFactory logFactory)
             {
+                _key = key;
                 _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
                 _config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -80,29 +83,37 @@ namespace Hudl.Mjolnir.Bulkhead
                 // semaphore to the dictionary, potentially trying to add two entries with
                 // different values in rapid succession.
 
+                // TODO what if this value is invalid? if we throw, will the GetOrAddSafe() eat the error? should we initialize but in a bad state, and throw on every call that passes through until the config is updated?
                 var value = _config.GetMaxConcurrent(key);
-
-                _bulkhead = new SemaphoreBulkhead(key, value);
+                
+                _bulkhead = new SemaphoreBulkhead(_key, value);
 
                 // On change, we'll replace the bulkhead. The assumption here is that a caller
                 // using the bulkhead will have kept a local reference to the bulkhead that they
                 // acquired a lock on, and will release the lock on that bulkhead and not one that
                 // has been replaced after a config change.
-                _config.AddChangeHandler<int>(key, newLimit =>
-                {
-                    if (newLimit < 0)
-                    {
-                        _log.Error($"Semaphore bulkhead config {_config.GetConfigKey(key)} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
-                        return;
-                    }
-
-                    _bulkhead = new SemaphoreBulkhead(key, newLimit);
-                });
+                _config.AddChangeHandler<int>(_key, UpdateMaxConcurrent);
 
                 _timer = new GaugeTimer(state =>
                 {
                     _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.GetMaxConcurrent(key));
                 });
+            }
+            
+            internal void UpdateMaxConcurrent(int newLimit)
+            {
+                if (!IsValidMaxConcurrent(newLimit))
+                {
+                    _log.Error($"Semaphore bulkhead config {_config.GetConfigKey(_key)} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
+                    return;
+                }
+
+                _bulkhead = new SemaphoreBulkhead(_key, newLimit);
+            }
+
+            private bool IsValidMaxConcurrent(int limit)
+            {
+                return limit >= 0;
             }
         }
     }

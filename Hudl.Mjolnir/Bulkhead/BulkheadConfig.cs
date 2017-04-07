@@ -25,7 +25,7 @@ namespace Hudl.Mjolnir.Bulkhead
         {
             _config.AddChangeHandler(GetConfigKey(key), onConfigChange);
         }
-
+        
         public string GetConfigKey(GroupKey key)
         {
             return $"mjolnir.bulkhead.{key}.maxConcurrent";

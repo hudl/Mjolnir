@@ -1,107 +1,101 @@
 ﻿using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
 using System;
+using System.Threading;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Bulkhead
 {
-    public class BulkheadFactoryTests
+    public class BulkheadFactoryTests : TestFixture
     {
-        public class GetBulkhead : TestFixture
+        [Fact]
+        public void GetBulkhead_ReturnsSameBulkheadForKey()
         {
-            [Fact]
-            public void ReturnsSameBulkheadForKey()
-            {
-                // Bulkheads are long-lived objects and used for many requests. In the absence
-                // of any configuration changes, we should be using the same one through the
-                // lifetime of the app.
+            // Bulkheads are long-lived objects and used for many requests. In the absence
+            // of any configuration changes, we should be using the same one through the
+            // lifetime of the app.
 
-                // Arrange
+            // Arrange
 
-                var key = AnyGroupKey;
+            var key = AnyGroupKey;
 
-                var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-                var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
-                mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
-                mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
-                var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-                mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
-                
-                var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
+            var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
 
-                // Act
+            // Act
 
-                var bulkhead = factory.GetBulkhead(key);
+            var bulkhead = factory.GetBulkhead(key);
 
-                // Assert
+            // Assert
 
-                Assert.Equal(bulkhead, factory.GetBulkhead(key));
-            }
-            
-            // TODO rewrite this test now that config is mock-able and change handlers have changed
-            //[Fact]
-            //public void ReturnsNewBulkheadWhenConfigChanges()
-            //{
-            //    // Config can be used to resize the bulkhead at runtime, which results in a new
-            //    // bulkhead being created.
+            Assert.Equal(bulkhead, factory.GetBulkhead(key));
+        }
 
-            //    // To ensure consistency, callers who retrieve a bulkhead and call TryEnter()
-            //    // on it should keep a local reference to the same bulkhead to later call
-            //    // Release() on (rather than re-retrieving the bulkhead from the context).
-            //    // That behavior is tested elsewhere (with the BulkheadInvoker tests).
+        // TODO how to assert the assumption that callers will keep a reference to the bulkead they use, even if config changes?
 
-            //    var key = Rand.String();
-            //    var groupKey = GroupKey.Named(key);
-            //    var configKey = "mjolnir.bulkhead." + key + ".maxConcurrent";
-            //    var context = new CommandContextImpl();
+        [Fact]
+        public void GetBulkhead_ReturnsNewBulkheadWhenConfigChanges()
+        {
+            // Config can be used to resize the bulkhead at runtime, which results in a new
+            // bulkhead being created.
 
-            //    int initialExpectedCount = 5;
+            // To ensure consistency, callers who retrieve a bulkhead and call TryEnter()
+            // on it should keep a local reference to the same bulkhead to later call
+            // Release() on (rather than re-retrieving the bulkhead from the context).
+            // That behavior is tested elsewhere (with the BulkheadInvoker tests).
 
-            //    ConfigProvider.Instance.Set(configKey, initialExpectedCount);
+            // Arrange
 
-            //    var bulkhead = context.GetBulkhead(groupKey);
+            var key = AnyString;
+            var groupKey = GroupKey.Named(key);
+            var configKey = $"mjolnir.bulkhead.{key}.maxConcurrent";
+            const int initialExpectedCount = 5;
+            const int newExpectedCount = 6;
 
-            //    Assert.Equal(5, initialExpectedCount);
+            Action<int> changeHandler = null;
 
-            //    // Now, change the config value and make sure it gets applied.
+            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
 
-            //    int newExpectedCount = 2;
-            //    ConfigProvider.Instance.Set(configKey, newExpectedCount);
+            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey)).Returns(initialExpectedCount);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(groupKey, It.IsAny<Action<int>>())).Callback((GroupKey gk, Action<int> occ) => changeHandler = occ);
 
-            //    // Shouldn't change any existing referenced bulkheads...
-            //    Assert.Equal(initialExpectedCount, bulkhead.CountAvailable);
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
-            //    // ...but newly-retrieved bulkheads should get a new instance
-            //    // with the updated count.
-            //    var newBulkhead = context.GetBulkhead(groupKey);
-            //    Assert.NotEqual(bulkhead, newBulkhead);
-            //    Assert.Equal(newExpectedCount, newBulkhead.CountAvailable);
-            //}
+            var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
 
-            // TODO rewrite this test now that config is mock-able and change handlers have changed
-            //[Fact]
-            //public void IgnoresConfigChangeToInvalidValues()
-            //{
-            //    var key = Rand.String();
-            //    var groupKey = GroupKey.Named(key);
-            //    var configKey = "mjolnir.bulkhead." + key + ".maxConcurrent";
-            //    var context = new CommandContextImpl();
+            // Act
 
-            //    // Should have a valid default value initially.
-            //    Assert.Equal(10, context.GetBulkhead(groupKey).CountAvailable);
+            var firstBulkhead = factory.GetBulkhead(groupKey);
+            changeHandler(newExpectedCount);
 
-            //    // Negative limits aren't valid.
-            //    ConfigProvider.Instance.Set(configKey, -1);
-            //    Assert.Equal(10, context.GetBulkhead(groupKey).CountAvailable);
+            // Give the change handler callback enough time to create and reassign the bulkhead.
+            Thread.Sleep(500);
 
-            //    // Zero (disallow all) is a valid value.
-            //    ConfigProvider.Instance.Set(configKey, 0);
-            //    Assert.Equal(0, context.GetBulkhead(groupKey).CountAvailable);
-            //}
+            var secondBulkhead = factory.GetBulkhead(groupKey);
+
+            // Assert
+
+            // Shouldn't change any existing referenced bulkheads...
+            Assert.Equal(initialExpectedCount, firstBulkhead.CountAvailable);
+
+            // ...but newly-retrieved bulkheads should get a new instance
+            // with the updated count.
+            Assert.Equal(newExpectedCount, secondBulkhead.CountAvailable);
+
+            // And they shouldn't be the same bulkhead (which should be obvious by this point).
+            Assert.False(firstBulkhead == secondBulkhead);
         }
     }
 }
