@@ -33,11 +33,16 @@ namespace Hudl.Mjolnir.Bulkhead
         /// </summary>
         public ISemaphoreBulkhead GetBulkhead(GroupKey key)
         {
-            var holder = _bulkheads.GetOrAddSafe(key,
+            return GetBulkheadHolder(key).Bulkhead;
+        }
+        
+        // This only exists so that unit tests can get access to the holder to trigget its config
+        // change handler.
+        internal SemaphoreBulkheadHolder GetBulkheadHolder(GroupKey key)
+        {
+            return _bulkheads.GetOrAddSafe(key,
                 k => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig, _logFactory),
                 LazyThreadSafetyMode.ExecutionAndPublication);
-
-            return holder.Bulkhead;
         }
 
         // In order to dynamically change semaphore limits, we replace the semaphore on config

@@ -8,6 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Xunit;
+using Hudl.Mjolnir.Breaker;
+using static Hudl.Mjolnir.Bulkhead.BulkheadFactory;
+using Hudl.Mjolnir.Metrics;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -15,58 +18,100 @@ namespace Hudl.Mjolnir.Tests.Command
     {
         public class ExecuteWithBulkheadAsync : TestFixture
         {
-            // TODO rewrite this test, it's different now that config is mock-able
-            //[Fact]
-            //public void CallsTryEnterAndReleaseOnTheSameBulkheadDuringConfigChange()
-            //{
-            //    // A little more widely-scoped than a unit - we're testing the interaction
-            //    // between the invoker and command context here.
+            [Fact]
+            public async Task CallsTryEnterAndReleaseOnTheSameBulkheadDuringConfigChange()
+            {
+                // The assumption tested here is important. If the bulkhead max concurrent
+                // configuration value changes, the bulkhead holder will build a new semaphore and
+                // swap it out with the old one. However, any bulkheads that acquired a lock on
+                // the original semaphore need to release that semaphore instead of the new one.
+                // Otherwise, they'll release on the new one. If that happens, the new semaphore's
+                // counter won't be accurate respective to the number of commands concurrently
+                // executing with it.
 
-            //    // The test is performed by having the command itself change the config
-            //    // value, which will happen between the TryEnter and Release calls.
+                // This test is complicated, but it's one of the most important unit tests in the
+                // project. If you need to change it, take care that it gets re-written properly.
 
-            //    var key = Rand.String();
-            //    var groupKey = GroupKey.Named(key);
-            //    var bulkheadConfig = "mjolnir.bulkhead." + key + ".maxConcurrent";
+                // The test is performed by having the command itself change the config
+                // value, which will happen between the TryEnter and Release calls.
 
-            //    var context = new CommandContextImpl();
 
-            //    var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            //    mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
+                // Arrange
 
-            //    var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
-            //    mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+                const int initialMaxConcurrent = 10;
+                const int newMaxConcurrent = 15;
 
-            //    // Use a real breaker invoker instead of a mocked one so that we actually
-            //    // invoke the command (to change the config).
-            //    var breakerInvoker = new BreakerInvoker(context, mockBreakerExceptionHandler.Object);
-            //    var command = new ChangeBulkheadLimitAsyncCommand(key, bulkheadConfig, 15); // Limit needs to be different from default.
+                var key = AnyString;
+                var groupKey = GroupKey.Named(key);
+                
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig($"mjolnir.bulkhead.{key}.maxConcurrent", It.IsAny<int?>())).Returns(initialMaxConcurrent);
+                mockConfig.Setup(m => m.AddChangeHandler(It.IsAny<string>(), It.IsAny<Action<int>>()));
 
-            //    // This is the bulkhead that should be used for both TryEnter and Release.
-            //    // We don't want to mock it because we're also testing the behavior of
-            //    // the CommandContext internals here when a config changes. Mocking would
-            //    // allow for a more accurate test, though, since we'd be able to actually
-            //    // check if Release and TryEnter were both called on the same object.
-            //    var bulkhead = context.GetBulkhead(groupKey);
-            //    var invoker = new BulkheadInvoker(breakerInvoker, context, mockConfig.Object);
-            //    var unusedCancellationToken = CancellationToken.None;
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
+                
+                var mockCircuitBreaker = new Mock<ICircuitBreaker>(MockBehavior.Strict);
+                mockCircuitBreaker.Setup(m => m.IsAllowing()).Returns(true);
+                mockCircuitBreaker.Setup(m => m.Name).Returns(AnyString);
+                mockCircuitBreaker.Setup(m => m.Metrics).Returns(new Mock<ICommandMetrics>().Object);
+                mockCircuitBreaker.Setup(m => m.MarkSuccess(It.IsAny<long>()));
 
-            //    // Make sure we know the bulkhead value before the test.
-            //    Assert.Equal(10, bulkhead.CountAvailable);
+                var mockCircuitBreakerFactory = new Mock<ICircuitBreakerFactory>(MockBehavior.Strict);
+                mockCircuitBreakerFactory.Setup(m => m.GetCircuitBreaker(groupKey)).Returns(mockCircuitBreaker.Object);
 
-            //    // The test - should cause the bulkhead to be used during a config change.
-            //    var result = invoker.ExecuteWithBulkheadAsync(command, unusedCancellationToken);
+                var mockMetricEvents = new Mock<IMetricEvents>(); // Non-Strict: we aren't testing metric events here, let's keep the test simpler.
+                
+                var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+                mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new Mock<IMjolnirLog>().Object);
 
-            //    // The bulkhead we used should have its original value. We're making sure that
-            //    // we didn't TryEnter() and then skip the release because a different bulkhead
-            //    // was used.
-            //    Assert.Equal(10, bulkhead.CountAvailable);
+                var bulkheadConfig = new BulkheadConfig(mockConfig.Object);
 
-            //    // For the sake of completeness, make sure the config change actually got
-            //    // applied (otherwise we might not be testing an actual config change up
-            //    // above.
-            //    Assert.Equal(15, context.GetBulkhead(groupKey).CountAvailable);
-            //}
+                // Use a real BulkheadFactory, which will give us access to its BulkheadHolder.
+                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+                var holder = bulkheadFactory.GetBulkheadHolder(groupKey);
+                var initialBulkhead = bulkheadFactory.GetBulkhead(groupKey);
+
+                // Use a real BreakerInvoker instead of a mocked one so that we actually
+                // invoke the command that changes the config value.
+                var breakerInvoker = new BreakerInvoker(mockCircuitBreakerFactory.Object, mockMetricEvents.Object, mockBreakerExceptionHandler.Object);
+                var command = new ChangeBulkheadLimitAsyncCommand(key, holder, newMaxConcurrent);
+                
+                var invoker = new BulkheadInvoker(breakerInvoker, bulkheadFactory, mockMetricEvents.Object, mockConfig.Object);
+                var unusedCancellationToken = CancellationToken.None;
+
+                // Make sure the BulkheadFactory has the expected Bulkhead initialized for the key.
+                Assert.Equal(initialMaxConcurrent, bulkheadFactory.GetBulkhead(groupKey).CountAvailable);
+
+                // Act
+                
+                var result = await invoker.ExecuteWithBulkheadAsync(command, unusedCancellationToken);
+
+                // Assert
+                
+                // The assertions here are a bit indirect and, if we were mocking, could be more
+                // deterministic. We check to see if the CountAvailable values change correctly.
+                // Mocking would let us make Verify calls on TryEnter() and Release(), but mocking
+                // is challenging because of how the BulkheadFactory internally keeps hold of the
+                // Bulkheads it's managing within SemaphoreBulkheadHolders. The tests here should
+                // be okay enough, though.
+
+
+                // Since the config changed, the factory should have a new bulkhead for the key.
+                var newBulkhead = bulkheadFactory.GetBulkhead(groupKey);
+                Assert.True(initialBulkhead != newBulkhead);
+                
+                // The bulkhead we used should have its original value. We're making sure that
+                // we didn't TryEnter() and then skip the Release() because a different bulkhead
+                // was used.
+                Assert.Equal(initialMaxConcurrent, initialBulkhead.CountAvailable);
+
+                // For the sake of completeness, make sure the config change actually got
+                // applied (otherwise we might not be testing an actual config change up
+                // above).
+                Assert.Equal(newMaxConcurrent, newBulkhead.CountAvailable);
+            }
 
             [Fact]
             public async Task FiresMetricEventWhenRejected()
@@ -320,56 +365,100 @@ namespace Hudl.Mjolnir.Tests.Command
 
         public class ExecuteWithBulkhead : TestFixture
         {
-            // TODO rewrite this test, it's different now that config is mock-able
-            //[Fact]
-            //public void CallsTryEnterAndReleaseOnTheSameBulkheadDuringConfigChange()
-            //{
-            //    // A little more widely-scoped than a unit - we're testing the interaction
-            //    // between the invoker and command context here.
+            [Fact]
+            public void CallsTryEnterAndReleaseOnTheSameBulkheadDuringConfigChange()
+            {
+                // The assumption tested here is important. If the bulkhead max concurrent
+                // configuration value changes, the bulkhead holder will build a new semaphore and
+                // swap it out with the old one. However, any bulkheads that acquired a lock on
+                // the original semaphore need to release that semaphore instead of the new one.
+                // Otherwise, they'll release on the new one. If that happens, the new semaphore's
+                // counter won't be accurate respective to the number of commands concurrently
+                // executing with it.
 
-            //    // The test is performed by having the command itself change the config
-            //    // value, which will happen between the TryEnter and Release calls.
+                // This test is complicated, but it's one of the most important unit tests in the
+                // project. If you need to change it, take care that it gets re-written properly.
 
-            //    var key = Rand.String();
-            //    var groupKey = GroupKey.Named(key);
-            //    var bulkheadConfig = "mjolnir.bulkhead." + key + ".maxConcurrent";
-                
-            //    var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            //    mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
+                // The test is performed by having the command itself change the config
+                // value, which will happen between the TryEnter and Release calls.
 
-            //    var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
-            //    mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            //    // Use a real breaker invoker instead of a mocked one so that we actually
-            //    // invoke the command (to change the config).
-            //    var breakerInvoker = new BreakerInvoker(context, mockBreakerExceptionHandler.Object);
-            //    var command = new ChangeBulkheadLimitSyncCommand(key, bulkheadConfig, 15); // Limit needs to be different from default.
+                // Arrange
 
-            //    // This is the bulkhead that should be used for both TryEnter and Release.
-            //    // We don't want to mock it because we're also testing the behavior of
-            //    // the CommandContext internals here when a config changes. Mocking would
-            //    // allow for a more accurate test, though, since we'd be able to actually
-            //    // check if Release and TryEnter were both called on the same object.
-            //    var bulkhead = context.GetBulkhead(groupKey);
-            //    var invoker = new BulkheadInvoker(breakerInvoker, context, mockConfig.Object);
-            //    var unusedCancellationToken = CancellationToken.None;
+                const int initialMaxConcurrent = 10;
+                const int newMaxConcurrent = 15;
 
-            //    // Make sure we know the bulkhead value before the test.
-            //    Assert.Equal(10, bulkhead.CountAvailable);
+                var key = AnyString;
+                var groupKey = GroupKey.Named(key);
 
-            //    // The test - should cause the bulkhead to be used during a config change.
-            //    var result = invoker.ExecuteWithBulkhead(command, unusedCancellationToken);
+                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
+                mockConfig.Setup(m => m.GetConfig("mjolnir.useCircuitBreakers", It.IsAny<bool>())).Returns(true);
+                mockConfig.Setup(m => m.GetConfig($"mjolnir.bulkhead.{key}.maxConcurrent", It.IsAny<int?>())).Returns(initialMaxConcurrent);
+                mockConfig.Setup(m => m.AddChangeHandler(It.IsAny<string>(), It.IsAny<Action<int>>()));
 
-            //    // The bulkhead we used should have its original value. We're making sure that
-            //    // we didn't TryEnter() and then skip the release because a different bulkhead
-            //    // was used.
-            //    Assert.Equal(10, bulkhead.CountAvailable);
+                var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
+                mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            //    // For the sake of completeness, make sure the config change actually got
-            //    // applied (otherwise we might not be testing an actual config change up
-            //    // above.
-            //    Assert.Equal(15, context.GetBulkhead(groupKey).CountAvailable);
-            //}
+                var mockCircuitBreaker = new Mock<ICircuitBreaker>(MockBehavior.Strict);
+                mockCircuitBreaker.Setup(m => m.IsAllowing()).Returns(true);
+                mockCircuitBreaker.Setup(m => m.Name).Returns(AnyString);
+                mockCircuitBreaker.Setup(m => m.Metrics).Returns(new Mock<ICommandMetrics>().Object);
+                mockCircuitBreaker.Setup(m => m.MarkSuccess(It.IsAny<long>()));
+
+                var mockCircuitBreakerFactory = new Mock<ICircuitBreakerFactory>(MockBehavior.Strict);
+                mockCircuitBreakerFactory.Setup(m => m.GetCircuitBreaker(groupKey)).Returns(mockCircuitBreaker.Object);
+
+                var mockMetricEvents = new Mock<IMetricEvents>(); // Non-Strict: we aren't testing metric events here, let's keep the test simpler.
+
+                var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+                mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new Mock<IMjolnirLog>().Object);
+
+                var bulkheadConfig = new BulkheadConfig(mockConfig.Object);
+
+                // Use a real BulkheadFactory, which will give us access to its BulkheadHolder.
+                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+                var holder = bulkheadFactory.GetBulkheadHolder(groupKey);
+                var initialBulkhead = bulkheadFactory.GetBulkhead(groupKey);
+
+                // Use a real BreakerInvoker instead of a mocked one so that we actually
+                // invoke the command that changes the config value.
+                var breakerInvoker = new BreakerInvoker(mockCircuitBreakerFactory.Object, mockMetricEvents.Object, mockBreakerExceptionHandler.Object);
+                var command = new ChangeBulkheadLimitSyncCommand(key, holder, newMaxConcurrent);
+
+                var invoker = new BulkheadInvoker(breakerInvoker, bulkheadFactory, mockMetricEvents.Object, mockConfig.Object);
+                var unusedCancellationToken = CancellationToken.None;
+
+                // Make sure the BulkheadFactory has the expected Bulkhead initialized for the key.
+                Assert.Equal(initialMaxConcurrent, bulkheadFactory.GetBulkhead(groupKey).CountAvailable);
+
+                // Act
+
+                var result = invoker.ExecuteWithBulkhead(command, unusedCancellationToken);
+
+                // Assert
+
+                // The assertions here are a bit indirect and, if we were mocking, could be more
+                // deterministic. We check to see if the CountAvailable values change correctly.
+                // Mocking would let us make Verify calls on TryEnter() and Release(), but mocking
+                // is challenging because of how the BulkheadFactory internally keeps hold of the
+                // Bulkheads it's managing within SemaphoreBulkheadHolders. The tests here should
+                // be okay enough, though.
+
+
+                // Since the config changed, the factory should have a new bulkhead for the key.
+                var newBulkhead = bulkheadFactory.GetBulkhead(groupKey);
+                Assert.True(initialBulkhead != newBulkhead);
+
+                // The bulkhead we used should have its original value. We're making sure that
+                // we didn't TryEnter() and then skip the Release() because a different bulkhead
+                // was used.
+                Assert.Equal(initialMaxConcurrent, initialBulkhead.CountAvailable);
+
+                // For the sake of completeness, make sure the config change actually got
+                // applied (otherwise we might not be testing an actual config change up
+                // above).
+                Assert.Equal(newMaxConcurrent, newBulkhead.CountAvailable);
+            }
 
             [Fact]
             public void FiresMetricEventWhenRejected()
@@ -620,45 +709,45 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(0, command.ExecutionTimeMillis);
             }
         }
-
-        // Has a configurable key.
+        
+        // Changes the maxConcurrent for a bulkhead during command execution, which is a fakey
+        // but useful way to test bulkhead behavior (see the test that uses this).
         internal class ChangeBulkheadLimitAsyncCommand : AsyncCommand<bool>
         {
-            private readonly string _configKey;
+            private readonly SemaphoreBulkheadHolder _holder;
             private readonly int _changeLimitTo;
 
-            public ChangeBulkheadLimitAsyncCommand(string bulkheadKey, string configKey, int changeLimitTo)
+            public ChangeBulkheadLimitAsyncCommand(string bulkheadKey, SemaphoreBulkheadHolder holder, int changeLimitTo)
                 : base(bulkheadKey, bulkheadKey, TimeSpan.FromSeconds(1000))
             {
-                _configKey = configKey;
+                _holder = holder;
                 _changeLimitTo = changeLimitTo;
             }
 
             public override Task<bool> ExecuteAsync(CancellationToken cancellationToken)
             {
-                // TODO rewrite the test that uses this class
-                //ConfigProvider.Instance.Set(_configKey, _changeLimitTo);
+                _holder.UpdateMaxConcurrent(_changeLimitTo);
                 return Task.FromResult(true);
             }
         }
 
-        // Has a configurable key.
+        // Changes the maxConcurrent for a bulkhead during command execution, which is a fakey
+        // but useful way to test bulkhead behavior (see the test that uses this).
         internal class ChangeBulkheadLimitSyncCommand : SyncCommand<bool>
         {
-            private readonly string _configKey;
+            private readonly SemaphoreBulkheadHolder _holder;
             private readonly int _changeLimitTo;
 
-            public ChangeBulkheadLimitSyncCommand(string bulkheadKey, string configKey, int changeLimitTo)
+            public ChangeBulkheadLimitSyncCommand(string bulkheadKey, SemaphoreBulkheadHolder holder, int changeLimitTo)
                 : base(bulkheadKey, bulkheadKey, TimeSpan.FromSeconds(1000))
             {
-                _configKey = configKey;
+                _holder = holder;
                 _changeLimitTo = changeLimitTo;
             }
 
             public override bool Execute(CancellationToken cancellationToken)
             {
-                // TODO rewrite the test that uses this class
-                //ConfigProvider.Instance.Set(_configKey, _changeLimitTo);
+                _holder.UpdateMaxConcurrent(_changeLimitTo);
                 return true;
             }
         }
