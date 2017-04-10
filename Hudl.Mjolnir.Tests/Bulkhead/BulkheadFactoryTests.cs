@@ -40,9 +40,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             Assert.Equal(bulkhead, factory.GetBulkhead(key));
         }
-
-        // TODO how to assert the assumption that callers will keep a reference to the bulkead they use, even if config changes?
-
+        
         [Fact]
         public void GetBulkhead_ReturnsNewBulkheadWhenConfigChanges()
         {
