@@ -15,7 +15,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
         {
             // Arrange
 
-            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+            var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBreakerConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());

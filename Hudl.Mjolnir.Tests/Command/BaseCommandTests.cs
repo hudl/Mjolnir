@@ -106,6 +106,42 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Equal(expected, command.BulkheadKey);
             }
+
+            [Fact]
+            public void WhenBreakerKeyIsDefault_Throws()
+            {
+                // Default config keys are keys like "mjolnir.breaker.default.minimumOperations".
+                // Specific config keys are "mjolnir.breaker.{key}.minimumOperations". To avoid
+                // a user-defined breaker key accidentally and confusingly using the default key,
+                // prevent commands from being created with "default" as their key.
+
+                // Arrange
+
+                const string invalidBreakerKey = "default";
+
+                // Act + Assert
+
+                var exception = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, invalidBreakerKey, AnyString, AnyPositiveTimeSpan));
+                Assert.Equal("Cannot use 'default' as breakerKey, it is a reserved name", exception.Message);
+            }
+
+            [Fact]
+            public void WhenBulkheadKeyIsDefault_Throws()
+            {
+                // Default config keys are keys like "mjolnir.bulkhead.default.maxConcurrent".
+                // Specific config keys are "mjolnir.bulkhead.{key}.maxConcurrent". To avoid
+                // a user-defined bulkhead key accidentally and confusingly using the default key,
+                // prevent commands from being created with "default" as their key.
+
+                // Arrange
+
+                const string invalidBulkheadKey = "default";
+
+                // Act + Assert
+
+                var exception = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, AnyString, invalidBulkheadKey, AnyPositiveTimeSpan));
+                Assert.Equal("Cannot use 'default' as bulkheadKey, it is a reserved name", exception.Message);
+            }
         }
 
         public class DetermineTimeout : TestFixture

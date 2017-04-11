@@ -67,6 +67,16 @@ namespace Hudl.Mjolnir.Command
                 throw new ArgumentNullException(nameof(bulkheadKey));
             }
 
+            if (breakerKey == "default")
+            {
+                throw new ArgumentException($"Cannot use 'default' as {nameof(breakerKey)}, it is a reserved name");
+            }
+
+            if (bulkheadKey == "default")
+            {
+                throw new ArgumentException($"Cannot use 'default' as {nameof(bulkheadKey)}, it is a reserved name");
+            }
+
             if (defaultTimeout != null && defaultTimeout.Value.TotalMilliseconds <= 0)
             {
                 throw new ArgumentException($"Positive default timeout is required if passed (received invalid timeout of {defaultTimeout.Value.TotalMilliseconds}ms)", nameof(defaultTimeout));

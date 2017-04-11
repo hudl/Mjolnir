@@ -1,4 +1,5 @@
 ﻿using Hudl.Mjolnir.Key;
+using System;
 
 namespace Hudl.Mjolnir.Tests.Helper
 {
@@ -19,6 +20,11 @@ namespace Hudl.Mjolnir.Tests.Helper
         protected static bool AnyBool
         {
             get { return Rand.Bool(); }
+        }
+
+        protected static TimeSpan AnyPositiveTimeSpan
+        {
+            get { return TimeSpan.FromMilliseconds(AnyPositiveInt); }
         }
     }
 }
