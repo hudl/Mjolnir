@@ -1,6 +1,7 @@
 ﻿using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using System;
+using System.Collections.Concurrent;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -11,8 +12,21 @@ namespace Hudl.Mjolnir.Command
     /// 
     /// For a detailed overview, see https://github.com/hudl/Mjolnir/wiki.
     /// </summary>
-    public abstract class BaseCommand : Command
+    public abstract class BaseCommand
     {
+        /// <summary>
+        /// Cache of known command names, keyed by Type and group key. Helps
+        /// avoid repeatedly generating the same Name for every distinct command
+        /// instance.
+        /// </summary>
+        protected static readonly ConcurrentDictionary<Tuple<Type, GroupKey>, string> GeneratedNameCache = new ConcurrentDictionary<Tuple<Type, GroupKey>, string>();
+
+        /// <summary>
+        /// Cache of known command names, keyed by provided name and group key. Helps
+        /// avoid repeatedly generating the same Name for every distinct command.
+        /// </summary>
+        protected static readonly ConcurrentDictionary<Tuple<string, GroupKey>, string> ProvidedNameCache = new ConcurrentDictionary<Tuple<string, GroupKey>, string>();
+
         private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMilliseconds(2000);
 
         private readonly GroupKey _group;
