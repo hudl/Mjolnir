@@ -64,11 +64,18 @@ namespace Hudl.Mjolnir.Breaker
             
             _metricsTimer = new GaugeTimer(state =>
             {
-                _metricEvents.BreakerConfigGauge(
+                try
+                {
+                    _metricEvents.BreakerConfigGauge(
                     Name,
                     _config.GetMinimumOperations(_key),
                     _config.GetThresholdPercentage(_key),
                     _config.GetTrippedDurationMillis(_key));
+                }
+                catch(Exception e)
+                {
+                    _log.Error($"Error sending {nameof(IMetricEvents.BreakerConfigGauge)} metric event", e);
+                }
             });
         }
 

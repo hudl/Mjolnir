@@ -110,7 +110,14 @@ namespace Hudl.Mjolnir.Bulkhead
 
                 _timer = new GaugeTimer(state =>
                 {
-                    _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.GetMaxConcurrent(key));
+                    try
+                    {
+                        _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.GetMaxConcurrent(key));
+                    }
+                    catch (Exception e)
+                    {
+                        _log.Error($"Error sending {nameof(IMetricEvents.BulkheadConfigGauge)} metric event", e);
+                    }
                 });
             }
             
