@@ -53,9 +53,7 @@ namespace Hudl.Mjolnir.Bulkhead
             // the value, which means if the config value later changes to a valid value, the
             // initialization here will work and start returning a valid Bulkhead instead of an
             // exception.
-            return _bulkheads.GetOrAddSafe(key,
-                k => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig, _logFactory),
-                LazyThreadSafetyMode.PublicationOnly);
+            return _bulkheads.GetOrAdd(key, new Lazy<SemaphoreBulkheadHolder>(() => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig, _logFactory), LazyThreadSafetyMode.PublicationOnly)).Value;
         }
 
         // In order to dynamically change semaphore limits, we replace the semaphore on config

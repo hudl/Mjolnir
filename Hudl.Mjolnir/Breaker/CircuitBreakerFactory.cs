@@ -1,7 +1,6 @@
 ﻿using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
-using Hudl.Mjolnir.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -29,18 +28,18 @@ namespace Hudl.Mjolnir.Breaker
 
         public ICircuitBreaker GetCircuitBreaker(GroupKey key)
         {
-            return _circuitBreakers.GetOrAddSafe(key, k =>
-            {
-                var metrics = GetCommandMetrics(key);
-                return new FailurePercentageCircuitBreaker(key, metrics, _metricEvents, _breakerConfig, _logFactory);
-            }, LazyThreadSafetyMode.ExecutionAndPublication);
+            return _circuitBreakers.GetOrAdd(key, new Lazy<ICircuitBreaker>(() => CircuitBreakerValueFactory(key), LazyThreadSafetyMode.PublicationOnly)).Value;
         }
-
+        
         private ICommandMetrics GetCommandMetrics(GroupKey key)
         {
-            return _metrics.GetOrAddSafe(key, k =>
-                new StandardCommandMetrics(key, _breakerConfig, _logFactory),
-                LazyThreadSafetyMode.ExecutionAndPublication);
+            return _metrics.GetOrAdd(key, new Lazy<ICommandMetrics>(() => new StandardCommandMetrics(key, _breakerConfig, _logFactory), LazyThreadSafetyMode.PublicationOnly)).Value;
+        }
+
+        private ICircuitBreaker CircuitBreakerValueFactory(GroupKey key)
+        {
+            var metrics = GetCommandMetrics(key);
+            return new FailurePercentageCircuitBreaker(key, metrics, _metricEvents, _breakerConfig, _logFactory);
         }
     }
 }
