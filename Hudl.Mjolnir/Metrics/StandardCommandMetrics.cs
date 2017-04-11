@@ -3,6 +3,7 @@ using System.Threading;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Clock;
+using Hudl.Mjolnir.Breaker;
 
 namespace Hudl.Mjolnir.Metrics
 {
@@ -11,12 +12,12 @@ namespace Hudl.Mjolnir.Metrics
         private readonly IClock _clock;
         private readonly ResettingNumbersBucket _resettingNumbersBucket;
         private readonly GroupKey _key;
-        private readonly IStandardCommandMetricsConfig _config;
+        private readonly IFailurePercentageCircuitBreakerConfig _config;
 
-        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IMjolnirLogFactory logFactory)
+        internal StandardCommandMetrics(GroupKey key, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory)
             : this(key, config, new UtcSystemClock(), logFactory) {}
 
-        internal StandardCommandMetrics(GroupKey key, IStandardCommandMetricsConfig config, IClock clock, IMjolnirLogFactory logFactory)
+        internal StandardCommandMetrics(GroupKey key, IFailurePercentageCircuitBreakerConfig config, IClock clock, IMjolnirLogFactory logFactory)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));

@@ -12,20 +12,18 @@ namespace Hudl.Mjolnir.Breaker
     {
         private readonly IMetricEvents _metricEvents;
         private readonly IFailurePercentageCircuitBreakerConfig _breakerConfig;
-        private readonly IStandardCommandMetricsConfig _metricsConfig;
         private readonly IMjolnirLogFactory _logFactory;
 
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<ICircuitBreaker>>();
         private readonly ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>> _metrics = new ConcurrentDictionary<GroupKey, Lazy<ICommandMetrics>>();
 
-        public CircuitBreakerFactory(IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig breakerConfig, IStandardCommandMetricsConfig metricsConfig, IMjolnirLogFactory logFactory)
+        public CircuitBreakerFactory(IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig breakerConfig, IMjolnirLogFactory logFactory)
         {
             // No null checks on parameters; we don't use them, we're just passing them through to
             // the objects we're creating.
 
             _metricEvents = metricEvents;
             _breakerConfig = breakerConfig;
-            _metricsConfig = metricsConfig;
             _logFactory = logFactory;
         }
 
@@ -41,7 +39,7 @@ namespace Hudl.Mjolnir.Breaker
         private ICommandMetrics GetCommandMetrics(GroupKey key)
         {
             return _metrics.GetOrAddSafe(key, k =>
-                new StandardCommandMetrics(key, _metricsConfig, _logFactory),
+                new StandardCommandMetrics(key, _breakerConfig, _logFactory),
                 LazyThreadSafetyMode.ExecutionAndPublication);
         }
     }

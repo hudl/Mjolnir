@@ -1,4 +1,5 @@
-﻿using Hudl.Mjolnir.Key;
+﻿using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
@@ -41,7 +42,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         {
             const long periodMillis = 1000;
 
-            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(It.IsAny<GroupKey>())).Returns(periodMillis);
             
             var clock = new ManualTestClock();
@@ -58,7 +59,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
 
         private ResettingNumbersBucket CreateBucket()
         {
-            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(It.IsAny<GroupKey>())).Returns(10000);
             
             var clock = new ManualTestClock();

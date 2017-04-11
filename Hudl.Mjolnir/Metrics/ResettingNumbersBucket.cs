@@ -3,6 +3,7 @@ using System.Threading;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Clock;
+using Hudl.Mjolnir.Breaker;
 
 namespace Hudl.Mjolnir.Metrics
 {
@@ -12,7 +13,7 @@ namespace Hudl.Mjolnir.Metrics
     /// </summary>
     internal class ResettingNumbersBucket
     {
-        private readonly IStandardCommandMetricsConfig _config;
+        private readonly IFailurePercentageCircuitBreakerConfig _config;
         private readonly IClock _clock;
         private readonly IMjolnirLog _log;
 
@@ -22,34 +23,19 @@ namespace Hudl.Mjolnir.Metrics
         private ILongCounter[] _counters;
         private long _lastResetAtTime = 0;
 
-        internal ResettingNumbersBucket(GroupKey key, IStandardCommandMetricsConfig config, IMjolnirLogFactory logFactory) : this(key, new UtcSystemClock(), config, logFactory)
+        internal ResettingNumbersBucket(GroupKey key, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory) : this(key, new UtcSystemClock(), config, logFactory)
         { }
 
-        internal ResettingNumbersBucket(GroupKey key, IClock clock, IStandardCommandMetricsConfig config, IMjolnirLogFactory logFactory)
+        internal ResettingNumbersBucket(GroupKey key, IClock clock, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (clock == null)
-            {
-                throw new ArgumentNullException(nameof(clock));
-            }
-
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            _key = key;
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
 
             if (logFactory == null)
             {
                 throw new ArgumentNullException(nameof(logFactory));
             }
-            
-            _key = key;
-            _clock = clock;
-            _config = config;
 
             _log = logFactory.CreateLog(typeof(ResettingNumbersBucket));
 

@@ -1,4 +1,5 @@
-﻿using Hudl.Mjolnir.Clock;
+﻿using Hudl.Mjolnir.Breaker;
+using Hudl.Mjolnir.Clock;
 using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
@@ -14,7 +15,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         {
             var key = AnyGroupKey;
 
-            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(30000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(1000);
             
@@ -31,7 +32,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         {
             var key = AnyGroupKey;
 
-            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(30000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(1000);
             
@@ -72,7 +73,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
 
             var key = AnyGroupKey;
 
-            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(10000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(1000);
             
@@ -94,7 +95,7 @@ namespace Hudl.Mjolnir.Tests.Metrics
         {
             var key = AnyGroupKey;
 
-            var mockConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
+            var mockConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             mockConfig.Setup(m => m.GetWindowMillis(key)).Returns(10000);
             mockConfig.Setup(m => m.GetSnapshotTtlMillis(key)).Returns(0); // Don't cache snapshots.
             

@@ -289,7 +289,6 @@ namespace Hudl.Mjolnir.Command
             _circuitBreakerFactory = new CircuitBreakerFactory(
                 _metricEvents,
                 new FailurePercentageCircuitBreakerConfig(_config),
-                new StandardCommandMetricsConfig(_config),
                 _logFactory);
 
             _bulkheadFactory = new BulkheadFactory(

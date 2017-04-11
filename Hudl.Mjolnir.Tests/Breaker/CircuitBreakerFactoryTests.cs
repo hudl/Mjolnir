@@ -1,7 +1,6 @@
 ﻿using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Log;
-using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
 using System;
@@ -18,12 +17,11 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
             var mockBreakerConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
-            var mockMetricsConfig = new Mock<IStandardCommandMetricsConfig>(MockBehavior.Strict);
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
             var groupKey = AnyGroupKey;
-            var factory = new CircuitBreakerFactory(mockMetricEvents.Object, mockBreakerConfig.Object, mockMetricsConfig.Object, mockLogFactory.Object);
+            var factory = new CircuitBreakerFactory(mockMetricEvents.Object, mockBreakerConfig.Object, mockLogFactory.Object);
 
             // Act
 

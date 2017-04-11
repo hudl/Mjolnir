@@ -4,15 +4,6 @@ using System;
 
 namespace Hudl.Mjolnir.Breaker
 {
-    internal interface IFailurePercentageCircuitBreakerConfig
-    {
-        long GetMinimumOperations(GroupKey key);
-        int GetThresholdPercentage(GroupKey key);
-        long GetTrippedDurationMillis(GroupKey key);
-        bool GetForceTripped(GroupKey key);
-        bool GetForceFixed(GroupKey key);
-    }
-
     internal class FailurePercentageCircuitBreakerConfig : IFailurePercentageCircuitBreakerConfig
     {
         private readonly IMjolnirConfig _config;
@@ -25,6 +16,11 @@ namespace Hudl.Mjolnir.Breaker
         public long GetMinimumOperations(GroupKey key)
         {
             return _config.GetConfig<long?>($"mjolnir.breaker.{key}.minimumOperations", null) ?? _config.GetConfig<long>("mjolnir.breaker.default.minimumOperations", 10);
+        }
+        
+        public long GetWindowMillis(GroupKey key)
+        {
+            return _config.GetConfig<long?>($"mjolnir.breaker.{key}.windowMillis", null) ?? _config.GetConfig<long>("mjolnir.breaker.default.windowMillis", 30000);
         }
 
         public int GetThresholdPercentage(GroupKey key)
@@ -45,6 +41,11 @@ namespace Hudl.Mjolnir.Breaker
         public bool GetForceFixed(GroupKey key)
         {
             return _config.GetConfig<bool?>($"mjolnir.breaker.{key}.forceFixed", null) ?? _config.GetConfig("mjolnir.breaker.default.forceFixed", false);
+        }
+
+        public long GetSnapshotTtlMillis(GroupKey key)
+        {
+            return _config.GetConfig<long?>($"mjolnir.breaker.{key}.snapshotTtlMillis", null) ?? _config.GetConfig<long>("mjolnir.breaker.default.snapshotTtlMillis", 1000);
         }
     }
 }
