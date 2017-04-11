@@ -142,6 +142,31 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
         }
 
         [Fact]
+        public void Construct_WhenMaxConcurrentConfigIsInvalid_DoesSomething()
+        {
+            // Arrange
+
+            var key = AnyString;
+            var groupKey = GroupKey.Named(key);
+            const int invalidMaxConcurrent = -1;
+            var mockMetricEvents = new Mock<IMetricEvents>(); // Not Strict: we're not testing the events here.
+
+            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey)).Returns(invalidMaxConcurrent);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(groupKey, It.IsAny<Action<int>>()));
+
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+
+            // Act + Assert
+
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new SemaphoreBulkheadHolder(groupKey, mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object));
+            
+            Assert.Equal("maxConcurrent", exception.ParamName);
+            Assert.Equal(invalidMaxConcurrent, exception.ActualValue);
+        }
+
+        [Fact]
         public void UpdateMaxConcurrent_IgnoresInvalidValues()
         {
             // Arrange

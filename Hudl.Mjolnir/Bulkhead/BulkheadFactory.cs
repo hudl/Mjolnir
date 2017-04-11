@@ -40,9 +40,22 @@ namespace Hudl.Mjolnir.Bulkhead
         // change handler.
         internal SemaphoreBulkheadHolder GetBulkheadHolder(GroupKey key)
         {
+            // Use LazyThreadSafetyMode.PublicationOnly. PublicationOnly means that multiple
+            // threads that attempt to initialize the lazy value at the same time might each create
+            // a SemaphoreBulkheadHolder, but the first to complete will get set as the Lazy's
+            // Value. Creating multiple is fine because the SemaphoreBulkheadHolders are
+            // lightweight.
+            //
+            // PublicationOnly is important because the SemaphoreBulkheadHolder may throw an
+            // exception, particularly in the case where the MaxConcurrent config value is
+            // initially an invalid value. Other LazyThreadSafetyModes will cache that exception
+            // and re-throw it on all requests for Lazy.Value; PublicationOnly will not cache
+            // the value, which means if the config value later changes to a valid value, the
+            // initialization here will work and start returning a valid Bulkhead instead of an
+            // exception.
             return _bulkheads.GetOrAddSafe(key,
                 k => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig, _logFactory),
-                LazyThreadSafetyMode.ExecutionAndPublication);
+                LazyThreadSafetyMode.PublicationOnly);
         }
 
         // In order to dynamically change semaphore limits, we replace the semaphore on config
@@ -88,9 +101,7 @@ namespace Hudl.Mjolnir.Bulkhead
                 // semaphore to the dictionary, potentially trying to add two entries with
                 // different values in rapid succession.
 
-                // TODO what if this value is invalid? if we throw, will the GetOrAddSafe() eat the error? should we initialize but in a bad state, and throw on every call that passes through until the config is updated?
                 var value = _config.GetMaxConcurrent(key);
-                
                 _bulkhead = new SemaphoreBulkhead(_key, value);
 
                 // On change, we'll replace the bulkhead. The assumption here is that a caller

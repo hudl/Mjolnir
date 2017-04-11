@@ -53,7 +53,5 @@ namespace Hudl.Mjolnir.External
         /// <param name="onConfigChange">Callback to invoke if config value changes</param>
         /// /// <throws>InvalidOperationException if value cannot be cast to Type T.</throws>
         void AddChangeHandler<T>(string key, Action<T> onConfigChange);
-
-        // TODO run an initial test for these assumptions when implementations are passed to CommandInvoker.
     }
 }

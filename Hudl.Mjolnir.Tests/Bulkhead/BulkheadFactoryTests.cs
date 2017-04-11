@@ -24,9 +24,11 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var key = AnyGroupKey;
 
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
             mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
+
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
@@ -94,6 +96,74 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             // And they shouldn't be the same bulkhead (which should be obvious by this point).
             Assert.False(firstBulkhead == secondBulkhead);
+        }
+
+        [Fact]
+        public void GetBulkhead_WhenInitializingBulkheadAndMaxConcurrentConfigIsInvalid_Throws()
+        {
+            // Arrange
+
+            var key = AnyGroupKey;
+            const int invalidMaxConcurrent = -1;
+
+            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+
+            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(invalidMaxConcurrent);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
+
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+
+            var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
+
+            // Act + Assert
+
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => factory.GetBulkhead(key));
+            
+            Assert.Equal("maxConcurrent", exception.ParamName);
+            Assert.Equal(invalidMaxConcurrent, exception.ActualValue);
+        }
+
+        [Fact]
+        public void GetBulkhead_WhenInitializingBulkheadAndMaxConcurrentConfigIsInvalid_AndThenConfigChangedToValidValue_CreatesBulkhead()
+        {
+            // Arrange
+
+            var key = AnyGroupKey;
+            const int invalidMaxConcurrent = -1;
+            const int validMaxConcurrent = 1;
+
+            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+
+            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
+
+            mockBulkheadConfig.SetupSequence(m => m.GetMaxConcurrent(key))
+                .Returns(invalidMaxConcurrent)
+                .Returns(validMaxConcurrent);
+            
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+
+            var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
+
+            try
+            {
+                factory.GetBulkhead(key);
+            }
+            catch(ArgumentOutOfRangeException)
+            {
+                // Expected, config is invalid for the first attempt.
+            }
+
+            // Act
+            
+            var bulkhead = factory.GetBulkhead(key); // Should not throw.
+
+            // Assert
+
+            Assert.Equal(validMaxConcurrent, bulkhead.CountAvailable);
         }
     }
 }
