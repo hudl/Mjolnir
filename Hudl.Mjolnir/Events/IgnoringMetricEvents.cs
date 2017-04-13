@@ -32,7 +32,7 @@ namespace Hudl.Mjolnir.Events
             return;
         }
 
-        public void BulkheadConfigGauge(string bulkheadName, string bulkheadType, int maxConcurrent)
+        public void BulkheadGauge(string bulkheadName, string bulkheadType, int maxConcurrent, int countAvailable)
         {
             return;
         }

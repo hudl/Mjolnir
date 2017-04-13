@@ -45,13 +45,13 @@ namespace Hudl.Mjolnir.Bulkhead
                         if (_bulkheads.TryGetValue(key, out Lazy<SemaphoreBulkheadHolder> holder) && holder.IsValueCreated)
                         {
                             var bulkhead = holder.Value.Bulkhead;
-                            _metricEvents.BulkheadConfigGauge(bulkhead.Name, "semaphore", _bulkheadConfig.GetMaxConcurrent(key));
+                            _metricEvents.BulkheadGauge(bulkhead.Name, "semaphore", _bulkheadConfig.GetMaxConcurrent(key), bulkhead.CountAvailable);
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    log.Error($"Error sending {nameof(IMetricEvents.BulkheadConfigGauge)} metric event", e);
+                    log.Error($"Error sending {nameof(IMetricEvents.BulkheadGauge)} metric event", e);
                 }
             });
         }

@@ -57,10 +57,9 @@
         void RejectedByBulkhead(string bulkheadName, string commandName);
 
         /// <summary>
-        /// Fires at one second intervals, providing the current configuration state of the
-        /// bulkhead. The interval isn't configurable, but the implementation of this callback
-        /// can debounce the event and pass it to their own metrics collector at the resolution
-        /// desired.
+        /// Fires at one second intervals, providing the current state of the bulkhead. The
+        /// interval isn't configurable, but the implementation of this callback can debounce the
+        /// event and pass it to their own metrics collector at the resolution desired.
         /// 
         /// Recommended metric: Gauge
         /// </summary>
@@ -69,7 +68,8 @@
         /// <param name="maxConcurrent">
         ///     The maximum concurrent ops the bulkhead currently allows.
         /// </param>
-        void BulkheadConfigGauge(string bulkheadName, string bulkheadType, int maxConcurrent);
+        /// <param name="countAvailable">The number of available spots in the bulkhead</param>
+        void BulkheadGauge(string bulkheadName, string bulkheadType, int maxConcurrent, int countAvailable);
 
         /// <summary>
         /// When a circuit breaker trips.

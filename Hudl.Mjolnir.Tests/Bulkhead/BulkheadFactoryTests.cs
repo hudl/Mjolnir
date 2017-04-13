@@ -21,7 +21,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var groupKey = GroupKey.Named(key);
             var expectedMaxConcurrent = AnyPositiveInt;
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(groupKey.Name, "semaphore", expectedMaxConcurrent));
+            mockMetricEvents.Setup(m => m.BulkheadGauge(groupKey.Name, "semaphore", expectedMaxConcurrent, It.IsAny<int>()));
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey)).Returns(expectedMaxConcurrent);
@@ -43,7 +43,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Assert
 
             // Gauges should fire every second, so wait one second and then verify.
-            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(key, "semaphore", expectedMaxConcurrent), Times.Once);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key, "semaphore", expectedMaxConcurrent, It.IsAny<int>()), Times.Once);
         }
 
         [Fact]
@@ -61,8 +61,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var expectedMaxConcurrent2 = AnyPositiveInt;
             
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(groupKey1.Name, "semaphore", expectedMaxConcurrent1));
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(groupKey2.Name, "semaphore", expectedMaxConcurrent2));
+            mockMetricEvents.Setup(m => m.BulkheadGauge(groupKey1.Name, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()));
+            mockMetricEvents.Setup(m => m.BulkheadGauge(groupKey2.Name, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()));
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey1)).Returns(expectedMaxConcurrent1);
@@ -79,7 +79,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             // Wait 2s - since we haven't yet created any bulkheads, we shouldn't have any events.
 
-            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
 
             Thread.Sleep(TimeSpan.FromMilliseconds(1010));
 
@@ -89,8 +89,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             Thread.Sleep(TimeSpan.FromMilliseconds(1010));
             
-            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(key1, "semaphore", expectedMaxConcurrent1), Times.Once);
-            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(key2, "semaphore", expectedMaxConcurrent2), Times.Once);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key1, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()), Times.Once);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key2, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()), Times.Once);
         }
 
         [Fact]

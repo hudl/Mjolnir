@@ -66,7 +66,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var key = AnyGroupKey;
             var expectedMaxConcurrent = AnyPositiveInt;
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()));
+            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(expectedMaxConcurrent);
@@ -92,7 +92,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             var key = AnyGroupKey;
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()));
+            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
@@ -145,7 +145,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             const int invalidMaxConcurrent = -1;
 
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()));
+            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
@@ -181,7 +181,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             const int initialExpectedCount = 5;
             const int newExpectedCount = 6;
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()));
+            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(initialExpectedCount);
