@@ -104,8 +104,6 @@ namespace Hudl.Mjolnir.Bulkhead
 
             public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, IBulkheadConfig config, IMjolnirLogFactory logFactory)
             {
-                Console.WriteLine("Creating a new semaphore bulkhead holder for " + key);
-
                 _key = key;
                 _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
                 _config = config ?? throw new ArgumentNullException(nameof(config));
