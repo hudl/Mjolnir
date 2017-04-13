@@ -13,6 +13,87 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
     public class BulkheadFactoryTests : TestFixture
     {
         [Fact]
+        public void Construct_InitializesConfigGauge_GaugeFiresForOneBulkhead()
+        {
+            // Arrange
+
+            var key = AnyString;
+            var groupKey = GroupKey.Named(key);
+            var expectedMaxConcurrent = AnyPositiveInt;
+            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(groupKey.Name, "semaphore", expectedMaxConcurrent));
+
+            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey)).Returns(expectedMaxConcurrent);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(groupKey, It.IsAny<Action<int>>()));
+
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            
+            // Act
+
+            var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
+            
+            // Add a bulkhead
+            factory.GetBulkhead(groupKey);
+            
+            // The timer will fire after 1 second.
+            Thread.Sleep(TimeSpan.FromMilliseconds(1010));
+
+            // Assert
+
+            // Gauges should fire every second, so wait one second and then verify.
+            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(key, "semaphore", expectedMaxConcurrent), Times.Once);
+        }
+
+        [Fact]
+        public void Construct_InitializesConfigGauge_GaugeFiresForMultipleBulkheads()
+        {
+            // Arrange
+
+            var key1 = AnyString;
+            var groupKey1 = GroupKey.Named(key1);
+
+            var key2 = AnyString;
+            var groupKey2 = GroupKey.Named(key2);
+
+            var expectedMaxConcurrent1 = AnyPositiveInt;
+            var expectedMaxConcurrent2 = AnyPositiveInt;
+            
+            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(groupKey1.Name, "semaphore", expectedMaxConcurrent1));
+            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(groupKey2.Name, "semaphore", expectedMaxConcurrent2));
+
+            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey1)).Returns(expectedMaxConcurrent1);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(groupKey1, It.IsAny<Action<int>>()));
+            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey2)).Returns(expectedMaxConcurrent2);
+            mockBulkheadConfig.Setup(m => m.AddChangeHandler(groupKey2, It.IsAny<Action<int>>()));
+
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+
+            // Act + Assert
+
+            var factory = new BulkheadFactory(mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
+
+            // Wait 2s - since we haven't yet created any bulkheads, we shouldn't have any events.
+
+            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(1010));
+
+            // Add two bulkheads
+            factory.GetBulkhead(groupKey1);
+            factory.GetBulkhead(groupKey2);
+
+            Thread.Sleep(TimeSpan.FromMilliseconds(1010));
+            
+            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(key1, "semaphore", expectedMaxConcurrent1), Times.Once);
+            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(key2, "semaphore", expectedMaxConcurrent2), Times.Once);
+        }
+
+        [Fact]
         public void GetBulkhead_ReturnsSameBulkheadForKey()
         {
             // Bulkheads are long-lived objects and used for many requests. In the absence

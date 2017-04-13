@@ -110,37 +110,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // It.IsAny<Action<int>>() could be better here, but I can't access the non-static method group.
             mockBulkheadConfig.Verify(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()), Times.Once);
         }
-
-        [Fact]
-        public void Construct_InitializesConfigGauge()
-        {
-            // Arrange
-
-            var key = AnyString;
-            var groupKey = GroupKey.Named(key);
-            var expectedMaxConcurrent = AnyPositiveInt;
-            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadConfigGauge(groupKey.Name, "semaphore", expectedMaxConcurrent));
-
-            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
-            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey)).Returns(expectedMaxConcurrent);
-            mockBulkheadConfig.Setup(m => m.AddChangeHandler(groupKey, It.IsAny<Action<int>>()));
-
-            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
-            // Act
-
-            var holder = new SemaphoreBulkheadHolder(groupKey, mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
-            Thread.Sleep(TimeSpan.FromMilliseconds(1100));
-
-            // Assert
-
-            // Gauges should fire every second, so wait one second and then verify.
-            mockMetricEvents.Verify(m => m.BulkheadConfigGauge(key, "semaphore", expectedMaxConcurrent), Times.Once);
-
-        }
-
+        
         [Fact]
         public void Construct_WhenMaxConcurrentConfigIsInvalid_DoesSomething()
         {

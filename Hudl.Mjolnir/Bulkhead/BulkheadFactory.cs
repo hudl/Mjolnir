@@ -16,6 +16,10 @@ namespace Hudl.Mjolnir.Bulkhead
         private readonly IBulkheadConfig _bulkheadConfig;
         private readonly IMjolnirLogFactory _logFactory;
 
+        // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
+        private readonly GaugeTimer _timer;
+        // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
+
         public BulkheadFactory(IMetricEvents metricEvents, IBulkheadConfig bulkheadConfig, IMjolnirLogFactory logFactory)
         {
             // No null checks on parameters; we don't use them, we're just passing them through to
@@ -23,7 +27,33 @@ namespace Hudl.Mjolnir.Bulkhead
 
             _metricEvents = metricEvents;
             _bulkheadConfig = bulkheadConfig;
-            _logFactory = logFactory;
+            _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
+
+            var log = logFactory.CreateLog(typeof(BulkheadFactory));
+            if (log == null)
+            {
+                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(BulkheadFactory)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
+            }
+            
+            _timer = new GaugeTimer(state =>
+            {
+                try
+                {
+                    var keys = _bulkheads.Keys;
+                    foreach(var key in keys)
+                    {
+                        if (_bulkheads.TryGetValue(key, out Lazy<SemaphoreBulkheadHolder> holder) && holder.IsValueCreated)
+                        {
+                            var bulkhead = holder.Value.Bulkhead;
+                            _metricEvents.BulkheadConfigGauge(bulkhead.Name, "semaphore", _bulkheadConfig.GetMaxConcurrent(key));
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.Error($"Error sending {nameof(IMetricEvents.BulkheadConfigGauge)} metric event", e);
+                }
+            });
         }
 
         /// <summary>
@@ -53,6 +83,7 @@ namespace Hudl.Mjolnir.Bulkhead
             // the value, which means if the config value later changes to a valid value, the
             // initialization here will work and start returning a valid Bulkhead instead of an
             // exception.
+            
             return _bulkheads.GetOrAdd(key, new Lazy<SemaphoreBulkheadHolder>(() => new SemaphoreBulkheadHolder(key, _metricEvents, _bulkheadConfig, _logFactory), LazyThreadSafetyMode.PublicationOnly)).Value;
         }
 
@@ -62,10 +93,6 @@ namespace Hudl.Mjolnir.Bulkhead
         // app to ensure consistent concurrency.
         internal class SemaphoreBulkheadHolder
         {
-            // ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
-            private readonly GaugeTimer _timer;
-            // ReSharper restore PrivateFieldCanBeConvertedToLocalVariable
-
             private readonly GroupKey _key;
 
             private ISemaphoreBulkhead _bulkhead;
@@ -77,6 +104,8 @@ namespace Hudl.Mjolnir.Bulkhead
 
             public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, IBulkheadConfig config, IMjolnirLogFactory logFactory)
             {
+                Console.WriteLine("Creating a new semaphore bulkhead holder for " + key);
+
                 _key = key;
                 _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
                 _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -107,18 +136,6 @@ namespace Hudl.Mjolnir.Bulkhead
                 // acquired a lock on, and will release the lock on that bulkhead and not one that
                 // has been replaced after a config change.
                 _config.AddChangeHandler<int>(_key, UpdateMaxConcurrent);
-
-                _timer = new GaugeTimer(state =>
-                {
-                    try
-                    {
-                        _metricEvents.BulkheadConfigGauge(_bulkhead.Name, "semaphore", _config.GetMaxConcurrent(key));
-                    }
-                    catch (Exception e)
-                    {
-                        _log.Error($"Error sending {nameof(IMetricEvents.BulkheadConfigGauge)} metric event", e);
-                    }
-                });
             }
             
             internal void UpdateMaxConcurrent(int newLimit)
