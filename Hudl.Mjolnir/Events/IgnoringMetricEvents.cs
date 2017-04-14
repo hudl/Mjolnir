@@ -7,7 +7,7 @@ namespace Hudl.Mjolnir.Events
     /// </summary>
     internal sealed class IgnoringMetricEvents : IMetricEvents
     {
-        public void BreakerConfigGauge(string breakerName, long minimumOps, int thresholdPercent, long tripForMillis)
+        public void BreakerGauge(string breakerName, long configuredMinimumOperations, long configuredWindowMillis, int configuredThresholdPercent, long configuredTrippedDurationMillis, bool configuredForceTripped, bool configuredForceFixed, bool isTripped, long windowSuccessCount, long windowFailureCount)
         {
             return;
         }

@@ -36,6 +36,9 @@ namespace Hudl.Mjolnir.Metrics
             _resettingNumbersBucket.Increment(CounterMetric.CommandFailure);
         }
 
+        public long SuccessCount { get { return _resettingNumbersBucket.GetCount(CounterMetric.CommandSuccess); } }
+        public long FailureCount { get { return _resettingNumbersBucket.GetCount(CounterMetric.CommandFailure); } }
+
         private long _lastSnapshotTimestamp = 0;
         private MetricsSnapshot _lastSnapshot = new MetricsSnapshot(0, 0);
 

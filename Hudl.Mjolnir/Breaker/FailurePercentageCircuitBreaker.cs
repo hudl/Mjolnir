@@ -4,7 +4,6 @@ using System.Threading;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
-using Hudl.Mjolnir.Util;
 using Hudl.Mjolnir.Clock;
 
 namespace Hudl.Mjolnir.Breaker
@@ -27,11 +26,6 @@ namespace Hudl.Mjolnir.Breaker
         private readonly IMetricEvents _metricEvents;
         private readonly IFailurePercentageCircuitBreakerConfig _config;
         private readonly IMjolnirLog _log;
-        
-        // ReSharper disable NotAccessedField.Local
-        // Don't let these get garbage collected.
-        private readonly GaugeTimer _metricsTimer;
-        // ReSharper restore NotAccessedField.Local
         
         private volatile State _state;
         private long _lastTrippedTimestamp;
@@ -61,22 +55,6 @@ namespace Hudl.Mjolnir.Breaker
 
             _state = State.Fixed; // Start off assuming everything's fixed.
             _lastTrippedTimestamp = 0; // 0 is fine since it'll be far less than the first compared value.
-            
-            _metricsTimer = new GaugeTimer(state =>
-            {
-                try
-                {
-                    _metricEvents.BreakerConfigGauge(
-                    Name,
-                    _config.GetMinimumOperations(_key),
-                    _config.GetThresholdPercentage(_key),
-                    _config.GetTrippedDurationMillis(_key));
-                }
-                catch(Exception e)
-                {
-                    _log.Error($"Error sending {nameof(IMetricEvents.BreakerConfigGauge)} metric event", e);
-                }
-            });
         }
 
         public ICommandMetrics Metrics
@@ -217,6 +195,16 @@ namespace Hudl.Mjolnir.Breaker
             {
                 Monitor.Exit(_stateChangeLock);
             }
+        }
+        
+        /// <summary>
+        /// Whether or not the breaker is tripped. This is a read-out state of the breaker. If
+        /// you're attempting to use the breaker, you probably want IsAllowing() instead. This
+        /// method is more useful for logging and gauge metrics.
+        /// </summary>
+        internal bool IsTripped()
+        {
+            return _state == State.Tripped;
         }
 
         private enum State

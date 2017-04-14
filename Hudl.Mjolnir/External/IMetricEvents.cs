@@ -114,23 +114,22 @@
         void BreakerFailureCount(string breakerName, string commandName);
 
         /// <summary>
-        /// Fires at one second intervals, providing the current configuration state of the
-        /// breaker. The interval isn't configurable, but the implementation of this callback
-        /// can debounce the event and pass it to their own metrics collector at the resolution
-        /// desired.
+        /// Fires at one second intervals, providing the current state of the breaker. The interval
+        /// isn't configurable, but the implementation of this callback can debounce the event and 
+        /// pass it to their own metrics collector at the resolution desired.
         /// 
         /// Recommended metric: Gauge
         /// </summary>
         /// <param name="breakerName">Name of the breaker.</param>
-        /// <param name="minimumOps">
-        ///     Minimum ops the breaker must see in its observation window before tripping.
-        /// </param>
-        /// <param name="thresholdPercent">
-        ///     Error rate in the observation window required to trip.
-        /// </param>
-        /// <param name="tripForMillis">
-        ///     Duration the breaker remains tripped for before testing.
-        /// </param>
-        void BreakerConfigGauge(string breakerName, long minimumOps, int thresholdPercent, long tripForMillis);
+        /// <param name="configuredMinimumOperations">Currently configured value for minimumOperations</param>
+        /// <param name="configuredWindowMillis">Currently configured value for windowMillis</param>
+        /// <param name="configuredThresholdPercent">Currently configured value for thresholdPercent</param>
+        /// <param name="configuredTrippedDurationMillis">Currently configured value for trippedDurationMillis.</param>
+        /// <param name="configuredForceTripped">Currently configured value for forceTripped</param>
+        /// <param name="configuredForceFixed">Currently configured value for forceFixed</param>
+        /// <param name="isTripped">If the breaker is currently tripped</param>
+        /// <param name="windowSuccessCount">Number of successes seen in the current window</param>
+        /// <param name="windowFailureCount">Number of failures seen in the current window</param>
+        void BreakerGauge(string breakerName, long configuredMinimumOperations, long configuredWindowMillis, int configuredThresholdPercent, long configuredTrippedDurationMillis, bool configuredForceTripped, bool configuredForceFixed, bool isTripped, long windowSuccessCount, long windowFailureCount);
     }
 }

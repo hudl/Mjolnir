@@ -14,5 +14,8 @@
         
         //void MarkExecutionTime(TimeSpan duration);
         //void MarkObservedExecutionTime(TimeSpan duration);
+
+        long SuccessCount { get; }
+        long FailureCount { get; }
     }
 }
