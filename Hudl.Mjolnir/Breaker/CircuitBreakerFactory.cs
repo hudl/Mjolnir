@@ -17,7 +17,7 @@ namespace Hudl.Mjolnir.Breaker
 
         // ReSharper disable NotAccessedField.Local
         // Don't let this get garbage collected.
-        private readonly GaugeTimer _metricsTimer;
+        private readonly GaugeTimer _timer;
         // ReSharper restore NotAccessedField.Local
 
         private readonly ConcurrentDictionary<GroupKey, Lazy<FailurePercentageCircuitBreaker>> _circuitBreakers = new ConcurrentDictionary<GroupKey, Lazy<FailurePercentageCircuitBreaker>>();
@@ -35,7 +35,7 @@ namespace Hudl.Mjolnir.Breaker
                 throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(CircuitBreakerFactory)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
             }
 
-            _metricsTimer = new GaugeTimer(state =>
+            _timer = new GaugeTimer(state =>
             {
                 try
                 {
