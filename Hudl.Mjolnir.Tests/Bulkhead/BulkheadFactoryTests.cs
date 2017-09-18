@@ -38,7 +38,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             factory.GetBulkhead(groupKey);
             
             // The timer will fire after 1 second.
-            Thread.Sleep(TimeSpan.FromMilliseconds(1010));
+            Thread.Sleep(TimeSpan.FromMilliseconds(1500));
 
             // Assert
 
@@ -81,13 +81,13 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             mockMetricEvents.Verify(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Never);
 
-            Thread.Sleep(TimeSpan.FromMilliseconds(1010));
+            Thread.Sleep(TimeSpan.FromMilliseconds(1500));
 
             // Add two bulkheads
             factory.GetBulkhead(groupKey1);
             factory.GetBulkhead(groupKey2);
 
-            Thread.Sleep(TimeSpan.FromMilliseconds(1010));
+            Thread.Sleep(TimeSpan.FromMilliseconds(1500));
             
             mockMetricEvents.Verify(m => m.BulkheadGauge(key1, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()), Times.Once);
             mockMetricEvents.Verify(m => m.BulkheadGauge(key2, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()), Times.Once);
