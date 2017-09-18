@@ -4,7 +4,6 @@ using Hudl.Mjolnir.Config;
 using Hudl.Mjolnir.Events;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Log;
-using Hudl.Mjolnir.Metrics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -310,7 +309,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             var token = GetCancellationTokenForCommand(command);
-            return InvokeAsync(command, token, OnFailure.Throw);
+            return InvokeAsync(command, OnFailure.Throw, token);
         }
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis)
@@ -323,7 +322,7 @@ namespace Hudl.Mjolnir.Command
             }
 
             var token = GetCancellationTokenForCommand(command, timeoutMillis);
-            return InvokeAsync(command, token, OnFailure.Throw);
+            return InvokeAsync(command, OnFailure.Throw, token);
         }
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
@@ -336,7 +335,46 @@ namespace Hudl.Mjolnir.Command
             }
 
             var token = GetCancellationTokenForCommand(ct);
-            return InvokeAsync(command, token, OnFailure.Throw);
+            return InvokeAsync(command, OnFailure.Throw, token);
+        }
+
+        public Task<TResult> InvokeThrowAsync<TResult>(string group, Func<CancellationToken?, Task<TResult>> func)
+        {
+            var command = new DelegateAsyncCommand<TResult>(group, func);
+
+            if (!IsEnabled())
+            {
+                return command.ExecuteAsync(CancellationToken.None);
+            }
+
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAsync(command, OnFailure.Throw, token);
+        }
+
+        public Task<TResult> InvokeThrowAsync<TResult>(string group, Func<CancellationToken?, Task<TResult>> func, long timeoutMillis)
+        {
+            var command = new DelegateAsyncCommand<TResult>(group, func);
+
+            if (!IsEnabled())
+            {
+                return command.ExecuteAsync(CancellationToken.None);
+            }
+
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAsync(command, OnFailure.Throw, token);
+        }
+
+        public Task<TResult> InvokeThrowAsync<TResult>(string group, Func<CancellationToken?, Task<TResult>> func, CancellationToken ct)
+        {
+            var command = new DelegateAsyncCommand<TResult>(group, func);
+
+            if (!IsEnabled())
+            {
+                return command.ExecuteAsync(CancellationToken.None);
+            }
+
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAsync(command, OnFailure.Throw, token);
         }
 
         public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command)
@@ -357,6 +395,27 @@ namespace Hudl.Mjolnir.Command
             return InvokeAndWrapAsync(command, token);
         }
 
+        public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(string group, Func<CancellationToken?, Task<TResult>> func)
+        {
+            var command = new DelegateAsyncCommand<TResult>(group, func);
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAndWrapAsync(command, token);
+        }
+
+        public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(string group, Func<CancellationToken?, Task<TResult>> func, long timeoutMillis)
+        {
+            var command = new DelegateAsyncCommand<TResult>(group, func);
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAndWrapAsync(command, token);
+        }
+
+        public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(string group, Func<CancellationToken?, Task<TResult>> func, CancellationToken ct)
+        {
+            var command = new DelegateAsyncCommand<TResult>(group, func);
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAndWrapAsync(command, token);
+        }
+
         private async Task<CommandResult<TResult>> InvokeAndWrapAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
             // Even though we're in a "Return" method, multiple invokes are a bug on the calling
@@ -372,7 +431,7 @@ namespace Hudl.Mjolnir.Command
                 }
                 else
                 {
-                    result = await InvokeAsync(command, ct, OnFailure.Return);
+                    result = await InvokeAsync(command, OnFailure.Return, ct);
                 }
                 return new CommandResult<TResult>(result);
             }
@@ -384,7 +443,7 @@ namespace Hudl.Mjolnir.Command
 
         // failureModeForMetrics is just so we can send "throw" or "return" along with the metrics
         // event we fire for CommandInvoke(). Not really intended for use beyond that.
-        private async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct, OnFailure failureModeForMetrics)
+        private async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command, OnFailure failureModeForMetrics, InformativeCancellationToken ct)
         {
             var stopwatch = Stopwatch.StartNew();
 
@@ -458,6 +517,45 @@ namespace Hudl.Mjolnir.Command
             return Invoke(command, OnFailure.Throw, token);
         }
 
+        public TResult InvokeThrow<TResult>(string group, Func<CancellationToken?, TResult> func)
+        {
+            var command = new DelegateSyncCommand<TResult>(group, func);
+
+            if (!IsEnabled())
+            {
+                return command.Execute(CancellationToken.None);
+            }
+
+            var token = GetCancellationTokenForCommand(command);
+            return Invoke(command, OnFailure.Throw, token);
+        }
+
+        public TResult InvokeThrow<TResult>(string group, Func<CancellationToken?, TResult> func, long timeoutMillis)
+        {
+            var command = new DelegateSyncCommand<TResult>(group, func);
+
+            if (!IsEnabled())
+            {
+                return command.Execute(CancellationToken.None);
+            }
+
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return Invoke(command, OnFailure.Throw, token);
+        }
+
+        public TResult InvokeThrow<TResult>(string group, Func<CancellationToken?, TResult> func, CancellationToken ct)
+        {
+            var command = new DelegateSyncCommand<TResult>(group, func);
+
+            if (!IsEnabled())
+            {
+                return command.Execute(CancellationToken.None);
+            }
+
+            var token = GetCancellationTokenForCommand(ct);
+            return Invoke(command, OnFailure.Throw, token);
+        }
+
         public CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command)
         {
             var token = GetCancellationTokenForCommand(command);
@@ -472,6 +570,27 @@ namespace Hudl.Mjolnir.Command
 
         public CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
+            var token = GetCancellationTokenForCommand(ct);
+            return InvokeAndWrap(command, token);
+        }
+
+        public CommandResult<TResult> InvokeReturn<TResult>(string group, Func<CancellationToken?, TResult> func)
+        {
+            var command = new DelegateSyncCommand<TResult>(group, func);
+            var token = GetCancellationTokenForCommand(command);
+            return InvokeAndWrap(command, token);
+        }
+
+        public CommandResult<TResult> InvokeReturn<TResult>(string group, Func<CancellationToken?, TResult> func, long timeoutMillis)
+        {
+            var command = new DelegateSyncCommand<TResult>(group, func);
+            var token = GetCancellationTokenForCommand(command, timeoutMillis);
+            return InvokeAndWrap(command, token);
+        }
+
+        public CommandResult<TResult> InvokeReturn<TResult>(string group, Func<CancellationToken?, TResult> func, CancellationToken ct)
+        {
+            var command = new DelegateSyncCommand<TResult>(group, func);
             var token = GetCancellationTokenForCommand(ct);
             return InvokeAndWrap(command, token);
         }
