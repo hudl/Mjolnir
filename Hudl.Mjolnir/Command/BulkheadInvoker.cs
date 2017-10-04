@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Hudl.Mjolnir.Config;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -21,9 +22,9 @@ namespace Hudl.Mjolnir.Command
         private readonly IBreakerInvoker _breakerInvoker;
         private readonly IBulkheadFactory _bulkheadFactory;
         private readonly IMetricEvents _metricEvents;
-        private readonly IMjolnirConfig _config;
+        private readonly MjolnirConfiguration _config;
 
-        public BulkheadInvoker(IBreakerInvoker breakerInvoker, IBulkheadFactory bulkheadFactory, IMetricEvents metricEvents, IMjolnirConfig config)
+        public BulkheadInvoker(IBreakerInvoker breakerInvoker, IBulkheadFactory bulkheadFactory, IMetricEvents metricEvents, MjolnirConfiguration config)
         {
             _breakerInvoker = breakerInvoker ?? throw new ArgumentNullException(nameof(breakerInvoker));
             _bulkheadFactory = bulkheadFactory ?? throw new ArgumentNullException(nameof(bulkheadFactory));
@@ -64,7 +65,7 @@ namespace Hudl.Mjolnir.Command
             var executedHere = false;
             try
             {
-                if (_config.GetConfig("mjolnir.useCircuitBreakers", true))
+                if (_config.UseCircuitBreakers)
                 {
                     return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
                 }
@@ -111,7 +112,7 @@ namespace Hudl.Mjolnir.Command
             var executedHere = false;
             try
             {
-                if (_config.GetConfig("mjolnir.useCircuitBreakers", true))
+                if (_config.UseCircuitBreakers)
                 {
                     return _breakerInvoker.ExecuteWithBreaker(command, ct);
                 }

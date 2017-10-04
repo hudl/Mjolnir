@@ -133,14 +133,16 @@ namespace Hudl.Mjolnir.Bulkhead
                 // using the bulkhead will have kept a local reference to the bulkhead that they
                 // acquired a lock on, and will release the lock on that bulkhead and not one that
                 // has been replaced after a config change.
-                _config.AddChangeHandler<int>(_key, UpdateMaxConcurrent);
+                
+                // TODO DAMIAN !!!! 
+                // _config.AddChangeHandler<int>(_key, UpdateMaxConcurrent);
             }
             
             internal void UpdateMaxConcurrent(int newLimit)
             {
                 if (!IsValidMaxConcurrent(newLimit))
                 {
-                    _log.Error($"Semaphore bulkhead config {_config.GetConfigKey(_key)} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
+                    _log.Error($"Semaphore bulkhead config for key {_key} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
                     return;
                 }
 

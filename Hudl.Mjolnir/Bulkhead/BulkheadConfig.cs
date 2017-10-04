@@ -1,33 +1,24 @@
-﻿using Hudl.Mjolnir.External;
-using Hudl.Mjolnir.Key;
+﻿using Hudl.Mjolnir.Key;
 using System;
+using Hudl.Mjolnir.Config;
 
 namespace Hudl.Mjolnir.Bulkhead
 {
     internal class BulkheadConfig : IBulkheadConfig
     {
-        private const int DefaultMaxConcurrent = 10;
-
-        private readonly IMjolnirConfig _config;
+        private readonly MjolnirConfiguration _config;
         
-        public BulkheadConfig(IMjolnirConfig config)
+        public BulkheadConfig(MjolnirConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         public int GetMaxConcurrent(GroupKey key)
         {
-            return _config.GetConfig<int?>(GetConfigKey(key), null) ?? _config.GetConfig("mjolnir.bulkhead.default.maxConcurrent", DefaultMaxConcurrent);
-        }
-
-        public void AddChangeHandler<T>(GroupKey key, Action<T> onConfigChange)
-        {
-            _config.AddChangeHandler(GetConfigKey(key), onConfigChange);
-        }
-        
-        public string GetConfigKey(GroupKey key)
-        {
-            return $"mjolnir.bulkhead.{key}.maxConcurrent";
+            BulkheadsConfiguration bulkheadsConfiguration;
+            return _config.BulkheadsConfigurations.TryGetValue(key.Name, out bulkheadsConfiguration) ? 
+                bulkheadsConfiguration.MaxConcurrent : 
+                _config.DefaultBulkheadsConfiguration.MaxConcurrent;
         }
     }
 }

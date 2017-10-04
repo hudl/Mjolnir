@@ -1,5 +1,4 @@
-﻿using Hudl.Mjolnir.External;
-using System;
+﻿using System.Collections.Generic;
 
 namespace Hudl.Mjolnir.Config
 {
@@ -8,16 +7,22 @@ namespace Hudl.Mjolnir.Config
     /// This is used as a fallback implementation. Most consumers will probably want to wire in 
     /// their own configuration implementation.
     /// </summary>
-    internal class DefaultValueConfig : IMjolnirConfig
+    internal class DefaultValueConfig : MjolnirConfiguration
     {
-        public T GetConfig<T>(string key, T defaultValue)
+        public DefaultValueConfig()
         {
-            return defaultValue;
+            IsEnabled = true;
+            UseCircuitBreakers = true;
+            IgnoreTimeouts = false;
+
+            DefaultBreakerConfiguration = new BreakerConfiguration();
+            BreakerConfigurations = new Dictionary<string, BreakerConfiguration>();
+            
+            BulkheadsConfigurations = new Dictionary<string, BulkheadsConfiguration>();
+            DefaultBulkheadsConfiguration = new BulkheadsConfiguration();
+            
+            CommandConfigurations = new Dictionary<string, CommandConfiguration>();
         }
 
-        public void AddChangeHandler<T>(string key, Action<T> onConfigChange)
-        {
-            // No-op for default value config.
-        }
     }
 }

@@ -1,7 +1,7 @@
-﻿using Hudl.Mjolnir.External;
-using Hudl.Mjolnir.Key;
+﻿using Hudl.Mjolnir.Key;
 using System;
 using System.Collections.Concurrent;
+using Hudl.Mjolnir.Config;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -107,7 +107,7 @@ namespace Hudl.Mjolnir.Command
         // Constructor Timeout: Value defined in the Command constructor.
         // Configured Timeout: Value provided by config.
         // Invocation Timeout: Value passed into the Invoke() / InvokeAsync() call.
-        internal TimeSpan DetermineTimeout(IMjolnirConfig config, long? invocationTimeoutMillis = null)
+        internal TimeSpan DetermineTimeout(MjolnirConfiguration config, long? invocationTimeoutMillis = null)
         {
             // Thoughts on invocation timeout vs. configured timeout:
             //
@@ -131,7 +131,10 @@ namespace Hudl.Mjolnir.Command
             }
 
             //var configured = GetTimeoutConfigurableValue(_name).Value;
-            var configured = config.GetConfig<long>($"mjolnir.command.{_name}.Timeout", 0);
+            CommandConfiguration commandConfiguration;
+            
+            var configured = config.CommandConfigurations.TryGetValue(_name, out commandConfiguration) ?
+                commandConfiguration.Timeout : 0;
 
             // We don't want to include 0 here. Since this comes from a potentially non-nullable
             // ConfigurableValue, it's possible (and probably likely) that an unconfigured

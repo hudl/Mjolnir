@@ -251,7 +251,7 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     public class CommandInvoker : ICommandInvoker
     {
-        private readonly IMjolnirConfig _config;
+        private readonly MjolnirConfiguration _config;
         private readonly IMjolnirLogFactory _logFactory;
         
         private readonly IMetricEvents _metricEvents;
@@ -266,7 +266,7 @@ namespace Hudl.Mjolnir.Command
         { }
         
         public CommandInvoker(
-            IMjolnirConfig config = null,
+            MjolnirConfiguration config = null,
             IMjolnirLogFactory logFactory = null,
             IMetricEvents metricEvents = null,
             IBreakerExceptionHandler breakerExceptionHandler = null)
@@ -275,7 +275,7 @@ namespace Hudl.Mjolnir.Command
         
         // Internal constructor with a few extra arguments used by tests to inject mocks.
         internal CommandInvoker(
-            IMjolnirConfig config = null,
+            MjolnirConfiguration config = null,
             IMjolnirLogFactory logFactory = null,
             IMetricEvents metricEvents = null,
             IBreakerExceptionHandler breakerExceptionHandler = null,
@@ -620,7 +620,7 @@ namespace Hudl.Mjolnir.Command
         /// </summary>
         private bool IsEnabled()
         {
-            return _config.GetConfig("mjolnir.isEnabled", true);
+            return _config.IsEnabled;
         }
         
         /// <summary>
@@ -631,7 +631,7 @@ namespace Hudl.Mjolnir.Command
         /// </summary>
         private bool IgnoreCancellation()
         {
-            return _config.GetConfig("mjolnir.ignoreTimeouts", false);
+            return _config.IgnoreTimeouts;
         }
 
         // "Failure" means any of [Fault || Timeout || Reject]
