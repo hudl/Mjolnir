@@ -4,6 +4,6 @@
         /// <summary>
         /// Per-Command Timeout - Timeouts are configurable per-command.
         /// </summary>
-        public int Timeout { get; set; }
+        public long Timeout { get; set; }
     }
 }

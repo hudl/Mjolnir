@@ -12,7 +12,8 @@ namespace Hudl.Mjolnir.Tests.Helper
             Dictionary<string, CommandConfiguration> commandConfigurations = null,
             CommandConfiguration defaultCommandConfiguration = null,
             bool? isEnabled = null,
-            bool? ignoreTimeouts = null)
+            bool? ignoreTimeouts = null,
+            bool? useCircuitBreakers = null)
         {
             BreakerConfigurations = breakerConfigurations ?? BreakerConfigurations;
             DefaultBreakerConfiguration = defaultBreakerConfiguration ?? DefaultBreakerConfiguration;
@@ -22,6 +23,7 @@ namespace Hudl.Mjolnir.Tests.Helper
             DefaultCommandConfiguration = defaultCommandConfiguration ?? DefaultCommandConfiguration;
             IsEnabled = isEnabled ?? IsEnabled;
             IgnoreTimeouts = ignoreTimeouts ?? IgnoreTimeouts;
+            UseCircuitBreakers = useCircuitBreakers ?? UseCircuitBreakers;
         }
     }
 }

@@ -1,12 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Hudl.Mjolnir.Command;
+using Hudl.Mjolnir.Config;
 using Hudl.Mjolnir.Tests.Helper;
 using Xunit;
 using Hudl.Mjolnir.Key;
-using Hudl.Mjolnir.External;
-using Moq;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -248,10 +248,20 @@ namespace Hudl.Mjolnir.Tests.Command
                 var constructorTs = (constructorMs == null ? (TimeSpan?) null : TimeSpan.FromMilliseconds(constructorMs.Value));
                 var command = new TestCommand(AnyString, AnyString, AnyString, constructorTs);
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig<long>($"mjolnir.command.{command.Name}.Timeout", It.IsAny<long>())).Returns(configuredMs);
+                       
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            command.Name,
+                            new CommandConfiguration
+                            {
+                                Timeout = configuredMs
+                            }
+                        }
+                    });
                 
-                var determined = command.DetermineTimeout(mockConfig.Object, invocationMs);
+                var determined = command.DetermineTimeout(mockConfig, invocationMs);
 
                 Assert.Equal(expected, determined);
             }

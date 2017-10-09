@@ -3,6 +3,8 @@ using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
 using System;
+using System.Collections.Generic;
+using Hudl.Mjolnir.Config;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Bulkhead
@@ -26,13 +28,20 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.bulkhead.{groupKey}.maxConcurrent";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns(expectedConfigValue);
+            var mockConfig = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BulkheadConfiguration
+                    {
+                        MaxConcurrent = expectedConfigValue
+                    }
+                }
+            });
 
-            var config = new BulkheadConfig(mockConfig.Object);
+            var config = new BulkheadConfig(mockConfig);
 
             // Act
 
@@ -49,15 +58,15 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.bulkhead.{groupKey}.maxConcurrent";
-            const string defaultConfigKey = "mjolnir.bulkhead.default.maxConcurrent";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns((int?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<int>())).Returns(expectedConfigValue);
+            var mockConfig = new TestConfiguration(defaultBulkheadConfiguration: new BulkheadConfiguration
+                {
+                    MaxConcurrent = expectedConfigValue
+                }
+            );
 
-            var config = new BulkheadConfig(mockConfig.Object);
+            var config = new BulkheadConfig(mockConfig);
 
             // Act
 
@@ -76,14 +85,13 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             const int expectedDefaultMaxConcurrent = 10;
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.bulkhead.{groupKey}.maxConcurrent";
-            const string defaultConfigKey = "mjolnir.bulkhead.default.maxConcurrent";
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns((int?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultMaxConcurrent)).Returns(expectedDefaultMaxConcurrent);
-
-            var config = new BulkheadConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBulkheadConfiguration: new BulkheadConfiguration
+                {
+                    MaxConcurrent = expectedDefaultMaxConcurrent
+                }
+            );
+            var config = new BulkheadConfig(mockConfig);
 
             // Act
 

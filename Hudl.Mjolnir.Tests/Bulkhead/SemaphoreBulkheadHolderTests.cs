@@ -5,7 +5,6 @@ using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
 using System;
-using System.Threading;
 using Xunit;
 using static Hudl.Mjolnir.Bulkhead.BulkheadFactory;
 
@@ -70,7 +69,6 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(expectedMaxConcurrent);
-            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
@@ -85,31 +83,31 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             Assert.Equal(expectedMaxConcurrent, holder.Bulkhead.CountAvailable);
         }
 
-        [Fact]
-        public void Construct_CallsAddChangeHandler()
-        {
-            // Arrange
-
-            var key = AnyGroupKey;
-            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
-
-            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
-            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
-            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
-
-            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
-            // Act
-
-            var holder = new SemaphoreBulkheadHolder(key, mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
-
-            // Assert
-
-            // It.IsAny<Action<int>>() could be better here, but I can't access the non-static method group.
-            mockBulkheadConfig.Verify(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()), Times.Once);
-        }
+//        [Fact]
+//        public void Construct_CallsAddChangeHandler()
+//        {
+//            // Arrange
+//
+//            var key = AnyGroupKey;
+//            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+//            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
+//
+//            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+//            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
+//            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
+//
+//            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+//            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+//
+//            // Act
+//
+//            var holder = new SemaphoreBulkheadHolder(key, mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
+//
+//            // Assert
+//
+//            // It.IsAny<Action<int>>() could be better here, but I can't access the non-static method group.
+//            mockBulkheadConfig.Verify(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()), Times.Once);
+//        }
         
         [Fact]
         public void Construct_WhenMaxConcurrentConfigIsInvalid_DoesSomething()
@@ -123,7 +121,6 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(groupKey)).Returns(invalidMaxConcurrent);
-            mockBulkheadConfig.Setup(m => m.AddChangeHandler(groupKey, It.IsAny<Action<int>>()));
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
@@ -136,41 +133,41 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             Assert.Equal(invalidMaxConcurrent, exception.ActualValue);
         }
 
-        [Fact]
-        public void UpdateMaxConcurrent_IgnoresInvalidValues()
-        {
-            // Arrange
-
-            var key = AnyGroupKey;
-            const int invalidMaxConcurrent = -1;
-
-            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
-
-            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
-            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
-            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
-            mockBulkheadConfig.Setup(m => m.GetConfigKey(key)).Returns(key.Name);
-
-            var mockLog = new Mock<IMjolnirLog>(MockBehavior.Strict);
-            mockLog.Setup(m => m.Error(It.IsAny<string>()));
-
-            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(mockLog.Object);
-
-            var holder = new SemaphoreBulkheadHolder(key, mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
-
-            // Act
-
-            var initialBulkhead = holder.Bulkhead;
-            holder.UpdateMaxConcurrent(invalidMaxConcurrent);
-
-            // Assert
-
-            // Bulkhead should be unchanged.
-            Assert.True(initialBulkhead == holder.Bulkhead);
-            mockLog.Verify(m => m.Error($"Semaphore bulkhead config {key.Name} changed to an invalid limit of {invalidMaxConcurrent}, the bulkhead will not be changed"), Times.Once);
-        }
+//        [Fact]
+//        public void UpdateMaxConcurrent_IgnoresInvalidValues()
+//        {
+//            // Arrange
+//
+//            var key = AnyGroupKey;
+//            const int invalidMaxConcurrent = -1;
+//
+//            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+//            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
+//
+//            var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
+//            mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(AnyPositiveInt);
+//            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
+//            mockBulkheadConfig.Setup(m => m.GetConfigKey(key)).Returns(key.Name);
+//
+//            var mockLog = new Mock<IMjolnirLog>(MockBehavior.Strict);
+//            mockLog.Setup(m => m.Error(It.IsAny<string>()));
+//
+//            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+//            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(mockLog.Object);
+//
+//            var holder = new SemaphoreBulkheadHolder(key, mockMetricEvents.Object, mockBulkheadConfig.Object, mockLogFactory.Object);
+//
+//            // Act
+//
+//            var initialBulkhead = holder.Bulkhead;
+//            holder.UpdateMaxConcurrent(invalidMaxConcurrent);
+//
+//            // Assert
+//
+//            // Bulkhead should be unchanged.
+//            Assert.True(initialBulkhead == holder.Bulkhead);
+//            mockLog.Verify(m => m.Error($"Semaphore bulkhead config {key.Name} changed to an invalid limit of {invalidMaxConcurrent}, the bulkhead will not be changed"), Times.Once);
+//        }
 
         [Fact]
         public void UpdateMaxConcurrent_ReplacesBulkhead()
@@ -185,7 +182,6 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             var mockBulkheadConfig = new Mock<IBulkheadConfig>(MockBehavior.Strict);
             mockBulkheadConfig.Setup(m => m.GetMaxConcurrent(key)).Returns(initialExpectedCount);
-            mockBulkheadConfig.Setup(m => m.AddChangeHandler(key, It.IsAny<Action<int>>()));
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
