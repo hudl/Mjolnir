@@ -45,7 +45,7 @@ namespace Hudl.Mjolnir.Config
         /// <summary>
         /// Per-bulkhead configuration. Key is the argument passed to the Command constructor.
         /// </summary>
-        protected Dictionary<string, BulkheadConfiguration> BulkheadsConfigurations { get; set; }
+        protected Dictionary<string, BulkheadConfiguration> BulkheadConfigurations { get; set; }
 
       
         
@@ -72,8 +72,8 @@ namespace Hudl.Mjolnir.Config
         {
             CommandConfigurations = new Dictionary<string, CommandConfiguration>();
             DefaultCommandConfiguration = new CommandConfiguration();
-            BulkheadsConfigurations = new Dictionary<string, BulkheadConfiguration>();
-            DefaultBreakerConfiguration = new BreakerConfiguration();
+            BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>();
+            DefaultBulkheadConfiguration = new BulkheadConfiguration();
             BreakerConfigurations = new Dictionary<string, BreakerConfiguration>();
             DefaultBreakerConfiguration = new BreakerConfiguration();
         }
@@ -104,7 +104,7 @@ namespace Hudl.Mjolnir.Config
         {
             if (key == null) return DefaultBulkheadConfiguration;
             BulkheadConfiguration bulkheadConfiguration;
-            return BulkheadsConfigurations.TryGetValue(key, out bulkheadConfiguration) ?
+            return BulkheadConfigurations.TryGetValue(key, out bulkheadConfiguration) ?
                 bulkheadConfiguration : DefaultBulkheadConfiguration;
         }       
         

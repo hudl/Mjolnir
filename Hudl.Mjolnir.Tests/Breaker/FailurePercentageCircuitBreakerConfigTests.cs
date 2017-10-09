@@ -3,6 +3,8 @@ using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
 using System;
+using System.Collections.Generic;
+using Hudl.Mjolnir.Config;
 using Xunit;
 
 namespace Hudl.Mjolnir.Tests.Breaker
@@ -26,13 +28,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.minimumOperations";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns(expectedConfigValue);
+            var mockConfig = new TestConfiguration(new Dictionary<string, BreakerConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BreakerConfiguration
+                    {
+                        MinimumOperations = expectedConfigValue
+                    }
+                }
+            });        
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -49,15 +58,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.minimumOperations";
-            const string defaultConfigKey = "mjolnir.breaker.default.minimumOperations";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<long>())).Returns(expectedConfigValue);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                MinimumOperations = expectedConfigValue
+            });        
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -76,15 +84,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const long expectedDefaultMinimumOperations = 10;
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.minimumOperations";
-            const string defaultConfigKey = "mjolnir.breaker.default.minimumOperations";
-            
+            const int expectedConfigValue = 10;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultMinimumOperations)).Returns(expectedDefaultMinimumOperations);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                MinimumOperations = expectedConfigValue
+            });      
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -101,13 +108,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.windowMillis";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(new Dictionary<string, BreakerConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BreakerConfiguration
+                    {
+                        WindowMillis = expectedConfigValue
+                    }
+                }
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -124,15 +138,15 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.windowMillis";
-            const string defaultConfigKey = "mjolnir.breaker.default.windowMillis";
             var expectedConfigValue = AnyPositiveInt;
+            
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                WindowMillis = expectedConfigValue
+            });        
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<long>())).Returns(expectedConfigValue);
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
 
             // Act
 
@@ -151,15 +165,13 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const long expectedDefaultWindowMillis = 30000;
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.windowMillis";
-            const string defaultConfigKey = "mjolnir.breaker.default.windowMillis";
-
-
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultWindowMillis)).Returns(expectedDefaultWindowMillis);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                WindowMillis = expectedDefaultWindowMillis
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -176,13 +188,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.thresholdPercentage";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(new Dictionary<string, BreakerConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BreakerConfiguration
+                    {
+                        ThresholdPercentage = expectedConfigValue
+                    }
+                }
+            });        
+         
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -199,15 +218,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.thresholdPercentage";
-            const string defaultConfigKey = "mjolnir.breaker.default.thresholdPercentage";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns((int?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<int>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                ThresholdPercentage = expectedConfigValue
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -226,14 +244,13 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const int expectedDefaultThresholdPercentage = 50;
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.thresholdPercentage";
-            const string defaultConfigKey = "mjolnir.breaker.default.thresholdPercentage";
-            
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<int?>())).Returns((int?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultThresholdPercentage)).Returns(expectedDefaultThresholdPercentage);
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                ThresholdPercentage = expectedDefaultThresholdPercentage
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -250,14 +267,21 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.trippedDurationMillis";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
-
+            var mockConfig = new TestConfiguration(new Dictionary<string, BreakerConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BreakerConfiguration
+                    {
+                        TrippedDurationMillis = expectedConfigValue
+                    }
+                }
+            });   
+                        
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+         
             // Act
 
             var value = config.GetTrippedDurationMillis(groupKey);
@@ -273,15 +297,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.trippedDurationMillis";
-            const string defaultConfigKey = "mjolnir.breaker.default.trippedDurationMillis";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<long>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                TrippedDurationMillis = expectedConfigValue
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -298,16 +321,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             const long expectedDefaultTrippedDurationMillis = 10000;
-
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.trippedDurationMillis";
-            const string defaultConfigKey = "mjolnir.breaker.default.trippedDurationMillis";
-            
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultTrippedDurationMillis)).Returns(expectedDefaultTrippedDurationMillis);
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                TrippedDurationMillis = expectedDefaultTrippedDurationMillis
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -324,13 +345,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceTripped";
             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(new Dictionary<string, BreakerConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BreakerConfiguration
+                    {
+                        ForceTripped = expectedConfigValue
+                    }
+                }
+            });   
+                        
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -347,15 +375,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceTripped";
-            const string defaultConfigKey = "mjolnir.breaker.default.forceTripped";
             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns((bool?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<bool>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                ForceTripped = expectedConfigValue
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -374,15 +401,13 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const bool expectedDefaultForceTripped = false;
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceTripped";
-            const string defaultConfigKey = "mjolnir.breaker.default.forceTripped";
             
-
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns((bool?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultForceTripped)).Returns(expectedDefaultForceTripped);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                ForceTripped = expectedDefaultForceTripped
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -399,13 +424,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceFixed";
             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(new Dictionary<string, BreakerConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BreakerConfiguration
+                    {
+                        ForceFixed = expectedConfigValue
+                    }
+                }
+            });   
+                        
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -422,15 +454,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceFixed";
-            const string defaultConfigKey = "mjolnir.breaker.default.forceFixed";
             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns((bool?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<bool>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                ForceFixed = expectedConfigValue
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -449,14 +480,13 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const bool expectedDefaultForceFixed = false;
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.forceFixed";
-            const string defaultConfigKey = "mjolnir.breaker.default.forceFixed";
             
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<bool?>())).Returns((bool?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultForceFixed)).Returns(expectedDefaultForceFixed);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                ForceFixed = expectedDefaultForceFixed
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -473,13 +503,20 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.snapshotTtlMillis";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(new Dictionary<string, BreakerConfiguration>
+            {
+                {
+                    groupKey.Name,
+                    new BreakerConfiguration
+                    {
+                        SnapshotTtlMillis = expectedConfigValue
+                    }
+                }
+            });   
+                        
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -496,15 +533,14 @@ namespace Hudl.Mjolnir.Tests.Breaker
             // Arrange
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.snapshotTtlMillis";
-            const string defaultConfigKey = "mjolnir.breaker.default.snapshotTtlMillis";
             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, It.IsAny<long>())).Returns(expectedConfigValue);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                SnapshotTtlMillis = expectedConfigValue
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
@@ -523,15 +559,13 @@ namespace Hudl.Mjolnir.Tests.Breaker
             const long expectedDefaultSnapshotTtlMillis = 1000;
 
             var groupKey = AnyGroupKey;
-            var specificConfigKey = $"mjolnir.breaker.{groupKey}.snapshotTtlMillis";
-            const string defaultConfigKey = "mjolnir.breaker.default.snapshotTtlMillis";
 
-
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig(specificConfigKey, It.IsAny<long?>())).Returns((long?)null);
-            mockConfig.Setup(m => m.GetConfig(defaultConfigKey, expectedDefaultSnapshotTtlMillis)).Returns(expectedDefaultSnapshotTtlMillis);
-
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig.Object);
+            var mockConfig = new TestConfiguration(defaultBreakerConfiguration: new BreakerConfiguration
+            {
+                SnapshotTtlMillis = expectedDefaultSnapshotTtlMillis
+            });        
+            
+            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
             // Act
 
