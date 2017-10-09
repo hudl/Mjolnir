@@ -14,14 +14,6 @@ namespace Hudl.Mjolnir.Config
             IsEnabled = true;
             UseCircuitBreakers = true;
             IgnoreTimeouts = false;
-
-            DefaultBreakerConfiguration = new BreakerConfiguration();
-            BreakerConfigurations = new Dictionary<string, BreakerConfiguration>();
-            
-            BulkheadsConfigurations = new Dictionary<string, BulkheadsConfiguration>();
-            DefaultBulkheadsConfiguration = new BulkheadsConfiguration();
-            
-            CommandConfigurations = new Dictionary<string, CommandConfiguration>();
         }
 
     }

@@ -1,6 +1,6 @@
 ﻿namespace Hudl.Mjolnir.Config
 {
-    public class BulkheadsConfiguration
+    public class BulkheadConfiguration
     {
         /// <summary>
         /// Bulkhead Maximum - The number of Commands that can execute in the Bulkhead concurrently before subsequent 
@@ -8,7 +8,7 @@
         /// </summary>
         public int MaxConcurrent { get; set; }
 
-        public BulkheadsConfiguration()
+        public BulkheadConfiguration()
         {
             // Set default value
             MaxConcurrent = 10;

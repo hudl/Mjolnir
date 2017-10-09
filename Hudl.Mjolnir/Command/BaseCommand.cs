@@ -130,11 +130,7 @@ namespace Hudl.Mjolnir.Command
                 return TimeSpan.FromMilliseconds(invocationTimeoutMillis.Value);
             }
 
-            //var configured = GetTimeoutConfigurableValue(_name).Value;
-            CommandConfiguration commandConfiguration;
-            
-            var configured = config.CommandConfigurations.TryGetValue(_name, out commandConfiguration) ?
-                commandConfiguration.Timeout : 0;
+            var configured = config.GetCommandConfiguration(_name).Timeout;
 
             // We don't want to include 0 here. Since this comes from a potentially non-nullable
             // ConfigurableValue, it's possible (and probably likely) that an unconfigured

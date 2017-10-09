@@ -15,10 +15,7 @@ namespace Hudl.Mjolnir.Bulkhead
 
         public int GetMaxConcurrent(GroupKey key)
         {
-            BulkheadsConfiguration bulkheadsConfiguration;
-            return _config.BulkheadsConfigurations.TryGetValue(key.Name, out bulkheadsConfiguration) ? 
-                bulkheadsConfiguration.MaxConcurrent : 
-                _config.DefaultBulkheadsConfiguration.MaxConcurrent;
+            return _config.GetBulkheadConfiguration(key.Name).MaxConcurrent;
         }
     }
 }
