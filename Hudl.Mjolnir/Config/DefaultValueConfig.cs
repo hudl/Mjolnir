@@ -12,7 +12,7 @@ namespace Hudl.Mjolnir.Config
         public DefaultValueConfig()
         {
             IsEnabled = true;
-            UseCircuitBreakers = true;
+            UseCircuitBreakers = false;
             IgnoreTimeouts = false;
         }
 

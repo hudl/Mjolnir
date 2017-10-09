@@ -1,14 +1,16 @@
 ﻿using Hudl.Mjolnir.Command;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Moq;
 using Xunit;
 using System.Threading;
-using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
+using Hudl.Mjolnir.Config;
+using Hudl.Mjolnir.Tests.Helper;
 using Hudl.Mjolnir.Log;
 
 namespace Hudl.Mjolnir.Tests.Command
@@ -41,9 +43,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // from being used.
 
                 var command = new TokenCapturingAsyncCommand();
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+                var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false);
                 
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
 
@@ -52,7 +52,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
                 
                 await invoker.InvokeThrowAsync(command);
 
@@ -68,10 +68,17 @@ namespace Hudl.Mjolnir.Tests.Command
                 const bool expectedResultValue = true;
                 var command = new NoOpAsyncCommand();
                 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            "NoOpAsync",
+                            new CommandConfiguration
+                            {
+                                Timeout = 10000
+                            }
+                        }
+                    });
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -80,7 +87,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 var result = await invoker.InvokeThrowAsync(command);
 
@@ -99,9 +106,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -109,7 +114,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
                 var expiredToken = new CancellationToken(true);
 
                 // We're testing the presence of the expired token here.
@@ -138,9 +143,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new DelayAsyncCommand(1);
                 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -148,7 +151,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // We're testing the presence of the timeout here.
                 var exception = await Assert.ThrowsAsync<OperationCanceledException>(() => invoker.InvokeThrowAsync(command, 0));
@@ -178,9 +181,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new DelayAsyncCommand(1);
                 var expiredToken = new CancellationToken(true);
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true); 
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -189,7 +190,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // Even though we pass a token, the config value on the invoker should prevent the
                 // token from being used/checked. This shouldn't throw.
@@ -207,9 +208,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true); 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -218,7 +217,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // Even though we pass a timeout, the config value on the invoker should prevent the
                 // timeout from being used/checked. This shouldn't throw.
@@ -236,9 +235,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true); 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -247,7 +244,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // We're testing the combination of OnFailure.Throw and the exceptions here.
                 var exception = await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.InvokeThrowAsync(command));
@@ -264,10 +261,17 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            "NoOpAsync",
+                            new CommandConfiguration
+                            {
+                                Timeout = 10000
+                            }
+                        }
+                    });
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -276,7 +280,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // We're testing the combination of OnFailure.Throw and the exceptions here.
                 var exception = await Assert.ThrowsAsync<ExpectedTestException>(() => invoker.InvokeThrowAsync(command));
@@ -287,7 +291,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["MjolnirStatus"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
-                Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
+                Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
             }
 
@@ -298,11 +302,18 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var expectedException = new CircuitBreakerRejectedException();
                 var command = new NoOpAsyncCommand();
-
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
+                
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            "NoOpAsync",
+                            new CommandConfiguration
+                            {
+                                Timeout = 10000
+                            }
+                        }
+                    });
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -311,7 +322,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 var exception = await Assert.ThrowsAsync<CircuitBreakerRejectedException>(() => invoker.InvokeThrowAsync(command));
 
@@ -321,7 +332,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["MjolnirStatus"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
                 Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
-                Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
+                Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
             }
         }
@@ -357,11 +368,19 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new TokenCapturingAsyncCommand();
                 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.TokenCapturingAsync.Timeout", It.IsAny<long>())).Returns(10000);
-
+                var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            "NoOpAsync",
+                            new CommandConfiguration
+                            {
+                                Timeout = 10000
+                            }
+                        }
+                    });
+                
+                
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
 
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
@@ -369,7 +388,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
                 
                 await invoker.InvokeReturnAsync(command);
 
@@ -385,10 +404,17 @@ namespace Hudl.Mjolnir.Tests.Command
                 const bool expectedResultValue = true;
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            "NoOpAsync",
+                            new CommandConfiguration
+                            {
+                                Timeout = 10000
+                            }
+                        }
+                    });
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -397,7 +423,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // We're testing OnFailure.Return here. The failure mode shouldn't have any bearing
                 // on what happens during successful execution.
@@ -420,9 +446,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false); 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -431,7 +455,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
                 // We're testing the combination of OnFailure.Return and the expired token here.
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
                 var expiredToken = new CancellationToken(true);
 
                 // Shouldn't throw.
@@ -465,9 +489,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 
                 var command = new DelayAsyncCommand(1);
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false); 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -475,7 +497,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // We're testing the presence of the timeout here.
                 var result = await invoker.InvokeReturnAsync(command, 0);
@@ -507,10 +529,17 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            "NoOpAsync",
+                            new CommandConfiguration
+                            {
+                                Timeout = 10000
+                            }
+                        }
+                    });
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -519,7 +548,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 // Exception should be captured and wrapped in the result.
                 var result = await invoker.InvokeReturnAsync(command);
@@ -532,7 +561,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Faulted, result.Exception.Data["MjolnirStatus"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
-                Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
+                Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
                 Assert.False(result.WasSuccess);
@@ -547,11 +576,18 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var expectedException = new BulkheadRejectedException();
                 var command = new NoOpAsyncCommand();
-
-                var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-                mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOpAsync.Timeout", It.IsAny<long>())).Returns(10000);
+                
+                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                    {
+                        {
+                            "NoOpAsync",
+                            new CommandConfiguration
+                            {
+                                Timeout = 10000
+                            }
+                        }
+                    });
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -560,7 +596,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-                var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+                var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
                 var result = await invoker.InvokeReturnAsync(command);
 
@@ -572,7 +608,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(CommandCompletionStatus.Rejected, result.Exception.Data["MjolnirStatus"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
                 Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
-                Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
+                Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
                 Assert.False(result.WasSuccess);
@@ -611,9 +647,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new TokenCapturingCommand();
             
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false);
 
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
 
@@ -622,7 +656,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var mockMetricEvents = new Mock<IMetricEvents>();
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             invoker.InvokeThrow(command);
 
@@ -637,10 +671,17 @@ namespace Hudl.Mjolnir.Tests.Command
             const bool expectedResultValue = true;
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "NoOpAsync",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -649,7 +690,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing OnFailure.Throws here. Mainly, it shouldn't throw if we're successful.
             var result = invoker.InvokeThrow(command);
@@ -669,9 +710,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -679,7 +718,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
             var expiredToken = new CancellationToken(true);
 
             // We're testing the combination of OnFailure.Throw and the expired token here.
@@ -708,9 +747,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new SleepCommand(1);
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -718,7 +755,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Throw and the timeout here.
             var exception = Assert.Throws<OperationCanceledException>(() => invoker.InvokeThrow(command, 0));
@@ -748,9 +785,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SleepCommand(1);
             var expiredToken = new CancellationToken(true);
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -759,7 +794,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // Even though we pass a token, the config value on the invoker should prevent the
             // token from being used/checked. This shouldn't throw.
@@ -778,9 +813,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -789,7 +822,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Throw and the exceptions here.
             var exception = Assert.Throws<ExpectedTestException>(() => invoker.InvokeThrow(command));
@@ -806,11 +839,19 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
-
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "NoOpAsync",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
+            
+            
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Throws(expectedException);
@@ -818,7 +859,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Throw and the exceptions here.
             var exception = Assert.Throws<ExpectedTestException>(() => invoker.InvokeThrow(command));
@@ -828,7 +869,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["MjolnirStatus"]);
             Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
             Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
-            Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
+            Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
         }
 
@@ -840,10 +881,17 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new CircuitBreakerRejectedException();
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "NoOpAsync",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -852,7 +900,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Throw and the exceptions here.
             var exception = Assert.Throws<CircuitBreakerRejectedException>(() => invoker.InvokeThrow(command));
@@ -863,7 +911,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["MjolnirStatus"]);
             Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
             Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
-            Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
+            Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
         }
     }
@@ -898,10 +946,17 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new TokenCapturingCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.TokenCapturing.Timeout", It.IsAny<long>())).Returns(10000);
+            var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "TokenCapturing",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
 
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
@@ -910,7 +965,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var mockMetricEvents = new Mock<IMetricEvents>();
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             invoker.InvokeReturn(command);
 
@@ -925,11 +980,18 @@ namespace Hudl.Mjolnir.Tests.Command
             const bool expectedResultValue = true;
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
-
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "test.NoOp",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
+            
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
             mockBulkheadInvoker.Setup(m => m.ExecuteWithBulkhead(command, It.IsAny<CancellationToken>())).Returns(expectedResultValue);
@@ -937,7 +999,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing OnFailure.Return here. The failure mode shouldn't have any bearing
             // on what happens during successful execution.
@@ -961,9 +1023,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -972,7 +1032,7 @@ namespace Hudl.Mjolnir.Tests.Command
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
             // We're testing the combination of OnFailure.Return and the expired token here.
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
             var expiredToken = new CancellationToken(true);
 
             // Shouldn't throw.
@@ -1007,9 +1067,7 @@ namespace Hudl.Mjolnir.Tests.Command
             
             var command = new SleepCommand(1);
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1017,7 +1075,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Return and the timeout here.
             var result = invoker.InvokeReturn(command, 0);
@@ -1051,10 +1109,19 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "test.NoOp",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
+            
+                
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1063,7 +1130,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // Even though we pass a timeout, the config value on the invoker should prevent the
             // timeout from being used/checked. This shouldn't throw.
@@ -1081,10 +1148,18 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "test.NoOp",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
+            
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1093,7 +1168,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of OnFailure.Return and the exceptions here.
             var result = invoker.InvokeReturn(command);
@@ -1106,7 +1181,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(CommandCompletionStatus.Faulted, result.Exception.Data["MjolnirStatus"]);
             Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
             Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
-            Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
+            Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
             Assert.False(result.WasSuccess);
@@ -1122,10 +1197,17 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new BulkheadRejectedException();
             var command = new NoOpCommand();
 
-            var mockConfig = new Mock<IMjolnirConfig>(MockBehavior.Strict);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.isEnabled", It.IsAny<bool>())).Returns(true);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.ignoreTimeouts", It.IsAny<bool>())).Returns(false);
-            mockConfig.Setup(m => m.GetConfig("mjolnir.command.test.NoOp.Timeout", It.IsAny<long>())).Returns(10000);
+            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
+                commandConfigurations: new Dictionary<string, CommandConfiguration>
+                {
+                    {
+                        "test.NoOp",
+                        new CommandConfiguration
+                        {
+                            Timeout = 10000
+                        }
+                    }
+                });
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1134,7 +1216,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
 
-            var invoker = new CommandInvoker(mockConfig.Object, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
+            var invoker = new CommandInvoker(mockConfig, new DefaultMjolnirLogFactory(), mockMetricEvents.Object, mockBreakerExceptionHandler.Object, mockBulkheadInvoker.Object);
 
             // We're testing the combination of the "return" failure mode and the exceptions here.
             var result = invoker.InvokeReturn(command);
@@ -1147,7 +1229,7 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(CommandCompletionStatus.Rejected, result.Exception.Data["MjolnirStatus"]);
             Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
             Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
-            Assert.Equal((int)command.DetermineTimeout(mockConfig.Object).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
+            Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
             Assert.False(result.WasSuccess);
