@@ -29,7 +29,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             // Act
 
-            var value = config.GetBulkheadConfiguration(groupKey.Name).MaxConcurrent;
+            var value = config.GetBulkheadConfiguration(groupKey).MaxConcurrent;
 
             // Assert
 
@@ -52,7 +52,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             // Act
 
-            var value = config.GetBulkheadConfiguration(groupKey.Name).MaxConcurrent;
+            var value = config.GetBulkheadConfiguration(groupKey).MaxConcurrent;
 
             // Assert
 
@@ -76,7 +76,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             // Act
 
-            var value = config.GetBulkheadConfiguration(groupKey.Name).MaxConcurrent;
+            var value = config.GetBulkheadConfiguration(groupKey).MaxConcurrent;
 
             // Assert
 

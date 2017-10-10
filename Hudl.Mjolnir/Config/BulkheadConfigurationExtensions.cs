@@ -2,7 +2,7 @@ using System;
 
 namespace Hudl.Mjolnir.Config
 {
-    internal static class BulkheadConfigurationObserverCreationExtensions
+    internal static class BulkheadConfigurationExtensions
     {
         internal static IDisposable OnConfigurationChanged<T>(this BulkheadConfiguration currentConfig, Func<BulkheadConfiguration, T> propertyToCheck, Action<T> onChangeAction)
         {

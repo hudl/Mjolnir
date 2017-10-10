@@ -192,7 +192,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Act
 
             var firstBulkhead = factory.GetBulkhead(groupKey);
-            mockConfig.GetBulkheadConfiguration(groupKey.Name).MaxConcurrent = newExpectedCount;
+            mockConfig.GetBulkheadConfiguration(groupKey).MaxConcurrent = newExpectedCount;
 
             // Give the change handler callback enough time to create and reassign the bulkhead.
             Thread.Sleep(500);
@@ -284,7 +284,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
                 // Expected, config is invalid for the first attempt.
             }
 
-            mockConfig.GetBulkheadConfiguration(key.Name).MaxConcurrent = validMaxConcurrent;
+            mockConfig.GetBulkheadConfiguration(key).MaxConcurrent = validMaxConcurrent;
 
             // Act
             

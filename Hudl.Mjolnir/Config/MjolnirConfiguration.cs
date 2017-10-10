@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Hudl.Mjolnir.Key;
 
 namespace Hudl.Mjolnir.Config
 {
@@ -73,7 +74,7 @@ namespace Hudl.Mjolnir.Config
             CommandConfigurations = new Dictionary<string, CommandConfiguration>();
             DefaultCommandConfiguration = new CommandConfiguration();
             BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>();
-            DefaultBulkheadConfiguration = new StaticBulkheadConfiguration();
+            DefaultBulkheadConfiguration = new NonObservableBulkheadConfiguration();
             BreakerConfigurations = new Dictionary<string, BreakerConfiguration>();
             DefaultBreakerConfiguration = new BreakerConfiguration();
         }
@@ -100,11 +101,11 @@ namespace Hudl.Mjolnir.Config
         /// <param name="key">Bulkhead configuration for a given key. Default value returned if non-existent or 
         /// null.</param>
         /// <returns></returns>
-        public BulkheadConfiguration GetBulkheadConfiguration(string key = null)
+        public BulkheadConfiguration GetBulkheadConfiguration(GroupKey key)
         {
-            if (key == null) return DefaultBulkheadConfiguration;
+            if (string.IsNullOrEmpty(key.Name)) return DefaultBulkheadConfiguration;
             BulkheadConfiguration bulkheadConfiguration;
-            return BulkheadConfigurations.TryGetValue(key, out bulkheadConfiguration) ?
+            return BulkheadConfigurations.TryGetValue(key.Name, out bulkheadConfiguration) ?
                 bulkheadConfiguration : DefaultBulkheadConfiguration;
         }       
         
