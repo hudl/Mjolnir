@@ -293,7 +293,7 @@ namespace Hudl.Mjolnir.Command
 
             _bulkheadFactory = new BulkheadFactory(
                 _metricEvents,
-                new BulkheadConfig(_config),
+                _config,
                 _logFactory);
 
             var breakerInvoker = new BreakerInvoker(_circuitBreakerFactory, _metricEvents, _breakerExceptionHandler);

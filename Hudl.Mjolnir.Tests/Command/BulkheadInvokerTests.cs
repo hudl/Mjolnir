@@ -13,6 +13,7 @@ using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Config;
 using static Hudl.Mjolnir.Bulkhead.BulkheadFactory;
 using Hudl.Mjolnir.Metrics;
+using Hudl.Mjolnir.Tests.Bulkhead;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -51,7 +52,7 @@ namespace Hudl.Mjolnir.Tests.Command
                     {
                         {
                             key,
-                            new BulkheadConfiguration
+                            new TestBulkheadConfiguration
                             {
                                 MaxConcurrent = initialMaxConcurrent
                             }
@@ -75,10 +76,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
                 mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new Mock<IMjolnirLog>().Object);
 
-                var bulkheadConfig = new BulkheadConfig(mockConfig);
-
                 // Use a real BulkheadFactory, which will give us access to its BulkheadHolder.
-                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
                 var holder = bulkheadFactory.GetBulkheadHolder(groupKey);
                 var initialBulkhead = bulkheadFactory.GetBulkhead(groupKey);
 
@@ -399,7 +398,7 @@ namespace Hudl.Mjolnir.Tests.Command
                     {
                         {
                             key,
-                            new BulkheadConfiguration
+                            new TestBulkheadConfiguration
                             {
                                 MaxConcurrent = initialMaxConcurrent
                             }
@@ -423,10 +422,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
                 mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new Mock<IMjolnirLog>().Object);
 
-                var bulkheadConfig = new BulkheadConfig(mockConfig);
-
                 // Use a real BulkheadFactory, which will give us access to its BulkheadHolder.
-                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
                 var holder = bulkheadFactory.GetBulkheadHolder(groupKey);
                 var initialBulkhead = bulkheadFactory.GetBulkhead(groupKey);
 

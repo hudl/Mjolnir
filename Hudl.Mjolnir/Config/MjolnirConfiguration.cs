@@ -73,7 +73,7 @@ namespace Hudl.Mjolnir.Config
             CommandConfigurations = new Dictionary<string, CommandConfiguration>();
             DefaultCommandConfiguration = new CommandConfiguration();
             BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>();
-            DefaultBulkheadConfiguration = new BulkheadConfiguration();
+            DefaultBulkheadConfiguration = new StaticBulkheadConfiguration();
             BreakerConfigurations = new Dictionary<string, BreakerConfiguration>();
             DefaultBreakerConfiguration = new BreakerConfiguration();
         }
