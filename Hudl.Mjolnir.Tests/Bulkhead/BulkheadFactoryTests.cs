@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Hudl.Mjolnir.Config;
 using Xunit;
+using static Hudl.Mjolnir.Bulkhead.BulkheadFactory;
 
 namespace Hudl.Mjolnir.Tests.Bulkhead
 {
@@ -37,15 +38,15 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             });
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-            
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             // Act
 
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
-            
+
             // Add a bulkhead
             factory.GetBulkhead(groupKey);
-            
+
             // The timer will fire after 1 second.
             Thread.Sleep(TimeSpan.FromMilliseconds(1500));
 
@@ -68,7 +69,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             var expectedMaxConcurrent1 = AnyPositiveInt;
             var expectedMaxConcurrent2 = AnyPositiveInt;
-            
+
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
             mockMetricEvents.Setup(m => m.BulkheadGauge(groupKey1.Name, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()));
             mockMetricEvents.Setup(m => m.BulkheadGauge(groupKey2.Name, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()));
@@ -92,8 +93,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             });
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             // Act + Assert
 
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
@@ -109,7 +110,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             factory.GetBulkhead(groupKey2);
 
             Thread.Sleep(TimeSpan.FromMilliseconds(1500));
-            
+
             mockMetricEvents.Verify(m => m.BulkheadGauge(key1, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()), Times.Once);
             mockMetricEvents.Verify(m => m.BulkheadGauge(key2, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()), Times.Once);
         }
@@ -139,7 +140,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             });
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
 
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
@@ -151,7 +153,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             Assert.Equal(bulkhead, factory.GetBulkhead(key));
         }
-        
+
         [Fact]
         public void GetBulkhead_ReturnsNewBulkheadWhenConfigChanges()
         {
@@ -185,8 +187,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
             // Act
@@ -238,14 +240,14 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
             // Act + Assert
 
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() => factory.GetBulkhead(key));
-            
+
             Assert.Equal("maxConcurrent", exception.ParamName);
             Assert.Equal(invalidMaxConcurrent, exception.ActualValue);
         }
@@ -271,18 +273,18 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
                     }
                 }
             });
-            
-            
-            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
+
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
             try
             {
                 factory.GetBulkhead(key);
             }
-            catch(ArgumentOutOfRangeException)
+            catch (ArgumentOutOfRangeException)
             {
                 // Expected, config is invalid for the first attempt.
             }
@@ -293,7 +295,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             });
 
             // Act
-            
+
             var bulkhead = factory.GetBulkhead(key); // Should not throw.
 
             // Assert

@@ -7,6 +7,8 @@ using Moq;
 using System;
 using System.Threading;
 using Xunit;
+using Hudl.Mjolnir.Bulkhead;
+using Hudl.Mjolnir.Metrics;
 
 namespace Hudl.Mjolnir.Tests.Breaker
 {
@@ -20,8 +22,9 @@ namespace Hudl.Mjolnir.Tests.Breaker
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBreakerConfig = new Mock<IFailurePercentageCircuitBreakerConfig>(MockBehavior.Strict);
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<FailurePercentageCircuitBreaker>()).Returns(new DefaultMjolnirLog<FailurePercentageCircuitBreaker>());
+            mockLogFactory.Setup(m => m.CreateLog<ResettingNumbersBucket>()).Returns(new DefaultMjolnirLog<ResettingNumbersBucket>());
             var groupKey = AnyGroupKey;
             var factory = new CircuitBreakerFactory(mockMetricEvents.Object, mockBreakerConfig.Object, mockLogFactory.Object);
 
@@ -62,8 +65,8 @@ namespace Hudl.Mjolnir.Tests.Breaker
             mockBreakerConfig.Setup(m => m.GetForceFixed(groupKey)).Returns(expectedForceFixed);
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-            
+            mockLogFactory.Setup(m => m.CreateLog<FailurePercentageCircuitBreaker>()).Returns(new DefaultMjolnirLog<FailurePercentageCircuitBreaker>());
+            mockLogFactory.Setup(m => m.CreateLog<ResettingNumbersBucket>()).Returns(new DefaultMjolnirLog<ResettingNumbersBucket>());
             // Act + Assert
 
             var factory = new CircuitBreakerFactory(mockMetricEvents.Object, mockBreakerConfig.Object, mockLogFactory.Object);
@@ -73,7 +76,7 @@ namespace Hudl.Mjolnir.Tests.Breaker
 
             // Add two breakers
             var firstBreaker = factory.GetCircuitBreaker(groupKey);
-            
+
             Thread.Sleep(TimeSpan.FromMilliseconds(1500));
 
             mockMetricEvents.Verify(m => m.BreakerGauge(key, expectedMinimumOperations, expectedWindowMillis, expectedThresholdPercent, expectedTrippedDurationMillis, expectedForceTripped, expectedForceFixed, false, 0, 0));

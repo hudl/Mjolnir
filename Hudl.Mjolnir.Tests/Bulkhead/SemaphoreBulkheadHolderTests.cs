@@ -81,7 +81,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
 
             // Act
 
@@ -108,13 +108,13 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
                         key.Name,
                         new BulkheadConfiguration
                         {
-                            MaxConcurrent = AnyPositiveInt 
+                            MaxConcurrent = AnyPositiveInt
                         }
                     }
                 });
-            
+
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
 
             // Act
 
@@ -125,7 +125,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Veryfy for Subscribtion would be better but we cannot mock MjolnirConfiguration properly with Mock
             Assert.Equal(1, mockConfig.Observers.Count);
         }
-        
+
         [Fact]
         public void Construct_WhenMaxConcurrentConfigIsInvalid_DoesSomething()
         {
@@ -148,12 +148,12 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             });
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
 
             // Act + Assert
 
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() => new SemaphoreBulkheadHolder(groupKey, mockMetricEvents.Object, mockConfig, mockLogFactory.Object));
-            
+
             Assert.Equal("maxConcurrent", exception.ParamName);
             Assert.Equal(invalidMaxConcurrent, exception.ActualValue);
         }
@@ -180,11 +180,11 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
                 }
             });
 
-            var mockLog = new Mock<IMjolnirLog>(MockBehavior.Strict);
+            var mockLog = new Mock<IMjolnirLog<SemaphoreBulkheadHolder>>(MockBehavior.Strict);
             mockLog.Setup(m => m.Error(It.IsAny<string>()));
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(mockLog.Object);
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(mockLog.Object);
 
             var holder = new SemaphoreBulkheadHolder(key, mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
@@ -204,7 +204,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
         public void UpdateMaxConcurrent_ReplacesBulkhead()
         {
             // Arrange
-            
+
             var key = AnyGroupKey;
             const int initialExpectedCount = 5;
             const int newExpectedCount = 6;
@@ -223,7 +223,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             });
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
 
             var holder = new SemaphoreBulkheadHolder(key, mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
