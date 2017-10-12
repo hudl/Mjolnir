@@ -13,7 +13,7 @@ namespace Hudl.Mjolnir.Breaker
         private readonly IMetricEvents _metricEvents;
         private readonly IFailurePercentageCircuitBreakerConfig _breakerConfig;
         private readonly IMjolnirLogFactory _logFactory;
-        private readonly IMjolnirLog _log;
+        private readonly IMjolnirLog<FailurePercentageCircuitBreaker> _log;
 
         // ReSharper disable NotAccessedField.Local
         // Don't let this get garbage collected.
@@ -29,7 +29,7 @@ namespace Hudl.Mjolnir.Breaker
             _breakerConfig = breakerConfig ?? throw new ArgumentNullException(nameof(breakerConfig));
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
 
-            _log = logFactory.CreateLog(typeof(FailurePercentageCircuitBreaker));
+            _log = logFactory.CreateLog<FailurePercentageCircuitBreaker>();
             if (_log == null)
             {
                 throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(CircuitBreakerFactory)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
@@ -70,7 +70,7 @@ namespace Hudl.Mjolnir.Breaker
         {
             return _circuitBreakers.GetOrAdd(key, new Lazy<FailurePercentageCircuitBreaker>(() => CircuitBreakerValueFactory(key), LazyThreadSafetyMode.PublicationOnly)).Value;
         }
-        
+
         private ICommandMetrics GetCommandMetrics(GroupKey key)
         {
             return _metrics.GetOrAdd(key, new Lazy<ICommandMetrics>(() => new StandardCommandMetrics(key, _breakerConfig, _logFactory), LazyThreadSafetyMode.PublicationOnly)).Value;

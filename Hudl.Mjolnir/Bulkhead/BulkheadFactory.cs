@@ -30,18 +30,18 @@ namespace Hudl.Mjolnir.Bulkhead
             _config = config;
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
 
-            var log = logFactory.CreateLog(typeof(BulkheadFactory));
+            var log = logFactory.CreateLog<BulkheadFactory>();
             if (log == null)
             {
                 throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(BulkheadFactory)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
             }
-            
+
             _timer = new GaugeTimer(state =>
             {
                 try
                 {
                     var keys = _bulkheads.Keys;
-                    foreach(var key in keys)
+                    foreach (var key in keys)
                     {
                         if (_bulkheads.TryGetValue(key, out Lazy<SemaphoreBulkheadHolder> holder) && holder.IsValueCreated)
                         {
@@ -66,7 +66,7 @@ namespace Hudl.Mjolnir.Bulkhead
         {
             return GetBulkheadHolder(key).Bulkhead;
         }
-        
+
         // This only exists so that unit tests can get access to the holder to trigget its config
         // change handler.
         internal SemaphoreBulkheadHolder GetBulkheadHolder(GroupKey key)
@@ -84,7 +84,7 @@ namespace Hudl.Mjolnir.Bulkhead
             // the value, which means if the config value later changes to a valid value, the
             // initialization here will work and start returning a valid Bulkhead instead of an
             // exception.
-            
+
             return _bulkheads.GetOrAdd(key, new Lazy<SemaphoreBulkheadHolder>(() => new SemaphoreBulkheadHolder(key, _metricEvents, _config, _logFactory), LazyThreadSafetyMode.PublicationOnly)).Value;
         }
 
@@ -101,7 +101,7 @@ namespace Hudl.Mjolnir.Bulkhead
 
             private readonly IMetricEvents _metricEvents;
             private readonly MjolnirConfiguration _config;
-            private readonly IMjolnirLog _log;
+            private readonly IMjolnirLog<SemaphoreBulkheadHolder> _log;
 
             public SemaphoreBulkheadHolder(GroupKey key, IMetricEvents metricEvents, MjolnirConfiguration config, IMjolnirLogFactory logFactory)
             {
@@ -114,7 +114,7 @@ namespace Hudl.Mjolnir.Bulkhead
                     throw new ArgumentNullException(nameof(logFactory));
                 }
 
-                _log = logFactory.CreateLog(typeof(SemaphoreBulkheadHolder));
+                _log = logFactory.CreateLog<SemaphoreBulkheadHolder>();
                 if (_log == null)
                 {
                     throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(SemaphoreBulkheadHolder)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
@@ -136,11 +136,11 @@ namespace Hudl.Mjolnir.Bulkhead
                 // has been replaced after a config change.
                 _config.OnConfigurationChanged(c => c.GetBulkheadConfiguration(key).MaxConcurrent, UpdateMaxConcurrent);
             }
-            
+
             internal void UpdateMaxConcurrent(int newLimit)
             {
                 if (!IsValidMaxConcurrent(newLimit))
-                {               
+                {
                     _log.Error($"Semaphore bulkhead config for key {_key} changed to an invalid limit of {newLimit}, the bulkhead will not be changed");
                     return;
                 }

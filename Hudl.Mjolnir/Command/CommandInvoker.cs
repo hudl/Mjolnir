@@ -244,7 +244,7 @@ namespace Hudl.Mjolnir.Command
         /// <returns>A CommandResult with a return value or exception information.</returns>
         CommandResult<TResult> InvokeReturn<TResult>(SyncCommand<TResult> command, CancellationToken ct);
     }
-    
+
     /// <summary>
     /// Invoker is thread-safe. Prefer to keep a single instance around and use it throughout your
     /// application (e.g. via dependency injection).
@@ -253,7 +253,7 @@ namespace Hudl.Mjolnir.Command
     {
         private readonly MjolnirConfiguration _config;
         private readonly IMjolnirLogFactory _logFactory;
-        
+        private readonly IMjolnirLog<CommandInvoker> _log;
         private readonly IMetricEvents _metricEvents;
         private readonly IBreakerExceptionHandler _breakerExceptionHandler;
         private readonly IBulkheadInvoker _bulkheadInvoker;
@@ -264,7 +264,7 @@ namespace Hudl.Mjolnir.Command
         public CommandInvoker()
             : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null, null)
         { }
-        
+
         public CommandInvoker(
             MjolnirConfiguration config = null,
             IMjolnirLogFactory logFactory = null,
@@ -272,7 +272,7 @@ namespace Hudl.Mjolnir.Command
             IBreakerExceptionHandler breakerExceptionHandler = null)
             : this(config, logFactory, metricEvents, breakerExceptionHandler, null)
         { }
-        
+
         // Internal constructor with a few extra arguments used by tests to inject mocks.
         internal CommandInvoker(
             MjolnirConfiguration config = null,
@@ -283,9 +283,15 @@ namespace Hudl.Mjolnir.Command
         {
             _config = config ?? new DefaultValueConfig();
             _logFactory = logFactory ?? new DefaultMjolnirLogFactory();
+            _log = _logFactory.CreateLog<CommandInvoker>();
+            if (_log == null)
+            {
+                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for name {nameof(CommandInvoker)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
+            }
+
             _metricEvents = metricEvents ?? new IgnoringMetricEvents();
             _breakerExceptionHandler = breakerExceptionHandler ?? new IgnoredExceptionHandler(new HashSet<Type>());
-            
+
             _circuitBreakerFactory = new CircuitBreakerFactory(
                 _metricEvents,
                 new FailurePercentageCircuitBreakerConfig(_config),
@@ -299,7 +305,7 @@ namespace Hudl.Mjolnir.Command
             var breakerInvoker = new BreakerInvoker(_circuitBreakerFactory, _metricEvents, _breakerExceptionHandler);
             _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _bulkheadFactory, _metricEvents, _config);
         }
-        
+
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)
         {
             EnsureSingleInvoke(command);
@@ -387,19 +393,11 @@ namespace Hudl.Mjolnir.Command
         private async Task<TResult> InvokeAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct, OnFailure failureModeForMetrics)
         {
             var stopwatch = Stopwatch.StartNew();
-
             var logName = $"Hudl.Mjolnir.Command.{command.Name}";
-            var log = _logFactory.CreateLog(logName);
-            if (log == null)
-            {
-                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for name {logName}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
-            }
-
             var status = CommandCompletionStatus.RanToCompletion;
-
             try
             {
-                log.Info($"Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
+                _log.Debug($"[{logName}] Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
@@ -493,7 +491,7 @@ namespace Hudl.Mjolnir.Command
                 {
                     result = Invoke(command, OnFailure.Return, ct);
                 }
-                
+
                 return new CommandResult<TResult>(result);
             }
             catch (Exception e)
@@ -507,17 +505,11 @@ namespace Hudl.Mjolnir.Command
             var stopwatch = Stopwatch.StartNew();
 
             var logName = $"Hudl.Mjolnir.Command.{command.Name}";
-            var log = _logFactory.CreateLog(logName);
-            if (log == null)
-            {
-                throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for name {logName}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
-            }
-
             var status = CommandCompletionStatus.RanToCompletion;
-            
+
             try
             {
-                log.Info($"Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
+                _log.Debug($"[{logName}] Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
@@ -528,7 +520,7 @@ namespace Hudl.Mjolnir.Command
             {
                 status = GetCompletionStatus(e, ct);
                 AttachCommandExceptionData(command, e, status, ct);
-                throw;                
+                throw;
             }
             finally
             {
@@ -570,7 +562,7 @@ namespace Hudl.Mjolnir.Command
                 throw new InvalidOperationException("A command instance may only be invoked once");
             }
         }
-        
+
         private static CommandCompletionStatus GetCompletionStatus(Exception exception, InformativeCancellationToken ct)
         {
             if (IsCancellationException(exception))
@@ -622,7 +614,7 @@ namespace Hudl.Mjolnir.Command
         {
             return _config.IsEnabled;
         }
-        
+
         /// <summary>
         /// If this is set to true then all calls wrapped in a Mjolnir command will ignore the
         /// default timeout. This is likely to be useful when debugging Command-decorated methods,
@@ -661,8 +653,8 @@ namespace Hudl.Mjolnir.Command
 
         public CancellationToken Token { get { return _token; } }
         public TimeSpan? Timeout { get { return _timeout; } }
-        public bool IsIgnored {  get { return _isIgnored; } }
-        
+        public bool IsIgnored { get { return _isIgnored; } }
+
         private InformativeCancellationToken(CancellationToken token, bool ignored = false)
         {
             _timeout = null;
@@ -677,7 +669,7 @@ namespace Hudl.Mjolnir.Command
 
             // This (int) cast probably breaks timeouts that are < 1 millisecond. I'm not sure
             // that's worth fixing yet. Notable, though.
-            if ((int) timeout.TotalMilliseconds == 0)
+            if ((int)timeout.TotalMilliseconds == 0)
             {
                 // If timeout is 0, we're immediately timed-out. This is somewhat
                 // here as a convenience for unit testing, but applies generally.
@@ -697,7 +689,7 @@ namespace Hudl.Mjolnir.Command
                 _token = source.Token;
             }
         }
-        
+
         public object DescriptionForLog
         {
             get
@@ -709,14 +701,14 @@ namespace Hudl.Mjolnir.Command
 
                 if (_timeout.HasValue)
                 {
-                    return (int) _timeout.Value.TotalMilliseconds;
+                    return (int)_timeout.Value.TotalMilliseconds;
                 }
 
                 if (_token == CancellationToken.None || _token == default(CancellationToken))
                 {
                     return "None";
                 }
-                
+
                 return "Token";
             }
         }
