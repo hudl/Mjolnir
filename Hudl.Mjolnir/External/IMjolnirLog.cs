@@ -2,8 +2,10 @@
 
 namespace Hudl.Mjolnir.External
 {
-    public interface IMjolnirLog
+    public interface IMjolnirLog<out T>
     {
+        void SetLogName(string name);
+        void Debug(string message);
         void Info(string message);
         void Error(string message);
         void Error(string message, Exception exception);
@@ -11,7 +13,6 @@ namespace Hudl.Mjolnir.External
 
     public interface IMjolnirLogFactory
     {
-        IMjolnirLog CreateLog(string name);
-        IMjolnirLog CreateLog(Type type);
+        IMjolnirLog<T> CreateLog<T>();
     }
 }
