@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Hudl.Mjolnir.Key;
 
 namespace Hudl.Mjolnir.Config
@@ -7,7 +8,7 @@ namespace Hudl.Mjolnir.Config
     /// Abstract class implementation for config values.
     /// This is used to instantiate all mjolnir configuration values. 
     /// </summary>
-    public abstract class MjolnirConfiguration
+    public abstract class MjolnirConfiguration: IObservable<MjolnirConfiguration>
     {
         /// <summary>
         /// Global Killswitch - Mjolnir can be turned off entirely if needed (though it's certainly not recommended). 
@@ -16,54 +17,54 @@ namespace Hudl.Mjolnir.Config
         /// it through Bulkheads and Circuit Breakers. No timeouts will be applied; a CancellationToken.None will be 
         /// passed to any method that supports cancellation.
         /// </summary>
-        public bool IsEnabled { get; protected set; }
+        public bool IsEnabled { get; set; }
         
         
         /// <summary>
         /// Global Ignore - Timeouts can be globally ignored. Only recommended for use in local/testing environments.
         /// </summary>
-        public bool IgnoreTimeouts { get; protected set; }
+        public bool IgnoreTimeouts { get; set; }
         
         
         /// <summary>
         /// Default Timeouts for commands.
         /// </summary>
-        protected CommandConfiguration DefaultCommandConfiguration;
+        public CommandConfiguration DefaultCommandConfiguration;
         
         
         /// <summary>
         /// Configuring Timeouts for commands.
         /// </summary>
-        protected Dictionary<string, CommandConfiguration> CommandConfigurations;
+        public Dictionary<string, CommandConfiguration> CommandConfigurations;
         
 
        
         /// <summary>
         /// System-wide default. Used if a per-bulkhead config isn't configured.
         /// </summary>
-        protected BulkheadConfiguration DefaultBulkheadConfiguration { get; set; }
+        public BulkheadConfiguration DefaultBulkheadConfiguration { get; set; }
         
         /// <summary>
         /// Per-bulkhead configuration. Key is the argument passed to the Command constructor.
         /// </summary>
-        protected Dictionary<string, BulkheadConfiguration> BulkheadConfigurations { get; set; }
+        public Dictionary<string, BulkheadConfiguration> BulkheadConfigurations { get; set; }
 
       
         
         /// <summary>
         /// Global Enable/Disable - Circuit Breakers can be globally disabled.
         /// </summary>
-        public bool UseCircuitBreakers { get; protected set; }      
+        public bool UseCircuitBreakers { get; set; }      
 
         /// <summary>
         /// System-wide default. Used if a per-breaker config isn't configured.
         /// </summary>
-        protected BreakerConfiguration DefaultBreakerConfiguration { get; set; }
+        public BreakerConfiguration DefaultBreakerConfiguration { get; set; }
         
         /// <summary>
         /// Per-breaker configuration. breaker-key is the argument passed to the Command constructor.
         /// </summary>
-        protected Dictionary<string, BreakerConfiguration> BreakerConfigurations { get; set; }
+        public Dictionary<string, BreakerConfiguration> BreakerConfigurations { get; set; }
         
         
         /// <summary>
@@ -74,7 +75,7 @@ namespace Hudl.Mjolnir.Config
             CommandConfigurations = new Dictionary<string, CommandConfiguration>();
             DefaultCommandConfiguration = new CommandConfiguration();
             BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>();
-            DefaultBulkheadConfiguration = new NonObservableBulkheadConfiguration();
+            DefaultBulkheadConfiguration = new BulkheadConfiguration();
             BreakerConfigurations = new Dictionary<string, BreakerConfiguration>();
             DefaultBreakerConfiguration = new BreakerConfiguration();
         }
@@ -124,6 +125,14 @@ namespace Hudl.Mjolnir.Config
             return BreakerConfigurations.TryGetValue(key, out breakerConfiguration) ?
                 breakerConfiguration : DefaultBreakerConfiguration;
         }
-        
+
+
+        /// <summary>
+        /// Allows subscribtions for configuration change. Whenever any property change in MjolnirConfig all 
+        /// subscribers are being notified of that change.
+        /// </summary>
+        /// <param name="observer">Mjolnir configuration observer which is acting upon configuration change</param>
+        /// <returns></returns>
+        public abstract IDisposable Subscribe(IObserver<MjolnirConfiguration> observer);
     }
 }

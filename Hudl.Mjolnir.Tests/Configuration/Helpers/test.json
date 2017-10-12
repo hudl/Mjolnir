@@ -1,0 +1,11 @@
+{
+    "testconfig": {
+        "isenabled": true,
+        "IgnoreTimeouts": true,
+        "BulkheadConfigurations": {
+            "testGroupKey": {
+                "MaxConcurrent": 5
+            }
+        }
+    }
+}

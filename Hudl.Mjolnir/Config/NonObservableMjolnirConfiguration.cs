@@ -5,9 +5,9 @@ namespace Hudl.Mjolnir.Config
     /// <summary>
     /// Used only for configs which will never change.
     /// </summary>
-    internal class NonObservableBulkheadConfiguration: BulkheadConfiguration
+    internal class NonObservableMjolnirConfiguration: MjolnirConfiguration
     {
-        public override IDisposable Subscribe(IObserver<BulkheadConfiguration> observer)
+        public override IDisposable Subscribe(IObserver<MjolnirConfiguration> observer)
         {
             // No-op
             return null;

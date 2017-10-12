@@ -134,7 +134,7 @@ namespace Hudl.Mjolnir.Bulkhead
                 // using the bulkhead will have kept a local reference to the bulkhead that they
                 // acquired a lock on, and will release the lock on that bulkhead and not one that
                 // has been replaced after a config change.
-                _config.GetBulkheadConfiguration(key).OnConfigurationChanged(c => c.MaxConcurrent, UpdateMaxConcurrent);
+                _config.OnConfigurationChanged(c => c.GetBulkheadConfiguration(key).MaxConcurrent, UpdateMaxConcurrent);
             }
             
             internal void UpdateMaxConcurrent(int newLimit)

@@ -72,7 +72,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     key.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = expectedMaxConcurrent
                     }
@@ -102,17 +102,17 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
             mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
-            var testBulkheadConfigurationMock = new Mock<TestBulkheadConfiguration>();
-            testBulkheadConfigurationMock.Setup(b => b.MaxConcurrent).Returns(AnyPositiveInt);
+            var mockConfig = new TestConfiguration(
+                bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>{
+                    {
+                        key.Name,
+                        new BulkheadConfiguration
+                        {
+                            MaxConcurrent = AnyPositiveInt 
+                        }
+                    }
+                });
             
-            var mockConfig = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
-            {
-                {
-                    key.Name,
-                    testBulkheadConfigurationMock.Object
-                }
-            });
-
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
 
@@ -122,8 +122,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             // Assert
 
-            // It.IsAny<Action<int>>() could be better here, but I can't access the method extension.
-            testBulkheadConfigurationMock.Verify(m => m.Subscribe(It.IsAny<BulkheadConfigurationObserver<int>>()), Times.Once);
+            // Veryfy for Subscribtion would be better but we cannot mock MjolnirConfiguration properly with Mock
+            Assert.Equal(1, mockConfig.Observers.Count);
         }
         
         [Fact]
@@ -140,7 +140,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     groupKey.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = invalidMaxConcurrent
                     }
@@ -173,7 +173,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     key.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = AnyPositiveInt
                     }
@@ -215,7 +215,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     key.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = initialExpectedCount
                     }

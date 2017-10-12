@@ -29,7 +29,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     groupKey.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = expectedMaxConcurrent
                     }
@@ -77,14 +77,14 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     groupKey1.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = expectedMaxConcurrent1
                     }
                 },
                 {
                     groupKey2.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = expectedMaxConcurrent2
                     }
@@ -131,7 +131,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     key.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = AnyPositiveInt
                     }
@@ -176,7 +176,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     groupKey.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = initialExpectedCount
                     }
@@ -192,7 +192,10 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Act
 
             var firstBulkhead = factory.GetBulkhead(groupKey);
-            mockConfig.GetBulkheadConfiguration(groupKey).MaxConcurrent = newExpectedCount;
+            mockConfig.UpdateBulkheadConfiguration(groupKey, new BulkheadConfiguration
+            {
+                MaxConcurrent = newExpectedCount
+            });
 
             // Give the change handler callback enough time to create and reassign the bulkhead.
             Thread.Sleep(500);
@@ -226,7 +229,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     key.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = invalidMaxConcurrent
                     }
@@ -262,7 +265,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             {
                 {
                     key.Name,
-                    new TestBulkheadConfiguration
+                    new BulkheadConfiguration
                     {
                         MaxConcurrent = invalidMaxConcurrent
                     }
@@ -284,7 +287,10 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
                 // Expected, config is invalid for the first attempt.
             }
 
-            mockConfig.GetBulkheadConfiguration(key).MaxConcurrent = validMaxConcurrent;
+            mockConfig.UpdateBulkheadConfiguration(key, new BulkheadConfiguration
+            {
+                MaxConcurrent = validMaxConcurrent
+            });
 
             // Act
             

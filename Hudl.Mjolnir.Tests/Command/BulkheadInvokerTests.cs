@@ -13,7 +13,6 @@ using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Config;
 using static Hudl.Mjolnir.Bulkhead.BulkheadFactory;
 using Hudl.Mjolnir.Metrics;
-using Hudl.Mjolnir.Tests.Bulkhead;
 
 namespace Hudl.Mjolnir.Tests.Command
 {
@@ -52,7 +51,7 @@ namespace Hudl.Mjolnir.Tests.Command
                     {
                         {
                             key,
-                            new TestBulkheadConfiguration
+                            new BulkheadConfiguration
                             {
                                 MaxConcurrent = initialMaxConcurrent
                             }
@@ -398,7 +397,7 @@ namespace Hudl.Mjolnir.Tests.Command
                     {
                         {
                             key,
-                            new TestBulkheadConfiguration
+                            new BulkheadConfiguration
                             {
                                 MaxConcurrent = initialMaxConcurrent
                             }

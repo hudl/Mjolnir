@@ -2,12 +2,13 @@
 
 namespace Hudl.Mjolnir.Config
 {
-    internal sealed class BulkheadConfigurationObserver<T> : IObserver<BulkheadConfiguration>
+    internal sealed class MjolnirConfigurationObserver<T> : IObserver<MjolnirConfiguration>
     {
         private T _currentValue;
-        private readonly Func<BulkheadConfiguration, T> _expression;
+        private readonly Func<MjolnirConfiguration, T> _expression;
         private readonly Action<T> _onChange;
-        internal BulkheadConfigurationObserver(BulkheadConfiguration currentConfig, Func<BulkheadConfiguration, T> propertyToCheck, Action<T> onChange)
+        internal MjolnirConfigurationObserver(MjolnirConfiguration currentConfig, 
+            Func<MjolnirConfiguration, T> propertyToCheck, Action<T> onChange)
         {
             _expression = propertyToCheck;
             _currentValue = _expression(currentConfig);
@@ -24,7 +25,7 @@ namespace Hudl.Mjolnir.Config
             throw new NotImplementedException();
         }
 
-        public void OnNext(BulkheadConfiguration value)
+        public void OnNext(MjolnirConfiguration value)
         {
             var newValue = _expression(value);
             var hasChanged = !Equals(_currentValue, newValue);
