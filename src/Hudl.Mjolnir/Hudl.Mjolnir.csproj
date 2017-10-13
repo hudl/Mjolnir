@@ -7,9 +7,4 @@
   <ItemGroup>
     <PackageReference Include="System.ComponentModel.TypeConverter" Version="4.1.0" />
   </ItemGroup>
-  <ItemGroup>
-    <!--This is Huld internal build package used for builds. -->
-    <DotNetCliToolReference Include="Hudl.Marvel.Tools.DotnetLibraryCli" Version="4.4.1" />
-    <DotNetCliToolReference Include="Microsoft.Extensions.SecretManager.Tools" Version="1.0.0" />
-  </ItemGroup>
 </Project>
