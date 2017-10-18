@@ -3,8 +3,13 @@ using System;
 
 namespace Hudl.Mjolnir.Log
 {
-    internal class DefaultMjolnirLog : IMjolnirLog
+    internal class DefaultMjolnirLog<T> : IMjolnirLog<T>
     {
+        public void Debug(string message)
+        {
+            return;
+        }
+
         public void Error(string message)
         {
             return;
@@ -16,6 +21,11 @@ namespace Hudl.Mjolnir.Log
         }
 
         public void Info(string message)
+        {
+            return;
+        }
+
+        public void SetLogName(string name)
         {
             return;
         }

@@ -5,14 +5,9 @@ namespace Hudl.Mjolnir.Log
 {
     internal class DefaultMjolnirLogFactory : IMjolnirLogFactory
     {
-        public IMjolnirLog CreateLog(string name)
+        public IMjolnirLog<T> CreateLog<T>()
         {
-            return new DefaultMjolnirLog();
-        }
-
-        public IMjolnirLog CreateLog(Type type)
-        {
-            return new DefaultMjolnirLog();
+            return new DefaultMjolnirLog<T>();
         }
     }
 }

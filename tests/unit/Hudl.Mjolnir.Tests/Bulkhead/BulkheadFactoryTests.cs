@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Hudl.Mjolnir.Config;
 using Xunit;
+using static Hudl.Mjolnir.Bulkhead.BulkheadFactory;
 
 namespace Hudl.Mjolnir.Tests.Bulkhead
 {
@@ -40,8 +41,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             };
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             // Act
 
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
@@ -55,7 +56,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Assert
 
             // Gauges should fire every second, so wait one second and then verify.
-            mockMetricEvents.Verify(m => m.BulkheadGauge(key, "semaphore", expectedMaxConcurrent, It.IsAny<int>()), Times.Once);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key, "semaphore", expectedMaxConcurrent, It.IsAny<int>()), Times.AtLeastOnce);
         }
 
         [Fact(Skip="This test is skipped since it's flaky as it is hard to test timeouts with consistency" +
@@ -99,8 +100,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             };
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             // Act + Assert
 
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
@@ -117,9 +118,9 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             factory.GetBulkhead(groupKey2);
 
             Thread.Sleep(TimeSpan.FromMilliseconds(1500));
-            
-            mockMetricEvents.Verify(m => m.BulkheadGauge(key1, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()), Times.Once);
-            mockMetricEvents.Verify(m => m.BulkheadGauge(key2, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()), Times.Once);
+
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key1, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()), Times.AtLeastOnce);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key2, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()), Times.AtLeastOnce);
         }
 
         [Fact]
@@ -150,7 +151,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             };
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
 
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
@@ -199,8 +201,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
             // Act
@@ -262,8 +264,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
             // Act + Assert
@@ -299,10 +301,9 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
                 }
             };
 
-
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>()).Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
             var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
 
             try

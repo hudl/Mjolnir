@@ -25,13 +25,13 @@ namespace Hudl.Mjolnir.Breaker
         private readonly GroupKey _key;
         private readonly IMetricEvents _metricEvents;
         private readonly IFailurePercentageCircuitBreakerConfig _config;
-        private readonly IMjolnirLog _log;
-        
+        private readonly IMjolnirLog<FailurePercentageCircuitBreaker> _log;
+
         private volatile State _state;
         private long _lastTrippedTimestamp;
 
         internal FailurePercentageCircuitBreaker(GroupKey key, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory)
-            : this(key, new UtcSystemClock(), metrics, metricEvents, config, logFactory) {}
+            : this(key, new UtcSystemClock(), metrics, metricEvents, config, logFactory) { }
 
         internal FailurePercentageCircuitBreaker(GroupKey key, IClock clock, ICommandMetrics metrics, IMetricEvents metricEvents, IFailurePercentageCircuitBreakerConfig config, IMjolnirLogFactory logFactory)
         {
@@ -39,15 +39,15 @@ namespace Hudl.Mjolnir.Breaker
             _clock = clock ?? throw new ArgumentNullException(nameof(config));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _metricEvents = metricEvents ?? throw new ArgumentNullException(nameof(metricEvents));
-            
+
             if (logFactory == null)
             {
                 throw new ArgumentNullException(nameof(logFactory));
             }
 
             _key = key;
-            
-            _log = logFactory.CreateLog(typeof(FailurePercentageCircuitBreaker));
+
+            _log = logFactory.CreateLog<FailurePercentageCircuitBreaker>();
             if (_log == null)
             {
                 throw new InvalidOperationException($"{nameof(IMjolnirLogFactory)} implementation returned null from {nameof(IMjolnirLogFactory.CreateLog)} for type {typeof(FailurePercentageCircuitBreaker)}, please make sure the implementation returns a non-null log for all calls to {nameof(IMjolnirLogFactory.CreateLog)}");
@@ -61,7 +61,7 @@ namespace Hudl.Mjolnir.Breaker
         {
             get { return _metrics; }
         }
-        
+
         public string Name
         {
             get { return _key.Name; }
@@ -196,7 +196,7 @@ namespace Hudl.Mjolnir.Breaker
                 Monitor.Exit(_stateChangeLock);
             }
         }
-        
+
         /// <summary>
         /// Whether or not the breaker is tripped. This is a read-out state of the breaker. If
         /// you're attempting to use the breaker, you probably want IsAllowing() instead. This

@@ -15,7 +15,7 @@ namespace Hudl.Mjolnir.Metrics
     {
         private readonly IFailurePercentageCircuitBreakerConfig _config;
         private readonly IClock _clock;
-        private readonly IMjolnirLog _log;
+        private readonly IMjolnirLog<ResettingNumbersBucket> _log;
 
         private readonly GroupKey _key;
         private readonly object _resetBucketLock = new { };
@@ -37,7 +37,7 @@ namespace Hudl.Mjolnir.Metrics
                 throw new ArgumentNullException(nameof(logFactory));
             }
 
-            _log = logFactory.CreateLog(typeof(ResettingNumbersBucket));
+            _log = logFactory.CreateLog<ResettingNumbersBucket>();
 
             if (_log == null)
             {
@@ -60,10 +60,10 @@ namespace Hudl.Mjolnir.Metrics
             {
                 Reset();
             }
-           
+
             // See note in Reset() about potential for losing current window counts here. 
 
-            _counters[(int) metric].Increment();
+            _counters[(int)metric].Increment();
         }
 
         private ILongCounter[] CreateCounters()
@@ -79,7 +79,7 @@ namespace Hudl.Mjolnir.Metrics
 
         internal long GetCount(CounterMetric metric)
         {
-            return _counters[(int) metric].Get();
+            return _counters[(int)metric].Get();
         }
 
         internal void Reset()
