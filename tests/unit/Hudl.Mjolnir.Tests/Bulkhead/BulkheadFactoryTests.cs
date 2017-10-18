@@ -53,7 +53,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Assert
 
             // Gauges should fire every second, so wait one second and then verify.
-            mockMetricEvents.Verify(m => m.BulkheadGauge(key, "semaphore", expectedMaxConcurrent, It.IsAny<int>()), Times.Once);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key, "semaphore", expectedMaxConcurrent, It.IsAny<int>()), Times.AtLeastOnce);
         }
 
         [Fact]
@@ -111,8 +111,8 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             Thread.Sleep(TimeSpan.FromMilliseconds(1500));
 
-            mockMetricEvents.Verify(m => m.BulkheadGauge(key1, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()), Times.Once);
-            mockMetricEvents.Verify(m => m.BulkheadGauge(key2, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()), Times.Once);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key1, "semaphore", expectedMaxConcurrent1, It.IsAny<int>()), Times.AtLeastOnce);
+            mockMetricEvents.Verify(m => m.BulkheadGauge(key2, "semaphore", expectedMaxConcurrent2, It.IsAny<int>()), Times.AtLeastOnce);
         }
 
         [Fact]
