@@ -7,7 +7,6 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 {
     public class BulkheadConfigTests : TestFixture
     {
-
         [Fact]
         public void GetMaxConcurrent_UsesSpecificValueIfConfigured()
         {
@@ -16,20 +15,23 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var groupKey = AnyGroupKey;
             var expectedConfigValue = AnyPositiveInt;
 
-            var config = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+            var config = new MjolnirConfiguration
             {
+                BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
                 {
-                    groupKey.Name,
-                    new TestBulkheadConfiguration
                     {
-                        MaxConcurrent = expectedConfigValue
+                        groupKey.Name,
+                        new BulkheadConfiguration
+                        {
+                            MaxConcurrent = expectedConfigValue
+                        }
                     }
                 }
-            });
+            };
 
             // Act
 
-            var value = config.GetBulkheadConfiguration(groupKey).MaxConcurrent;
+            var value = config.GetBulkheadConfiguration(groupKey.Name).MaxConcurrent;
 
             // Assert
 
@@ -44,15 +46,17 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var groupKey = AnyGroupKey;
             var expectedConfigValue = AnyPositiveInt;
 
-            var config = new TestConfiguration(defaultBulkheadConfiguration: new TestBulkheadConfiguration
+            var config = new MjolnirConfiguration
+            {
+                DefaultBulkheadConfiguration = new BulkheadConfiguration
                 {
                     MaxConcurrent = expectedConfigValue
                 }
-            );
+            };
 
             // Act
 
-            var value = config.GetBulkheadConfiguration(groupKey).MaxConcurrent;
+            var value = config.GetBulkheadConfiguration(groupKey.Name).MaxConcurrent;
 
             // Assert
 
@@ -68,15 +72,17 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             var groupKey = AnyGroupKey;
 
-            var config = new TestConfiguration(defaultBulkheadConfiguration: new TestBulkheadConfiguration
+            var config = new MjolnirConfiguration
+            {
+                DefaultBulkheadConfiguration = new BulkheadConfiguration
                 {
                     MaxConcurrent = expectedDefaultMaxConcurrent
                 }
-            );
+            };
 
             // Act
 
-            var value = config.GetBulkheadConfiguration(groupKey).MaxConcurrent;
+            var value = config.GetBulkheadConfiguration(groupKey.Name).MaxConcurrent;
 
             // Assert
 

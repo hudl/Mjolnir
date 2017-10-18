@@ -2,12 +2,13 @@
 
 namespace Hudl.Mjolnir.Config
 {
-    internal sealed class BulkheadConfigurationObserver<T> : IObserver<BulkheadConfiguration>
+    internal sealed class MjolnirConfigurationObserver<T> : IObserver<MjolnirConfiguration>
     {
         private T _currentValue;
-        private readonly Func<BulkheadConfiguration, T> _expression;
+        private readonly Func<MjolnirConfiguration, T> _expression;
         private readonly Action<T> _onChange;
-        internal BulkheadConfigurationObserver(BulkheadConfiguration currentConfig, Func<BulkheadConfiguration, T> propertyToCheck, Action<T> onChange)
+        internal MjolnirConfigurationObserver(MjolnirConfiguration currentConfig, 
+            Func<MjolnirConfiguration, T> propertyToCheck, Action<T> onChange)
         {
             _expression = propertyToCheck;
             _currentValue = _expression(currentConfig);
@@ -16,15 +17,15 @@ namespace Hudl.Mjolnir.Config
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            // No-op
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            // No-op
         }
 
-        public void OnNext(BulkheadConfiguration value)
+        public void OnNext(MjolnirConfiguration value)
         {
             var newValue = _expression(value);
             var hasChanged = !Equals(_currentValue, newValue);
@@ -33,11 +34,13 @@ namespace Hudl.Mjolnir.Config
             
             try
             {
+                // Invoke onChange action to act apon config change.
                 _onChange(newValue);
             }
             catch (Exception)
             {
-                //Purely to make sure that other change events still fire 
+                // Even if onChange implementation returns exception we still want to process other changes. Exception 
+                // here should not affect observable implementation. 
             }
             finally
             {

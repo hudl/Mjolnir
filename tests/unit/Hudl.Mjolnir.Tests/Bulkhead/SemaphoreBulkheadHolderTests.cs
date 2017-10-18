@@ -19,7 +19,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Arrange
 
             var key = AnyGroupKey;
-            var mockConfig = new TestConfiguration();
+            var mockConfig = new MjolnirConfiguration();
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
 
             // Act + Assert
@@ -50,7 +50,7 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
 
             var key = AnyGroupKey;
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            var mockConfig = new TestConfiguration();
+            var mockConfig = new MjolnirConfiguration();
 
             // Act + Assert
 
@@ -68,16 +68,19 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
             mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
-            var mockConfig = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+            var mockConfig = new MjolnirConfiguration
             {
+                BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
                 {
-                    key.Name,
-                    new TestBulkheadConfiguration
                     {
-                        MaxConcurrent = expectedMaxConcurrent
+                        key.Name,
+                        new BulkheadConfiguration
+                        {
+                            MaxConcurrent = expectedMaxConcurrent
+                        }
                     }
                 }
-            });
+            };
 
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
@@ -94,39 +97,6 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
         }
 
         [Fact]
-        public void Construct_CallsAddChangeHandler()
-        {
-            // Arrange
-
-            var key = AnyGroupKey;
-            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
-            mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
-
-            var testBulkheadConfigurationMock = new Mock<TestBulkheadConfiguration>();
-            testBulkheadConfigurationMock.Setup(b => b.MaxConcurrent).Returns(AnyPositiveInt);
-            
-            var mockConfig = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
-            {
-                {
-                    key.Name,
-                    testBulkheadConfigurationMock.Object
-                }
-            });
-
-            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
-            mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
-
-            // Act
-
-            var holder = new SemaphoreBulkheadHolder(key, mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
-
-            // Assert
-
-            // It.IsAny<Action<int>>() could be better here, but I can't access the method extension.
-            testBulkheadConfigurationMock.Verify(m => m.Subscribe(It.IsAny<BulkheadConfigurationObserver<int>>()), Times.Once);
-        }
-        
-        [Fact]
         public void Construct_WhenMaxConcurrentConfigIsInvalid_DoesSomething()
         {
             // Arrange
@@ -136,16 +106,19 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             const int invalidMaxConcurrent = -1;
             var mockMetricEvents = new Mock<IMetricEvents>(); // Not Strict: we're not testing the events here.
 
-            var mockConfig = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+            var mockConfig = new MjolnirConfiguration
             {
+                BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
                 {
-                    groupKey.Name,
-                    new TestBulkheadConfiguration
                     {
-                        MaxConcurrent = invalidMaxConcurrent
+                        groupKey.Name,
+                        new BulkheadConfiguration
+                        {
+                            MaxConcurrent = invalidMaxConcurrent
+                        }
                     }
                 }
-            });
+            };
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
@@ -169,16 +142,19 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
             mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
-            var mockConfig = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+            var mockConfig = new MjolnirConfiguration
             {
+                BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
                 {
-                    key.Name,
-                    new TestBulkheadConfiguration
                     {
-                        MaxConcurrent = AnyPositiveInt
+                        key.Name,
+                        new BulkheadConfiguration
+                        {
+                            MaxConcurrent = AnyPositiveInt
+                        }
                     }
                 }
-            });
+            };
 
             var mockLog = new Mock<IMjolnirLog>(MockBehavior.Strict);
             mockLog.Setup(m => m.Error(It.IsAny<string>()));
@@ -204,23 +180,26 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
         public void UpdateMaxConcurrent_ReplacesBulkhead()
         {
             // Arrange
-            
+
             var key = AnyGroupKey;
             const int initialExpectedCount = 5;
             const int newExpectedCount = 6;
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
             mockMetricEvents.Setup(m => m.BulkheadGauge(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()));
 
-            var mockConfig = new TestConfiguration(bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+            var mockConfig = new MjolnirConfiguration
             {
+                BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
                 {
-                    key.Name,
-                    new TestBulkheadConfiguration
                     {
-                        MaxConcurrent = initialExpectedCount
+                        key.Name,
+                        new BulkheadConfiguration
+                        {
+                            MaxConcurrent = initialExpectedCount
+                        }
                     }
                 }
-            });
+            };
 
             var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
             mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new DefaultMjolnirLog());
