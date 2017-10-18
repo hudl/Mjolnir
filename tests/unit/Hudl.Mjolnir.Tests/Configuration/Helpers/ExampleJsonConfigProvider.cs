@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Hudl.Mjolnir.Config;
 using Microsoft.Extensions.Configuration;
 
 namespace Hudl.Mjolnir.Tests.Configuration.Helpers
@@ -11,7 +12,7 @@ namespace Hudl.Mjolnir.Tests.Configuration.Helpers
         private const string ConfigurationPath = "Configuration/Helpers/test.json";
         private static TimeSpan _updateTimeInterval = TimeSpan.FromSeconds(30);
 
-        private ExampleMjolnirConfiguration _currentConfig;  
+        private MjolnirConfiguration _currentConfig;  
         private IConfigurationRoot _root;
 
         public ExampleJsonConfigProvider(TimeSpan? updateTime = null)
@@ -31,13 +32,13 @@ namespace Hudl.Mjolnir.Tests.Configuration.Helpers
 
                 // We can add some deep comparision between _currentConfig and new config here so
                 // we notify our observers only when config really changes
-                _currentConfig?.Notify();
+                _currentConfig?.NotifyAfterConfigUpdate();
                 
                 await Task.Delay(_updateTimeInterval);
             }
         }
 
-        public ExampleMjolnirConfiguration GetConfig()
+        public MjolnirConfiguration GetConfig()
         {
             if(_currentConfig != null)
             {
@@ -49,11 +50,11 @@ namespace Hudl.Mjolnir.Tests.Configuration.Helpers
 
             if(section == null || section.Value == null && !section.GetChildren().Any())
             {
-                _currentConfig = new ExampleMjolnirConfiguration();
-                return default(ExampleMjolnirConfiguration);
+                _currentConfig = new MjolnirConfiguration();
+                return default(MjolnirConfiguration);
             }
 
-            var config = new ExampleMjolnirConfiguration();
+            var config = new MjolnirConfiguration();
             section.Bind(config);
             _currentConfig = config;
             return config;

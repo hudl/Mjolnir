@@ -17,12 +17,12 @@ namespace Hudl.Mjolnir.Config
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            // No-op
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            // No-op
         }
 
         public void OnNext(MjolnirConfiguration value)
@@ -34,11 +34,13 @@ namespace Hudl.Mjolnir.Config
             
             try
             {
+                // Invoke onChange action to act apon config change.
                 _onChange(newValue);
             }
             catch (Exception)
             {
-                //Purely to make sure that other change events still fire 
+                // Even if onChange implementation returns exception we still want to process other changes. Exception 
+                // here should not affect observable implementation. 
             }
             finally
             {

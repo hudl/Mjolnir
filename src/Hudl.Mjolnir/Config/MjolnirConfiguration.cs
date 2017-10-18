@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using Hudl.Mjolnir.Key;
 
 namespace Hudl.Mjolnir.Config
 {
     /// <summary>
-    /// Abstract class implementation for config values.
+    /// Class for config values.
     /// This is used to instantiate all mjolnir configuration values. 
     /// </summary>
-    public abstract class MjolnirConfiguration: IObservable<MjolnirConfiguration>
+    public sealed class MjolnirConfiguration
     {
         /// <summary>
         /// Global Killswitch - Mjolnir can be turned off entirely if needed (though it's certainly not recommended). 
@@ -70,7 +69,7 @@ namespace Hudl.Mjolnir.Config
         /// <summary>
         /// Default constructor just to create dictionaires.
         /// </summary>
-        protected MjolnirConfiguration()
+        public MjolnirConfiguration()
         {
             CommandConfigurations = new Dictionary<string, CommandConfiguration>();
             DefaultCommandConfiguration = new CommandConfiguration();
@@ -84,14 +83,14 @@ namespace Hudl.Mjolnir.Config
         /// Gets command configuration for a given key. If key is null or not exists in configuration dictionary
         /// default configuration is being returned.
         /// </summary>
-        /// <param name="groupKey">Command configuration for a given key. Default value returned if non-existent or 
+        /// <param name="key">Command configuration for a given key. Default value returned if non-existent or 
         /// null.</param>
         /// <returns></returns>
-        public CommandConfiguration GetCommandConfiguration(string groupKey = null)
+        public CommandConfiguration GetCommandConfiguration(string key = null)
         {
-            if (groupKey == null) return DefaultCommandConfiguration;
+            if (string.IsNullOrWhiteSpace(key)) return DefaultCommandConfiguration;
             CommandConfiguration commandConfiguration;
-            return CommandConfigurations.TryGetValue(groupKey, out commandConfiguration) ?
+            return CommandConfigurations.TryGetValue(key, out commandConfiguration) ?
                 commandConfiguration : DefaultCommandConfiguration;
         }
         
@@ -102,11 +101,11 @@ namespace Hudl.Mjolnir.Config
         /// <param name="key">Bulkhead configuration for a given key. Default value returned if non-existent or 
         /// null.</param>
         /// <returns></returns>
-        public BulkheadConfiguration GetBulkheadConfiguration(GroupKey key)
+        public BulkheadConfiguration GetBulkheadConfiguration(string key)
         {
-            if (string.IsNullOrEmpty(key.Name)) return DefaultBulkheadConfiguration;
+            if (string.IsNullOrWhiteSpace(key)) return DefaultBulkheadConfiguration;
             BulkheadConfiguration bulkheadConfiguration;
-            return BulkheadConfigurations.TryGetValue(key.Name, out bulkheadConfiguration) ?
+            return BulkheadConfigurations.TryGetValue(key, out bulkheadConfiguration) ?
                 bulkheadConfiguration : DefaultBulkheadConfiguration;
         }       
         
@@ -118,21 +117,46 @@ namespace Hudl.Mjolnir.Config
         /// <param name="key">Breaker configuration for a given key. Default value returned if non-existent or 
         /// null.</param>
         /// <returns></returns>
-        public BreakerConfiguration GetBreakerConfiguration(string key = null)
+        public BreakerConfiguration GetBreakerConfiguration(string key)
         {
-            if (key == null) return DefaultBreakerConfiguration;
+            if (string.IsNullOrWhiteSpace(key)) return DefaultBreakerConfiguration;
             BreakerConfiguration breakerConfiguration;
             return BreakerConfigurations.TryGetValue(key, out breakerConfiguration) ?
                 breakerConfiguration : DefaultBreakerConfiguration;
         }
 
-
         /// <summary>
+        /// Notify all observers that config has been changed.
         /// Allows subscribtions for configuration change. Whenever any property change in MjolnirConfig all 
-        /// subscribers are being notified of that change.
+        /// subscribers should be notified by calling this function.
         /// </summary>
-        /// <param name="observer">Mjolnir configuration observer which is acting upon configuration change</param>
-        /// <returns></returns>
-        public abstract IDisposable Subscribe(IObserver<MjolnirConfiguration> observer);
+        public void NotifyAfterConfigUpdate()
+        {
+            _observers.ForEach(observer => observer.OnNext(this));
+        }
+        
+        
+        private class Subscription: IDisposable
+        {
+            private readonly Action _onDispose;
+            public Subscription(Action onDispose)
+            {
+                _onDispose = onDispose;
+            }
+
+            public void Dispose()
+            {
+                _onDispose();
+            }
+        }
+
+        private readonly List<IObserver<MjolnirConfiguration>> _observers = new List<IObserver<MjolnirConfiguration>>();
+        
+        internal IDisposable Subscribe(IObserver<MjolnirConfiguration> observer)
+        {
+            var subscription = new Subscription(() => _observers.Remove(observer));
+            _observers.Add(observer);
+            return subscription;
+        }
     }
 }

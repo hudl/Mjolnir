@@ -1,9 +1,9 @@
 {
-    "testconfig": {
-        "isenabled": true,
+    "TestConfig": {
+        "IsEnabled": true,
         "IgnoreTimeouts": true,
         "BulkheadConfigurations": {
-            "testGroupKey": {
+            "TestGroupKey": {
                 "MaxConcurrent": 5
             }
         }

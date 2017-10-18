@@ -23,8 +23,8 @@ namespace Hudl.Mjolnir.Tests.Command
             [InlineData(" ")]
             public void NullOrEmptyGroup_Throws(string group)
             {
-                
-                var e = Assert.Throws<ArgumentNullException>(() => new TestCommand(group, AnyString, AnyString, ValidTimeout));
+                var e = Assert.Throws<ArgumentNullException>(() =>
+                    new TestCommand(group, AnyString, AnyString, ValidTimeout));
                 Assert.Equal("group", e.ParamName);
             }
 
@@ -34,7 +34,8 @@ namespace Hudl.Mjolnir.Tests.Command
             [InlineData(" ")]
             public void NullOrEmptyBreakerKey_Throws(string breakerKey)
             {
-                var e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, breakerKey, AnyString, ValidTimeout));
+                var e = Assert.Throws<ArgumentNullException>(() =>
+                    new TestCommand(AnyString, breakerKey, AnyString, ValidTimeout));
                 Assert.Equal("breakerKey", e.ParamName);
             }
 
@@ -44,7 +45,8 @@ namespace Hudl.Mjolnir.Tests.Command
             [InlineData(" ")]
             public void NullOrEmptyBulkheadKey_Throws(string bulkheadKey)
             {
-                var e = Assert.Throws<ArgumentNullException>(() => new TestCommand(AnyString, AnyString, bulkheadKey, ValidTimeout));
+                var e = Assert.Throws<ArgumentNullException>(() =>
+                    new TestCommand(AnyString, AnyString, bulkheadKey, ValidTimeout));
                 Assert.Equal("bulkheadKey", e.ParamName);
             }
 
@@ -54,7 +56,8 @@ namespace Hudl.Mjolnir.Tests.Command
             public void NegativeOrZeroTimeout_Throws(long timeoutMillis)
             {
                 var invalidTimeout = TimeSpan.FromMilliseconds(timeoutMillis);
-                var e = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, AnyString, AnyString, invalidTimeout));
+                var e = Assert.Throws<ArgumentException>(() =>
+                    new TestCommand(AnyString, AnyString, AnyString, invalidTimeout));
                 Assert.Equal("defaultTimeout", e.ParamName);
             }
 
@@ -68,7 +71,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Equal(expected, command.Group);
             }
-            
+
             [Fact]
             public void GeneratesNameWhenNameNotProvided()
             {
@@ -84,7 +87,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new TestCommand(groupKey, AnyString, AnyString, ValidTimeout);
                 Assert.Equal(groupKey + ".Test", command.Name);
             }
-            
+
             [Fact]
             public void SetsBreakerKey()
             {
@@ -121,7 +124,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 // Act + Assert
 
-                var exception = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, invalidBreakerKey, AnyString, AnyPositiveTimeSpan));
+                var exception = Assert.Throws<ArgumentException>(() =>
+                    new TestCommand(AnyString, invalidBreakerKey, AnyString, AnyPositiveTimeSpan));
                 Assert.Equal("Cannot use 'default' as breakerKey, it is a reserved name", exception.Message);
             }
 
@@ -139,7 +143,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 // Act + Assert
 
-                var exception = Assert.Throws<ArgumentException>(() => new TestCommand(AnyString, AnyString, invalidBulkheadKey, AnyPositiveTimeSpan));
+                var exception = Assert.Throws<ArgumentException>(() =>
+                    new TestCommand(AnyString, AnyString, invalidBulkheadKey, AnyPositiveTimeSpan));
                 Assert.Equal("Cannot use 'default' as bulkheadKey, it is a reserved name", exception.Message);
             }
         }
@@ -245,12 +250,17 @@ namespace Hudl.Mjolnir.Tests.Command
                 // isn't set, and we need to be prepared for that and not treat it as an actual
                 // timeout.
 
-                var constructorTs = (constructorMs == null ? (TimeSpan?) null : TimeSpan.FromMilliseconds(constructorMs.Value));
+                var constructorTs = (constructorMs == null
+                    ? (TimeSpan?) null
+                    : TimeSpan.FromMilliseconds(constructorMs.Value));
                 var command = new TestCommand(AnyString, AnyString, AnyString, constructorTs);
 
-                       
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = true,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             command.Name,
@@ -259,8 +269,9 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = configuredMs
                             }
                         }
-                    });
-                
+                    }
+                };
+
                 var determined = command.DetermineTimeout(mockConfig, invocationMs);
 
                 Assert.Equal(expected, determined);
@@ -289,7 +300,8 @@ namespace Hudl.Mjolnir.Tests.Command
             private class BaseTestNamingCommand : AsyncCommand<object>
             {
                 protected BaseTestNamingCommand(string group) : base(group, AnyString, ValidTimeout)
-                { }
+                {
+                }
 
                 public override Task<object> ExecuteAsync(CancellationToken cancellationToken)
                 {
@@ -300,7 +312,9 @@ namespace Hudl.Mjolnir.Tests.Command
 
             private class FooAsyncCommand : BaseTestNamingCommand
             {
-                public FooAsyncCommand(string group) : base(group) { }
+                public FooAsyncCommand(string group) : base(group)
+                {
+                }
             }
         }
 
@@ -308,7 +322,8 @@ namespace Hudl.Mjolnir.Tests.Command
         {
             public TestCommand(string group, string breakerKey, string bulkheadKey, TimeSpan? timeout) :
                 base(group, breakerKey, bulkheadKey, timeout)
-            { }
+            {
+            }
         }
     }
 }
