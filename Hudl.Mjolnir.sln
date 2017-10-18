@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26228.12
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hudl.Mjolnir", "Hudl.Mjolnir\Hudl.Mjolnir.csproj", "{2B4150EC-0AEA-41C7-B02E-8B799C2879B6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hudl.Mjolnir", "src\Hudl.Mjolnir\Hudl.Mjolnir.csproj", "{2B4150EC-0AEA-41C7-B02E-8B799C2879B6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hudl.Mjolnir.Tests", "Hudl.Mjolnir.Tests\Hudl.Mjolnir.Tests.csproj", "{F600DF5B-3A24-4F7A-825D-B71239C539C4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hudl.Mjolnir.Tests", "tests\unit\Hudl.Mjolnir.Tests\Hudl.Mjolnir.Tests.csproj", "{F600DF5B-3A24-4F7A-825D-B71239C539C4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
