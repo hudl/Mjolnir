@@ -43,7 +43,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 // from being used.
 
                 var command = new TokenCapturingAsyncCommand();
-                var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false);
+                var mockConfig = new MjolnirConfiguration {IsEnabled = false, IgnoreTimeouts = false};
                 
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
 
@@ -68,8 +68,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 const bool expectedResultValue = true;
                 var command = new NoOpAsyncCommand();
                 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = true,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             "NoOpAsync",
@@ -78,7 +81,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = 10000
                             }
                         }
-                    });
+                    }
+                };
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -106,7 +110,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
+                var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false};
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -142,8 +146,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 // of general "cancellations".
 
                 var command = new DelayAsyncCommand(1);
-                
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
+
+                var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false};
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -181,7 +185,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var command = new DelayAsyncCommand(1);
                 var expiredToken = new CancellationToken(true);
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true); 
+                var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = true}; 
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -208,7 +212,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true); 
+                var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = true}; 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -235,7 +239,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true); 
+                var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = true}; 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -261,8 +265,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = true,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             "NoOpAsync",
@@ -271,7 +278,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = 10000
                             }
                         }
-                    });
+                    }
+                };
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -302,9 +310,12 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var expectedException = new CircuitBreakerRejectedException();
                 var command = new NoOpAsyncCommand();
-                
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = true,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             "NoOpAsync",
@@ -313,7 +324,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = 10000
                             }
                         }
-                    });
+                    }
+                };
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -367,9 +379,12 @@ namespace Hudl.Mjolnir.Tests.Command
                 // from being used.
 
                 var command = new TokenCapturingAsyncCommand();
-                
-                var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = false,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             "NoOpAsync",
@@ -378,7 +393,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = 10000
                             }
                         }
-                    });
+                    }
+                };
                 
                 
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
@@ -404,8 +420,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 const bool expectedResultValue = true;
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = true,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             "NoOpAsync",
@@ -414,7 +433,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = 10000
                             }
                         }
-                    });
+                    }
+                };
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -446,7 +466,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false); 
+                var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false}; 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -489,7 +509,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 
                 var command = new DelayAsyncCommand(1);
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false); 
+                var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false}; 
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -529,8 +549,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new ExpectedTestException("Expected");
                 var command = new NoOpAsyncCommand();
 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = true,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             "NoOpAsync",
@@ -539,7 +562,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = 10000
                             }
                         }
-                    });
+                    }
+                };
                 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -577,8 +601,11 @@ namespace Hudl.Mjolnir.Tests.Command
                 var expectedException = new BulkheadRejectedException();
                 var command = new NoOpAsyncCommand();
                 
-                var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                    commandConfigurations: new Dictionary<string, CommandConfiguration>
+                var mockConfig = new MjolnirConfiguration
+                {
+                    IsEnabled = true,
+                    IgnoreTimeouts = false,
+                    CommandConfigurations = new Dictionary<string, CommandConfiguration>
                     {
                         {
                             "NoOpAsync",
@@ -587,7 +614,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 Timeout = 10000
                             }
                         }
-                    });
+                    }
+                };
 
                 var mockMetricEvents = new Mock<IMetricEvents>();
                 var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -646,8 +674,8 @@ namespace Hudl.Mjolnir.Tests.Command
             // from being used.
 
             var command = new TokenCapturingCommand();
-            
-            var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false);
+
+            var mockConfig = new MjolnirConfiguration {IsEnabled = false, IgnoreTimeouts = false};
 
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>(MockBehavior.Strict);
 
@@ -671,8 +699,11 @@ namespace Hudl.Mjolnir.Tests.Command
             const bool expectedResultValue = true;
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                IgnoreTimeouts = false,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "NoOpAsync",
@@ -681,7 +712,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
+                }
+            };
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -710,7 +742,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
+            var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false};
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -747,7 +779,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new SleepCommand(1);
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
+            var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false};
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -785,7 +817,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var command = new SleepCommand(1);
             var expiredToken = new CancellationToken(true);
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true);
+            var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = true};
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -813,7 +845,7 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true);
+            var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = true};
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -839,8 +871,11 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                IgnoreTimeouts = false,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "NoOpAsync",
@@ -849,7 +884,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
+                }
+            };
             
             
             var mockMetricEvents = new Mock<IMetricEvents>();
@@ -881,8 +917,11 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new CircuitBreakerRejectedException();
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                IgnoreTimeouts = false,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "NoOpAsync",
@@ -891,7 +930,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
+                }
+            };
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -946,8 +986,11 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new TokenCapturingCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: false, ignoreTimeouts: false, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = false,
+                IgnoreTimeouts = false,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "TokenCapturing",
@@ -956,7 +999,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
+                }
+            };
 
             var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
             mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
@@ -980,8 +1024,11 @@ namespace Hudl.Mjolnir.Tests.Command
             const bool expectedResultValue = true;
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                IgnoreTimeouts = false,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "test.NoOp",
@@ -990,7 +1037,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
+                }
+            };
             
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1023,7 +1071,7 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
+            var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false};
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1067,7 +1115,7 @@ namespace Hudl.Mjolnir.Tests.Command
             
             var command = new SleepCommand(1);
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false);
+            var mockConfig = new MjolnirConfiguration {IsEnabled = true, IgnoreTimeouts = false};
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1109,8 +1157,11 @@ namespace Hudl.Mjolnir.Tests.Command
 
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: true, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                IgnoreTimeouts = true,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "test.NoOp",
@@ -1119,9 +1170,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
-            
-                
+                }
+            };  
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1148,8 +1198,11 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new ExpectedTestException("Expected");
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                IgnoreTimeouts = false,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "test.NoOp",
@@ -1158,8 +1211,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
-            
+                }
+            };            
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();
@@ -1197,8 +1250,11 @@ namespace Hudl.Mjolnir.Tests.Command
             var expectedException = new BulkheadRejectedException();
             var command = new NoOpCommand();
 
-            var mockConfig = new TestConfiguration(isEnabled: true, ignoreTimeouts: false, 
-                commandConfigurations: new Dictionary<string, CommandConfiguration>
+            var mockConfig = new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                IgnoreTimeouts = false,
+                CommandConfigurations = new Dictionary<string, CommandConfiguration>
                 {
                     {
                         "test.NoOp",
@@ -1207,7 +1263,8 @@ namespace Hudl.Mjolnir.Tests.Command
                             Timeout = 10000
                         }
                     }
-                });
+                }
+            };
 
             var mockMetricEvents = new Mock<IMetricEvents>();
             var mockBulkheadInvoker = new Mock<IBulkheadInvoker>();

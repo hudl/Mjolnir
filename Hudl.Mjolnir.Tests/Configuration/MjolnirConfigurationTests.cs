@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using Hudl.Mjolnir.Config;
-using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Tests.Configuration.Helpers;
 using Moq;
 using Xunit;
@@ -47,7 +46,7 @@ namespace Hudl.Mjolnir.Tests.Configuration
             var mjolnirConfiguration = configProvider.GetConfig();
             
             // Assert
-            Assert.NotNull(mjolnirConfiguration.GetBulkheadConfiguration(GroupKey.Named("testGroupKey")));
+            Assert.NotNull(mjolnirConfiguration.GetBulkheadConfiguration("TestGroupKey"));
         }       
         
 
@@ -61,7 +60,7 @@ namespace Hudl.Mjolnir.Tests.Configuration
             var mjolnirConfiguration = configProvider.GetConfig();
             
             // Assert
-            Assert.Equal(5, mjolnirConfiguration.GetBulkheadConfiguration(GroupKey.Named("testGroupKey")).MaxConcurrent);
+            Assert.Equal(5, mjolnirConfiguration.GetBulkheadConfiguration("TestGroupKey").MaxConcurrent);
         }
         
         [Fact]
