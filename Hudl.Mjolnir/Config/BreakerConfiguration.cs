@@ -40,9 +40,6 @@
         /// </summary>
         public bool ForceFixed { get; set; }
 
-        /// <summary>
-        /// TODO DAMIAN
-        /// </summary>
         public long SnapshotTtlMillis { get; set; }
     }
 }

@@ -46,8 +46,10 @@ namespace Hudl.Mjolnir.Tests.Command
                 var key = AnyString;
                 var groupKey = GroupKey.Named(key);
                 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true, 
-                    bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+                var mockConfig = new MjolnirConfiguration
+                {
+                    UseCircuitBreakers = true,
+                    BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
                     {
                         {
                             key,
@@ -56,7 +58,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 MaxConcurrent = initialMaxConcurrent
                             }
                         }
-                    });
+                    }
+                };
 
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
@@ -75,10 +78,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
                 mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new Mock<IMjolnirLog>().Object);
 
-                var bulkheadConfig = new BulkheadConfig(mockConfig);
-
                 // Use a real BulkheadFactory, which will give us access to its BulkheadHolder.
-                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
                 var holder = bulkheadFactory.GetBulkheadHolder(groupKey);
                 var initialBulkhead = bulkheadFactory.GetBulkhead(groupKey);
 
@@ -140,7 +141,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = true};
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
                 // where we try to use it.
@@ -172,7 +173,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = true};
                 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
                 // where we try to use it. Pass a "false" value for useCircuitBreakers to help
@@ -208,7 +209,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: false);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = false};
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
                 // where we try to use it. Pass a "false" value for useCircuitBreakers to help
@@ -242,7 +243,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: false);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = false};
 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);
@@ -275,7 +276,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: false);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = false};
 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);
@@ -313,7 +314,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreakerAsync(command, It.IsAny<CancellationToken>()))
                     .Returns(Task.FromResult(true));
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = true};
 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);
@@ -352,7 +353,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreakerAsync(command, It.IsAny<CancellationToken>()))
                     .Throws(new ExpectedTestException(command.Name));
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = true};
 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);
@@ -394,8 +395,10 @@ namespace Hudl.Mjolnir.Tests.Command
                 var groupKey = GroupKey.Named(key);
 
                 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true, 
-                    bulkheadConfigurations: new Dictionary<string, BulkheadConfiguration>
+                var mockConfig = new MjolnirConfiguration
+                {
+                    UseCircuitBreakers = true,
+                    BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
                     {
                         {
                             key,
@@ -404,7 +407,8 @@ namespace Hudl.Mjolnir.Tests.Command
                                 MaxConcurrent = initialMaxConcurrent
                             }
                         }
-                    });
+                    }
+                };
 
                 var mockBreakerExceptionHandler = new Mock<IBreakerExceptionHandler>(MockBehavior.Strict);
                 mockBreakerExceptionHandler.Setup(m => m.IsExceptionIgnored(It.IsAny<Type>())).Returns(false);
@@ -423,10 +427,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
                 mockLogFactory.Setup(m => m.CreateLog(It.IsAny<Type>())).Returns(new Mock<IMjolnirLog>().Object);
 
-                var bulkheadConfig = new BulkheadConfig(mockConfig);
-
                 // Use a real BulkheadFactory, which will give us access to its BulkheadHolder.
-                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, bulkheadConfig, mockLogFactory.Object);
+                var bulkheadFactory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
                 var holder = bulkheadFactory.GetBulkheadHolder(groupKey);
                 var initialBulkhead = bulkheadFactory.GetBulkhead(groupKey);
 
@@ -488,7 +490,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = true};
                 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
                 // where we try to use it.
@@ -520,7 +522,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: false);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = false};
 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
                 // where we try to use it. Pass a "false" value for useCircuitBreakers to help
@@ -556,7 +558,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: false);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = false};
                 
                 // The breaker invoker behavior doesn't matter here, we shouldn't get to the point
                 // where we try to use it. Pass a "false" value for useCircuitBreakers to help
@@ -590,7 +592,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: false);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = false};
                 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);
@@ -623,7 +625,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 var mockBulkheadFactory = new Mock<IBulkheadFactory>(MockBehavior.Strict);
                 mockBulkheadFactory.Setup(m => m.GetBulkhead(groupKey)).Returns(mockBulkhead.Object);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: false);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = false};
                 
                 // Pass false for useCircuitBreakers to bypass the breaker; we're testing that here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);
@@ -661,7 +663,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreaker(command, It.IsAny<CancellationToken>()))
                     .Returns(true);
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = true};
                 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);
@@ -700,7 +702,7 @@ namespace Hudl.Mjolnir.Tests.Command
                 mockBreakerInvoker.Setup(m => m.ExecuteWithBreaker(command, It.IsAny<CancellationToken>()))
                     .Throws(new ExpectedTestException(command.Name));
 
-                var mockConfig = new TestConfiguration(useCircuitBreakers: true);
+                var mockConfig = new MjolnirConfiguration {UseCircuitBreakers = true};
                 
                 // Pass true for useCircuitBreakers, we need to test that behavior here.
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, mockConfig);

@@ -262,7 +262,7 @@ namespace Hudl.Mjolnir.Command
         private readonly IBulkheadFactory _bulkheadFactory;
 
         public CommandInvoker()
-            : this(new DefaultValueConfig(), new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null, null)
+            : this(null, new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null, null)
         { }
         
         public CommandInvoker(
@@ -281,7 +281,12 @@ namespace Hudl.Mjolnir.Command
             IBreakerExceptionHandler breakerExceptionHandler = null,
             IBulkheadInvoker bulkheadInvoker = null)
         {
-            _config = config ?? new DefaultValueConfig();
+            _config = config ?? new MjolnirConfiguration
+            {
+                IsEnabled = true,
+                UseCircuitBreakers = false,
+                IgnoreTimeouts = false
+            };
             _logFactory = logFactory ?? new DefaultMjolnirLogFactory();
             _metricEvents = metricEvents ?? new IgnoringMetricEvents();
             _breakerExceptionHandler = breakerExceptionHandler ?? new IgnoredExceptionHandler(new HashSet<Type>());
@@ -293,7 +298,7 @@ namespace Hudl.Mjolnir.Command
 
             _bulkheadFactory = new BulkheadFactory(
                 _metricEvents,
-                new BulkheadConfig(_config),
+                _config,
                 _logFactory);
 
             var breakerInvoker = new BreakerInvoker(_circuitBreakerFactory, _metricEvents, _breakerExceptionHandler);
