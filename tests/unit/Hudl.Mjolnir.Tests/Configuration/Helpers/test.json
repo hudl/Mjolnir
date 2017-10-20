@@ -1,10 +1,51 @@
 {
-    "TestConfig": {
+    "MjolnirConfiguration": {
         "IsEnabled": true,
         "IgnoreTimeouts": true,
+        "UseCircuitBreakers": true,
+        "DefaultCommandConfiguration": {
+            "Timeout": 1000
+        },
+        "CommandConfigurations": {
+            "TestKey": {
+                "Timeout": 1050
+            },
+            "TestKey2": {
+                "Timeout": 1030
+            }
+        },
+        "DefaultBulkheadConfiguration": {
+            "MaxConcurrent": 10
+        },
         "BulkheadConfigurations": {
             "TestGroupKey": {
                 "MaxConcurrent": 5
+            }
+        },
+        "DefaultBreakerConfiguration": {
+            "WindowMillis": 1000,
+            "MinimumOperations": 10,
+            "ThresholdPercentage": 50,
+            "TrippedDurationMillis": 1000,
+            "ForceTripped": false,
+            "ForceFixed": false
+        },
+        "BreakerConfigurations": {
+            "TestKey": {
+                "WindowMillis": 1000,
+                "MinimumOperations": 10,
+                "ThresholdPercentage": 50,
+                "TrippedDurationMillis": 1000,
+                "ForceTripped": false,
+                "ForceFixed": false
+            },
+            "TestKey2": {
+                "WindowMillis": 500,
+                "MinimumOperations": 5,
+                "ThresholdPercentage": 500,
+                "TrippedDurationMillis": 2000,
+                "ForceTripped": true,
+                "ForceFixed": true
             }
         }
     }

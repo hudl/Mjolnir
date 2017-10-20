@@ -85,5 +85,44 @@ namespace Hudl.Mjolnir.Tests.Configuration
             // Assert
             Assert.True(signalled);
         }
+
+        [Fact]
+        public void TestJsonFile_DoesNotHaveTypos()
+        {
+            // Arrange
+            var configProvider = new ExampleJsonConfigProvider();
+
+            // Act
+            var mjolnirConfiguration = configProvider.GetConfig();
+            
+            // Assert
+            Assert.Equal(true, mjolnirConfiguration.IsEnabled);
+            Assert.Equal(true, mjolnirConfiguration.IgnoreTimeouts);
+            Assert.Equal(true, mjolnirConfiguration.UseCircuitBreakers);
+            Assert.Equal(1000, mjolnirConfiguration.DefaultCommandConfiguration.Timeout);
+            Assert.Equal(1000, mjolnirConfiguration.DefaultCommandConfiguration.Timeout);
+            Assert.Equal(1050, mjolnirConfiguration.CommandConfigurations["TestKey"].Timeout);
+            Assert.Equal(1030, mjolnirConfiguration.CommandConfigurations["TestKey2"].Timeout);
+            Assert.Equal(10, mjolnirConfiguration.DefaultBulkheadConfiguration.MaxConcurrent);
+            Assert.Equal(5, mjolnirConfiguration.BulkheadConfigurations["TestGroupKey"].MaxConcurrent);
+            Assert.Equal(1000, mjolnirConfiguration.DefaultBreakerConfiguration.WindowMillis);
+            Assert.Equal(10, mjolnirConfiguration.DefaultBreakerConfiguration.MinimumOperations);
+            Assert.Equal(50, mjolnirConfiguration.DefaultBreakerConfiguration.ThresholdPercentage);
+            Assert.Equal(1000, mjolnirConfiguration.DefaultBreakerConfiguration.TrippedDurationMillis);
+            Assert.Equal(false, mjolnirConfiguration.DefaultBreakerConfiguration.ForceTripped);
+            Assert.Equal(false, mjolnirConfiguration.DefaultBreakerConfiguration.ForceFixed);
+            Assert.Equal(1000, mjolnirConfiguration.BreakerConfigurations["TestKey"].WindowMillis);
+            Assert.Equal(10, mjolnirConfiguration.BreakerConfigurations["TestKey"].MinimumOperations);
+            Assert.Equal(50, mjolnirConfiguration.BreakerConfigurations["TestKey"].ThresholdPercentage);
+            Assert.Equal(1000, mjolnirConfiguration.BreakerConfigurations["TestKey"].TrippedDurationMillis);
+            Assert.Equal(false, mjolnirConfiguration.BreakerConfigurations["TestKey"].ForceTripped);
+            Assert.Equal(false, mjolnirConfiguration.BreakerConfigurations["TestKey"].ForceFixed);
+            Assert.Equal(500, mjolnirConfiguration.BreakerConfigurations["TestKey2"].WindowMillis);
+            Assert.Equal(5, mjolnirConfiguration.BreakerConfigurations["TestKey2"].MinimumOperations);
+            Assert.Equal(500, mjolnirConfiguration.BreakerConfigurations["TestKey2"].ThresholdPercentage);
+            Assert.Equal(2000, mjolnirConfiguration.BreakerConfigurations["TestKey2"].TrippedDurationMillis);
+            Assert.Equal(true, mjolnirConfiguration.BreakerConfigurations["TestKey2"].ForceTripped);
+            Assert.Equal(true, mjolnirConfiguration.BreakerConfigurations["TestKey2"].ForceFixed);
+        }
     }
 }

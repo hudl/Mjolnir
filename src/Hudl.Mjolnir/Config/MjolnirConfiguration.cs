@@ -28,13 +28,13 @@ namespace Hudl.Mjolnir.Config
         /// <summary>
         /// Default Timeouts for commands.
         /// </summary>
-        public CommandConfiguration DefaultCommandConfiguration;
+        public CommandConfiguration DefaultCommandConfiguration { get; set; }
         
         
         /// <summary>
         /// Configuring Timeouts for commands.
         /// </summary>
-        public Dictionary<string, CommandConfiguration> CommandConfigurations;
+        public Dictionary<string, CommandConfiguration> CommandConfigurations { get; set; }
         
 
        

@@ -45,7 +45,7 @@ namespace Hudl.Mjolnir.Tests.Configuration.Helpers
                 return _currentConfig;
             }
             
-            const string rootKey = "testconfig";
+            const string rootKey = "MjolnirConfiguration";
             var section = _root.GetSection(rootKey);
 
             if(section == null || section.Value == null && !section.GetChildren().Any())
