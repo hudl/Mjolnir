@@ -95,7 +95,6 @@ namespace Hudl.Mjolnir.Breaker
         /// <returns><code>true</code> if this breaker is allowing operations through</returns>
         public bool IsAllowing()
         {
-            var stopwatch = Stopwatch.StartNew();
             var result = true;
             if (_config.GetForceTripped(_key))
             {
@@ -120,8 +119,6 @@ namespace Hudl.Mjolnir.Breaker
         /// <returns><code>true</code> if we should allow a single test operation through the breaker</returns>
         private bool AllowSingleTest()
         {
-            var stopwatch = Stopwatch.StartNew();
-
             if (!Monitor.TryEnter(_singleTestLock))
             {
                 return false;
@@ -155,8 +152,6 @@ namespace Hudl.Mjolnir.Breaker
         /// <returns><code>true</code> if breaker is tripped</returns>
         private bool CheckAndSetTripped()
         {
-            var stopwatch = Stopwatch.StartNew();
-
             if (_state == State.Tripped)
             {
                 return true;
