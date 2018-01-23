@@ -132,7 +132,10 @@ namespace Hudl.Mjolnir.Config
         /// </summary>
         public void NotifyAfterConfigUpdate()
         {
-            _observers.ForEach(observer => observer.OnNext(this));
+            foreach (var observer in _observers)
+            {
+                observer.OnNext(this);
+            }
         }
         
         
