@@ -64,7 +64,7 @@ namespace Hudl.Mjolnir.Command
         /// 
         /// Supplying the name param will override the default behaviour of constructing the name from the Type of the command. 
         /// 
-        /// /// Command timeouts can be configured at runtime. See the Mjolnir wiki at
+        /// Command timeouts can be configured at runtime. See the Mjolnir wiki at
         /// https://github.com/hudl/Mjolnir/wiki for configuration information.
         /// If not configured, the provided <code>defaultTimeout</code> will be used.
         /// 
