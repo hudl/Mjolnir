@@ -34,7 +34,7 @@ namespace Hudl.Mjolnir.Config
         /// <summary>
         /// Configuring Timeouts for commands.
         /// </summary>
-        public virtual Dictionary<string, CommandConfiguration> CommandConfigurations { get; set; }
+        public Dictionary<string, CommandConfiguration> CommandConfigurations { get; set; }
 
 
 
@@ -46,7 +46,7 @@ namespace Hudl.Mjolnir.Config
         /// <summary>
         /// Per-bulkhead configuration. Key is the argument passed to the Command constructor.
         /// </summary>
-        public virtual Dictionary<string, BulkheadConfiguration> BulkheadConfigurations { get; set; }
+        public Dictionary<string, BulkheadConfiguration> BulkheadConfigurations { get; set; }
 
 
 
@@ -63,7 +63,7 @@ namespace Hudl.Mjolnir.Config
         /// <summary>
         /// Per-breaker configuration. breaker-key is the argument passed to the Command constructor.
         /// </summary>
-        public virtual Dictionary<string, BreakerConfiguration> BreakerConfigurations { get; set; }
+        public Dictionary<string, BreakerConfiguration> BreakerConfigurations { get; set; }
 
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace Hudl.Mjolnir.Config
         /// <param name="key">Command configuration for a given key. Default value returned if non-existent or 
         /// null.</param>
         /// <returns></returns>
-        public CommandConfiguration GetCommandConfiguration(string key = null)
+        public virtual CommandConfiguration GetCommandConfiguration(string key = null)
         {
             if (string.IsNullOrWhiteSpace(key)) return DefaultCommandConfiguration;
             CommandConfiguration commandConfiguration;
@@ -101,7 +101,7 @@ namespace Hudl.Mjolnir.Config
         /// <param name="key">Bulkhead configuration for a given key. Default value returned if non-existent or 
         /// null.</param>
         /// <returns></returns>
-        public BulkheadConfiguration GetBulkheadConfiguration(string key)
+        public virtual BulkheadConfiguration GetBulkheadConfiguration(string key)
         {
             if (string.IsNullOrWhiteSpace(key)) return DefaultBulkheadConfiguration;
             BulkheadConfiguration bulkheadConfiguration;
@@ -117,7 +117,7 @@ namespace Hudl.Mjolnir.Config
         /// <param name="key">Breaker configuration for a given key. Default value returned if non-existent or 
         /// null.</param>
         /// <returns></returns>
-        public BreakerConfiguration GetBreakerConfiguration(string key)
+        public virtual BreakerConfiguration GetBreakerConfiguration(string key)
         {
             if (string.IsNullOrWhiteSpace(key)) return DefaultBreakerConfiguration;
             BreakerConfiguration breakerConfiguration;
