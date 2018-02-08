@@ -6,7 +6,7 @@
         /// Bulkhead Maximum - The number of Commands that can execute in the Bulkhead concurrently before subsequent 
         /// Command attempts are rejected.
         /// </summary>
-        public int MaxConcurrent { get; set; }
+        public virtual int MaxConcurrent { get; set; }
 
         public BulkheadConfiguration()
         {
