@@ -1,9 +1,10 @@
 ﻿namespace Hudl.Mjolnir.Config
 {
-    public class CommandConfiguration   {
+    public class CommandConfiguration
+    {
         /// <summary>
         /// Per-Command Timeout - Timeouts are configurable per-command.
         /// </summary>
-        public long Timeout { get; set; }
+        public virtual long Timeout { get; set; }
     }
 }
