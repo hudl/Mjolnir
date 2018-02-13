@@ -132,8 +132,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Equal("test.NoOpAsync", exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.Canceled, exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
                 Assert.Equal("Token", exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
             }
@@ -168,8 +168,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Equal("test.DelayAsync", exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.TimedOut, exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
                 Assert.Equal(0, exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
             }
@@ -297,8 +297,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Equal("test.NoOpAsync", exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
                 Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
             }
@@ -342,8 +342,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
                 Assert.Equal("test.NoOpAsync", exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
                 Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
             }
@@ -491,8 +491,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
                 Assert.Equal("test.NoOpAsync", result.Exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.Canceled, result.Exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
                 Assert.Equal("Token", result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
@@ -532,8 +532,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
                 Assert.Equal("test.DelayAsync", result.Exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.TimedOut, result.Exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
                 Assert.Equal(0, result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
@@ -583,8 +583,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(expectedException, result.Exception);
                 Assert.Equal("test.NoOpAsync", result.Exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.Faulted, result.Exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
                 Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
@@ -634,8 +634,8 @@ namespace Hudl.Mjolnir.Tests.Command
                 Assert.Equal(expectedException, result.Exception);
                 Assert.Equal("test.NoOpAsync", result.Exception.Data["MjolnirCommand"]);
                 Assert.Equal(CommandCompletionStatus.Rejected, result.Exception.Data["MjolnirStatus"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-                Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+                Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
                 Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
                 Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
@@ -764,8 +764,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
             Assert.Equal("test.NoOp", exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.Canceled, exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
             Assert.Equal("Token", exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
         }
@@ -800,8 +800,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
             Assert.Equal("test.Sleep", exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.TimedOut, exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
             Assert.Equal(0, exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
         }
@@ -903,8 +903,8 @@ namespace Hudl.Mjolnir.Tests.Command
             mockMetricEvents.Verify(m => m.CommandInvoked(command.Name, It.IsAny<double>(), It.IsAny<double>(), "Faulted", "throw"));
             Assert.Equal("test.NoOp", exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.Faulted, exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
             Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
         }
@@ -949,8 +949,8 @@ namespace Hudl.Mjolnir.Tests.Command
 
             Assert.Equal("test.NoOp", exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.Rejected, exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, exception.Data["MjolnirBulkhead"]);
             Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)exception.Data["MjolnirExecuteMillis"] >= 0);
         }
@@ -1096,8 +1096,8 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
             Assert.Equal("test.NoOp", result.Exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.Canceled, result.Exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
             Assert.Equal("Token", result.Exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
@@ -1138,8 +1138,8 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.True(result.Exception.GetType() == typeof(OperationCanceledException));
             Assert.Equal("test.Sleep", result.Exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.TimedOut, result.Exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
             Assert.Equal(0, result.Exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
@@ -1232,8 +1232,8 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(expectedException, result.Exception);
             Assert.Equal("test.NoOp", result.Exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.Faulted, result.Exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
             Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
@@ -1284,8 +1284,8 @@ namespace Hudl.Mjolnir.Tests.Command
             Assert.Equal(expectedException, result.Exception);
             Assert.Equal("test.NoOp", result.Exception.Data["MjolnirCommand"]);
             Assert.Equal(CommandCompletionStatus.Rejected, result.Exception.Data["MjolnirStatus"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBreaker"]);
-            Assert.Equal(GroupKey.Named("test"), result.Exception.Data["MjolnirBulkhead"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBreaker"]);
+            Assert.Equal(GroupKey.Named("test").Name, result.Exception.Data["MjolnirBulkhead"]);
             Assert.Equal((int)command.DetermineTimeout(mockConfig).TotalMilliseconds, result.Exception.Data["MjolnirTimeoutMillis"]);
             Assert.True((double)result.Exception.Data["MjolnirExecuteMillis"] >= 0);
 
