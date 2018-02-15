@@ -56,6 +56,28 @@ namespace Hudl.Mjolnir.Command
         { }
 
         /// <summary>
+        /// Constructs the command.
+        /// 
+        /// The group is used as part of the command's <see cref="Name">Name</see>.
+        /// If the group contains dots, they'll be converted to dashes.
+        /// 
+        /// Supplying the name param will override the default behaviour of constructing the name from the Type of the command. 
+        /// 
+        /// Command timeouts can be configured at runtime. See the Mjolnir wiki at
+        /// https://github.com/hudl/Mjolnir/wiki for configuration information.
+        /// If not configured, the provided <code>defaultTimeout</code> will be used.
+        /// 
+        /// </summary>
+        /// <param name="group">Logical grouping for the command, usually the owning team. Avoid using dots.</param>
+        /// <param name="name">Name to use for the command, override the default name which is constructed from the command's object Type.</param>
+        /// <param name="breakerKey">Breaker to use for this command.</param>
+        /// <param name="bulkheadKey">Bulkhead to use for this command.</param>
+        /// <param name="defaultTimeout">Timeout to enforce if not otherwise provided.</param>
+        protected SyncCommand(string group, string name, string breakerKey, string bulkheadKey, TimeSpan defaultTimeout)
+            : base(group, name, breakerKey, bulkheadKey, defaultTimeout)
+        { }
+
+        /// <summary>
         /// The operation that should be performed when this command is invoked.
         /// 
         /// If this method throws an Exception, the command's execution will be tracked as a

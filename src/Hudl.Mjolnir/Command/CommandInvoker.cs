@@ -597,8 +597,8 @@ namespace Hudl.Mjolnir.Command
             // already attached (or will attach later).
             exception.Data["MjolnirCommand"] = command.Name;
             exception.Data["MjolnirStatus"] = status;
-            exception.Data["MjolnirBreaker"] = command.BreakerKey;
-            exception.Data["MjolnirBulkhead"] = command.BulkheadKey;
+            exception.Data["MjolnirBreaker"] = command.BreakerKey.Name;
+            exception.Data["MjolnirBulkhead"] = command.BulkheadKey.Name;
             exception.Data["MjolnirTimeoutMillis"] = ct.DescriptionForLog;
             exception.Data["MjolnirExecuteMillis"] = command.ExecutionTimeMillis;
         }
