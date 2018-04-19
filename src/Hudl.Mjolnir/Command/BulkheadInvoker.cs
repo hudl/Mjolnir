@@ -48,8 +48,9 @@ namespace Hudl.Mjolnir.Command
 
             if (!bulkhead.TryEnter())
             {
+                var onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
                 _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
-                throw new BulkheadRejectedException();
+                if (!onlyMetrics) throw new BulkheadRejectedException();
             }
 
             _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
