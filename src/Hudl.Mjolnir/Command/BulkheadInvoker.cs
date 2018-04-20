@@ -45,10 +45,10 @@ namespace Hudl.Mjolnir.Command
         public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
-
+            bool onlyMetrics = false;
             if (!bulkhead.TryEnter())
             {
-                var onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
+                onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
                 _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
                 if (!onlyMetrics) throw new BulkheadRejectedException();
             }
@@ -77,7 +77,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                bulkhead.Release();
+                if (!onlyMetrics) bulkhead.Release();
 
                 _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
@@ -93,11 +93,12 @@ namespace Hudl.Mjolnir.Command
         public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
-
+            bool onlyMetrics = false;
             if (!bulkhead.TryEnter())
             {
+                onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
                 _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
-                throw new BulkheadRejectedException();
+                if (!onlyMetrics) throw new BulkheadRejectedException();
             }
 
             _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
@@ -124,7 +125,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                bulkhead.Release();
+                if (!onlyMetrics) bulkhead.Release();
 
                 _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
 
