@@ -314,7 +314,7 @@ namespace Hudl.Mjolnir.Command
             if (_constructorCount > 1)
             {
                 // This should be a Warn but I don't want to make a breaking change right now just for a log message. 
-                _log.Info($"{_constructorCount} {nameof(CommandInvoker)} classes have been constructed in this application. It is advisable to use the CommandInvoker as a Singleton.");
+                _log.Error($"{_constructorCount} {nameof(CommandInvoker)} classes have been constructed in this application. It is advisable to use the CommandInvoker as a Singleton.");
             }
         }
 
