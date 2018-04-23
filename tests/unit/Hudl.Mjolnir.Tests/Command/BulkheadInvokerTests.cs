@@ -778,9 +778,9 @@ namespace Hudl.Mjolnir.Tests.Command
                 };
                 var invoker = new BulkheadInvoker(mockBreakerInvoker.Object, mockBulkheadFactory.Object, mockMetricEvents.Object, config);
                 var result = await invoker.ExecuteWithBulkheadAsync(command, CancellationToken.None);
-                mockMetricEvents.Verify(i => i.RejectedByBulkhead(key, $"{key}.{nameof(ConfigurableKeyAsyncCommand)}"));
-                mockMetricEvents.Verify(i => i.EnterBulkhead(key, $"{key}.{nameof(ConfigurableKeyAsyncCommand)}"));
-                mockMetricEvents.Verify(i => i.LeaveBulkhead(key, $"{key}.{nameof(ConfigurableKeyAsyncCommand)}"));
+                mockMetricEvents.Verify(i => i.RejectedByBulkhead(key, $"{key}.{nameof(ConfigurableKeyAsyncCommand).Replace("Command", "")}"));
+                mockMetricEvents.Verify(i => i.EnterBulkhead(key, $"{key}.{nameof(ConfigurableKeyAsyncCommand).Replace("Command", "")}"));
+                mockMetricEvents.Verify(i => i.LeaveBulkhead(key, $"{key}.{nameof(ConfigurableKeyAsyncCommand).Replace("Command", "")}"));
             }
         }
 
