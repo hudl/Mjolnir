@@ -53,7 +53,7 @@ namespace Hudl.Mjolnir.Command
                 if (!onlyMetrics) throw new BulkheadRejectedException();
             }
 
-            _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+            if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -77,10 +77,11 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                if (!onlyMetrics) bulkhead.Release();
-
-                _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
-
+                if (!onlyMetrics)
+                {
+                    bulkhead.Release();
+                    _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                }
                 // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)
                 {
@@ -101,7 +102,7 @@ namespace Hudl.Mjolnir.Command
                 if (!onlyMetrics) throw new BulkheadRejectedException();
             }
 
-            _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+            if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -125,10 +126,11 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                if (!onlyMetrics) bulkhead.Release();
-
-                _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
-
+                if (!onlyMetrics)
+                {
+                    bulkhead.Release();
+                    _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                }
                 // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)
                 {
