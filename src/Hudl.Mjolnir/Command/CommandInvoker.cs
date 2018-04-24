@@ -260,6 +260,7 @@ namespace Hudl.Mjolnir.Command
 
         private readonly ICircuitBreakerFactory _circuitBreakerFactory;
         private readonly IBulkheadFactory _bulkheadFactory;
+        private static volatile int _constructorCount;
 
         public CommandInvoker()
             : this(null, new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null, null)
@@ -309,6 +310,12 @@ namespace Hudl.Mjolnir.Command
 
             var breakerInvoker = new BreakerInvoker(_circuitBreakerFactory, _metricEvents, _breakerExceptionHandler);
             _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _bulkheadFactory, _metricEvents, _config);
+            _constructorCount++;
+            if (_constructorCount > 1)
+            {
+                // This should be a Warn but I don't want to make a breaking change right now just for a log message. 
+                _log.Error($"{_constructorCount} {nameof(CommandInvoker)} classes have been constructed in this application. It is advisable to use the CommandInvoker as a Singleton.");
+            }
         }
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)

@@ -24,6 +24,15 @@ namespace Hudl.Mjolnir.Config
         /// </summary>
         public virtual bool IgnoreTimeouts { get; set; }
 
+        /// <summary>
+        /// Global Killswitch For Bulkhead rejections - With this set to true Mjolnir will not throw any BulkheadRejectedExceptions,
+        /// and the command will continue to execute. However the IMetricEvents.RejectedByBulkhead() will still be invoked. 
+        /// The main purpose of this configuration would be for diagnostics, giving you the ability to tune the MaxCurrency levels for each bulkhead 
+        /// based on observed metrics.
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool BulkheadMetricsOnly { get; set; }
+
 
         /// <summary>
         /// Default Timeouts for commands.

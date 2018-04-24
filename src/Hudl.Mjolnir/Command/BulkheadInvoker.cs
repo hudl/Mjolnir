@@ -45,14 +45,15 @@ namespace Hudl.Mjolnir.Command
         public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
-
+            bool onlyMetrics = false;
             if (!bulkhead.TryEnter())
             {
+                onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
                 _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
-                throw new BulkheadRejectedException();
+                if (!onlyMetrics) throw new BulkheadRejectedException();
             }
 
-            _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+            if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -76,10 +77,11 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                bulkhead.Release();
-
-                _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
-
+                if (!onlyMetrics)
+                {
+                    bulkhead.Release();
+                    _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                }
                 // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)
                 {
@@ -92,14 +94,15 @@ namespace Hudl.Mjolnir.Command
         public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
             var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
-
+            bool onlyMetrics = false;
             if (!bulkhead.TryEnter())
             {
+                onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
                 _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
-                throw new BulkheadRejectedException();
+                if (!onlyMetrics) throw new BulkheadRejectedException();
             }
 
-            _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+            if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
 
             // This stopwatch should begin stopped (hence the constructor instead of the usual
             // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
@@ -123,10 +126,11 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                bulkhead.Release();
-
-                _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
-
+                if (!onlyMetrics)
+                {
+                    bulkhead.Release();
+                    _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                }
                 // If not executed here, the circuit breaker invoker will set the execution time.
                 if (executedHere)
                 {
