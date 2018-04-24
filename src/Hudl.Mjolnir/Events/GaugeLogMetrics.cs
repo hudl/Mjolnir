@@ -109,7 +109,7 @@ namespace Hudl.Mjolnir.Events
             var log = $"RejectedByBulkhead - [Bulkhead={bulkheadName}, Command={commandName}]";
             _diagnosticLog.Debug(log);
             _concurrencyExceededLog.Debug(log);
-            _currentBulkheadsRejected.AddOrUpdate(bulkheadName, 1, (bh, current) => current++);
+            _currentBulkheadsRejected.AddOrUpdate(bulkheadName, 1, (bh, current) => ++current);
         }
     }
 }
