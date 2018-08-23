@@ -136,12 +136,21 @@ namespace Hudl.Mjolnir.Config
 
         /// <summary>
         /// Notify all observers that config has been changed.
-        /// Allows subscribtions for configuration change. Whenever any property change in MjolnirConfig all 
+        /// Allows subscriptions for configuration change. Whenever any property change in MjolnirConfig all 
         /// subscribers should be notified by calling this function.
         /// </summary>
         public void NotifyAfterConfigUpdate()
         {
-            foreach (var observer in _observers)
+            var copies = new List<IObserver<MjolnirConfiguration>>();
+            lock (_observers)
+            {
+                foreach (var observer in _observers)
+                {
+                    copies.Add(observer);
+                }
+            }
+
+            foreach (var observer in copies)
             {
                 observer.OnNext(this);
             }
@@ -166,8 +175,19 @@ namespace Hudl.Mjolnir.Config
 
         public IDisposable Subscribe(IObserver<MjolnirConfiguration> observer)
         {
-            var subscription = new Subscription(() => _observers.Remove(observer));
-            _observers.Add(observer);
+            var subscription = new Subscription(() =>
+            {
+                lock (_observers)
+                {
+                    _observers.Remove(observer);
+                }
+            });
+
+            lock (_observers)
+            {
+                _observers.Add(observer);
+            }
+
             return subscription;
         }
     }
