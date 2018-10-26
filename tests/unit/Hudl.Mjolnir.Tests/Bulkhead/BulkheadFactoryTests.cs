@@ -5,8 +5,10 @@ using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Tests.Helper;
 using Moq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Hudl.Mjolnir.Config;
 using Xunit;
 using static Hudl.Mjolnir.Bulkhead.BulkheadFactory;
@@ -334,6 +336,58 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
             // Assert
 
             Assert.Equal(validMaxConcurrent, bulkhead.CountAvailable);
+        }
+
+
+        [Fact]
+        public async Task MultiThreadedInitialization_DoesNotThrow()
+        {
+            var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
+
+            var key = AnyGroupKey;
+            const int validMaxConcurrent = 10;
+
+            var mockConfig = new MjolnirConfiguration
+            {
+                BulkheadConfigurations = new Dictionary<string, BulkheadConfiguration>
+                {
+                    {
+                        key.Name,
+                        new BulkheadConfiguration
+                        {
+                            MaxConcurrent = validMaxConcurrent
+                        }
+                    }
+                }
+            };
+
+            var mockLogFactory = new Mock<IMjolnirLogFactory>(MockBehavior.Strict);
+            mockLogFactory.Setup(m => m.CreateLog<BulkheadFactory>()).Returns(new DefaultMjolnirLog<BulkheadFactory>());
+            mockLogFactory.Setup(m => m.CreateLog<SemaphoreBulkheadHolder>())
+                .Returns(new DefaultMjolnirLog<SemaphoreBulkheadHolder>());
+            var factory = new BulkheadFactory(mockMetricEvents.Object, mockConfig, mockLogFactory.Object);
+
+            var groupKeys = new List<GroupKey>();
+            for (var i = 0; i < 50000000; ++i)
+            {
+                groupKeys.Add(GroupKey.Named(1.ToString()));
+            }
+
+            var exceptions = new ConcurrentQueue<Exception>();
+            
+            Parallel.ForEach(groupKeys, (groupKey) =>
+            {
+                try
+                {
+                    factory.GetBulkhead(groupKey);
+                }
+                catch (Exception e)
+                {
+                    exceptions.Enqueue(e);
+                }
+            });
+            
+            Assert.Empty(exceptions);
         }
     }
 }
