@@ -339,8 +339,12 @@ namespace Hudl.Mjolnir.Tests.Bulkhead
         }
 
 
+        /// <summary>
+        /// This test may past even if there is a concurrency problem. It will always pass if the concurrency is working
+        /// fine. Do not ignore FAILURES!!
+        /// </summary>
         [Fact]
-        public async Task MultiThreadedInitialization_DoesNotThrow()
+        public void MultiThreadedInitialization_DoesNotThrow()
         {
             var mockMetricEvents = new Mock<IMetricEvents>(MockBehavior.Strict);
 
