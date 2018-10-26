@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Hudl.Mjolnir.Config
@@ -141,7 +142,7 @@ namespace Hudl.Mjolnir.Config
         /// </summary>
         public void NotifyAfterConfigUpdate()
         {
-            foreach (var observer in _observers)
+            foreach (var observer in _observers.Values)
             {
                 observer.OnNext(this);
             }
@@ -161,13 +162,14 @@ namespace Hudl.Mjolnir.Config
                 _onDispose();
             }
         }
-
-        private readonly List<IObserver<MjolnirConfiguration>> _observers = new List<IObserver<MjolnirConfiguration>>();
-
+        
+        private readonly ConcurrentDictionary<IObserver<MjolnirConfiguration>, IObserver<MjolnirConfiguration>>
+            _observers = new ConcurrentDictionary<IObserver<MjolnirConfiguration>, IObserver<MjolnirConfiguration>>();
+        
         public IDisposable Subscribe(IObserver<MjolnirConfiguration> observer)
         {
-            var subscription = new Subscription(() => _observers.Remove(observer));
-            _observers.Add(observer);
+            var subscription = new Subscription(() => _observers.TryRemove(observer, out var unused));
+            _observers.TryAdd(observer, observer);
             return subscription;
         }
     }

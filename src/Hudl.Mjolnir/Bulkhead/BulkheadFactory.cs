@@ -97,7 +97,7 @@ namespace Hudl.Mjolnir.Bulkhead
             private readonly GroupKey _key;
 
             private ISemaphoreBulkhead _bulkhead;
-            public ISemaphoreBulkhead Bulkhead { get { return _bulkhead; } }
+            public ISemaphoreBulkhead Bulkhead => _bulkhead;
 
             private readonly IMetricEvents _metricEvents;
             private readonly MjolnirConfiguration _config;
