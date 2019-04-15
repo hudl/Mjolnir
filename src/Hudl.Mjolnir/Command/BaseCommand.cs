@@ -155,6 +155,10 @@ namespace Hudl.Mjolnir.Command
         private string GenerateAndCacheName(GroupKey group)
         {
             var type = GetType();
+            if(this is IOverridableCommandType)
+            {
+                type = ((IOverridableCommandType)this).GetOverridenType();
+            }
             var cacheKey = new Tuple<Type, GroupKey>(type, group);
             return GeneratedNameCache.GetOrAdd(cacheKey, t =>
             {
