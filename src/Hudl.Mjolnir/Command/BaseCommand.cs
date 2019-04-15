@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using Hudl.Mjolnir.Config;
+using System.Reflection;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -155,7 +156,7 @@ namespace Hudl.Mjolnir.Command
         private string GenerateAndCacheName(GroupKey group)
         {
             var type = GetType();
-            if(this is IOverridableCommandType)
+            if(typeof(IOverridableCommandType).GetTypeInfo().IsAssignableFrom(type.GetTypeInfo()))
             {
                 type = ((IOverridableCommandType)this).GetOverridenType();
             }
