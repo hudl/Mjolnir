@@ -2,7 +2,7 @@ using System;
 
 namespace Hudl.Mjolnir.Command
 {
-    interface IOverridableCommandType
+    public interface IOverridableCommandType
     {
         Type GetOverridenType();
     }
