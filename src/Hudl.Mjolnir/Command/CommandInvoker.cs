@@ -21,6 +21,7 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     public interface ICommandInvoker
     {
+        Func<bool> IsTemporarilyDisabled {get;set;}
         /// <summary>
         /// Invokes the provided command and returns a wrapped result, even if the command's
         /// execution threw an Exception.
@@ -257,10 +258,11 @@ namespace Hudl.Mjolnir.Command
         private readonly IMetricEvents _metricEvents;
         private readonly IBreakerExceptionHandler _breakerExceptionHandler;
         private readonly IBulkheadInvoker _bulkheadInvoker;
-
         private readonly ICircuitBreakerFactory _circuitBreakerFactory;
         private readonly IBulkheadFactory _bulkheadFactory;
         private static volatile int _constructorCount;
+
+        public Func<bool> IsTemporarilyDisabled { get;  set ;}
 
         public CommandInvoker()
             : this(null, new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null, null)
@@ -624,6 +626,10 @@ namespace Hudl.Mjolnir.Command
         /// </summary>
         private bool IsEnabled()
         {
+            if (IsTemporarilyDisabled != null && IsTemporarilyDisabled.Invoke() == true)
+            {
+                return false;
+            }
             return _config.IsEnabled;
         }
 
