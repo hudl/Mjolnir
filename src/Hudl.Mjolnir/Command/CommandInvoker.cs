@@ -626,9 +626,16 @@ namespace Hudl.Mjolnir.Command
         /// </summary>
         private bool IsEnabled()
         {
-            if (IsTemporarilyDisabled != null && IsTemporarilyDisabled.Invoke() == true)
+            try
             {
-                return false;
+                if (IsTemporarilyDisabled != null && IsTemporarilyDisabled.Invoke() == true)
+                {
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                _log.Error("Unable to determine if Mjolnir is temporarily disabled.", ex);
             }
             return _config.IsEnabled;
         }
