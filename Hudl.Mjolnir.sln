@@ -7,6 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hudl.Mjolnir", "src\Hudl.Mj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Hudl.Mjolnir.Tests", "tests\unit\Hudl.Mjolnir.Tests\Hudl.Mjolnir.Tests.csproj", "{F600DF5B-3A24-4F7A-825D-B71239C539C4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FEBD1EE2-0433-4D20-A45C-706E440BA39C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "performance", "performance", "{202A0A4B-6E72-4854-8198-0FEC6B8994B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hudl.Mjolnir.PerformanceTests", "tests\performance\Hudl.Mjolnir.PerformanceTests\Hudl.Mjolnir.PerformanceTests.csproj", "{0DB76870-0B99-4F3C-B18E-F7A2C58B9125}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,8 +27,16 @@ Global
 		{F600DF5B-3A24-4F7A-825D-B71239C539C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F600DF5B-3A24-4F7A-825D-B71239C539C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F600DF5B-3A24-4F7A-825D-B71239C539C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DB76870-0B99-4F3C-B18E-F7A2C58B9125}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DB76870-0B99-4F3C-B18E-F7A2C58B9125}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DB76870-0B99-4F3C-B18E-F7A2C58B9125}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DB76870-0B99-4F3C-B18E-F7A2C58B9125}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{202A0A4B-6E72-4854-8198-0FEC6B8994B8} = {FEBD1EE2-0433-4D20-A45C-706E440BA39C}
+		{0DB76870-0B99-4F3C-B18E-F7A2C58B9125} = {202A0A4B-6E72-4854-8198-0FEC6B8994B8}
 	EndGlobalSection
 EndGlobal

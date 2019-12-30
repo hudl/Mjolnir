@@ -22,6 +22,7 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Hudl.Mjolnir.Tests")]
 [assembly: InternalsVisibleTo("Hudl.Mjolnir.SystemTests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+[assembly: InternalsVisibleTo("Hudl.Mjolnir.PerformanceTests")]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("97b23684-6c4a-4749-b307-5867cbce2dff")]
