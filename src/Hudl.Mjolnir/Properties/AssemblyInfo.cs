@@ -27,10 +27,10 @@ using System.Runtime.InteropServices;
 [assembly: Guid("97b23684-6c4a-4749-b307-5867cbce2dff")]
 
 // Used for NuGet packaging, uses semantic versioning: major.minor.patch-prerelease.
-[assembly: AssemblyInformationalVersion("3.0.1")]
+[assembly: AssemblyInformationalVersion("3.2.2")]
 
 // Keep this the same as AssemblyInformationalVersion.
-[assembly: AssemblyFileVersion("3.0.1")]
+[assembly: AssemblyFileVersion("3.2.2")]
 
 // ONLY change this when the major version changes; never with minor/patch/build versions.
 // It'll almost always be the major version followed by three zeroes (e.g. 1.0.0.0).
