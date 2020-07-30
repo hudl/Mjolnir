@@ -167,13 +167,15 @@ namespace Hudl.Mjolnir.Breaker
                 var snapshot = _metrics.GetSnapshot();
 
                 // If we haven't met the minimum number of operations needed to trip, don't trip.
-                if (snapshot.Total < _config.GetMinimumOperations(_key))
+                var configuredMinimumOperations = _config.GetMinimumOperations(_key);
+                if (snapshot.Total < configuredMinimumOperations)
                 {
                     return false;
                 }
 
                 // If we're within the error threshold, don't trip.
-                if (snapshot.ErrorPercentage < _config.GetThresholdPercentage(_key))
+                var configuredThresholdPercentage = _config.GetThresholdPercentage(_key);
+                if (snapshot.ErrorPercentage < configuredThresholdPercentage)
                 {
                     return false;
                 }
@@ -182,7 +184,7 @@ namespace Hudl.Mjolnir.Breaker
                 _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
 
                 _metricEvents.BreakerTripped(Name);
-                _log.Error($"Tripped Breaker={_key} Operations={snapshot.Total} ErrorPercentage={snapshot.ErrorPercentage} Wait={_config.GetTrippedDurationMillis(_key)}");
+                _log.Error($"Tripped Breaker={_key} Operations={snapshot.Total} ErrorPercentage={snapshot.ErrorPercentage} Wait={_config.GetTrippedDurationMillis(_key)} ConfiguredErrorPercentage={configuredThresholdPercentage} ConfiguredMinimumOperations={configuredMinimumOperations}");
 
                 return true;
             }
