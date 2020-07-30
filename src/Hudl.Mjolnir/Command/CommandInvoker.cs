@@ -529,7 +529,7 @@ namespace Hudl.Mjolnir.Command
                 MjolnirEventSource.Log.CommandInvoked(command.Name);
                 var executionResult = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
                 MjolnirEventSource.Log.CommandSuccess(command.Name);
-                return executionResult
+                return executionResult;
             }
             catch (Exception e)
             {
