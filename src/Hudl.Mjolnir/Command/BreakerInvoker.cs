@@ -1,4 +1,5 @@
-﻿using Hudl.Mjolnir.Breaker;
+﻿using Elastic.Apm.Api;
+using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Util;
 using System;
@@ -32,62 +33,77 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            var breaker = _circuitBreakerFactory.GetCircuitBreaker(command.BreakerKey);
-
-            if (!breaker.IsAllowing())
-            {
-                MjolnirEventSource.Log.CircuitBreakerRejection(breaker.Name, command.Name);
-                _metricEvents.RejectedByBreaker(breaker.Name, command.Name);
-                throw new CircuitBreakerRejectedException();
-            }
-
-            TResult result;
-
-            var success = true;
-            var breakerStopwatch = Stopwatch.StartNew();
-            var executionStopwatch = Stopwatch.StartNew();
+            var transaction = Elastic.Apm.Agent.Tracer.StartTransaction("CircuitBreaker", ApiConstants.ActionExec);
             try
             {
-                // Await here so we can catch the Exception and track the state.
-                result = await command.ExecuteAsync(ct).ConfigureAwait(false);
-                executionStopwatch.Stop();
+                //application code that is captured as a transaction
 
-                breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
-                breaker.Metrics.MarkCommandSuccess();
-            }
-            catch (Exception e)
-            {
-                executionStopwatch.Stop();
-                success = false;
+                var breaker = _circuitBreakerFactory.GetCircuitBreaker(command.BreakerKey);
 
-                if (_ignoredExceptions.IsExceptionIgnored(e.GetType()))
+                if (!breaker.IsAllowing())
                 {
-                    success = true;
+                    MjolnirEventSource.Log.CircuitBreakerRejection(breaker.Name, command.Name);
+                    _metricEvents.RejectedByBreaker(breaker.Name, command.Name);
+                    throw new CircuitBreakerRejectedException();
+                }
+
+                TResult result;
+
+                var success = true;
+                var breakerStopwatch = Stopwatch.StartNew();
+                var executionStopwatch = Stopwatch.StartNew();
+                try
+                {
+                    // Await here so we can catch the Exception and track the state.
+                    result = await command.ExecuteAsync(ct).ConfigureAwait(false);
+                    executionStopwatch.Stop();
+
                     breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
                     breaker.Metrics.MarkCommandSuccess();
                 }
-                else
+                catch (Exception e)
                 {
-                    breaker.Metrics.MarkCommandFailure();
+                    executionStopwatch.Stop();
+                    success = false;
+
+                    if (_ignoredExceptions.IsExceptionIgnored(e.GetType()))
+                    {
+                        success = true;
+                        breaker.MarkSuccess(breakerStopwatch.ElapsedMilliseconds);
+                        breaker.Metrics.MarkCommandSuccess();
+                    }
+                    else
+                    {
+                        breaker.Metrics.MarkCommandFailure();
+                    }
+
+                    throw;
+                }
+                finally
+                {
+                    command.ExecutionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
+
+                    if (success)
+                    {
+                        _metricEvents.BreakerSuccessCount(breaker.Name, command.Name);
+                    }
+                    else
+                    {
+                        _metricEvents.BreakerFailureCount(breaker.Name, command.Name);
+                    }
                 }
 
+                return result;
+            }
+            catch (Exception e)
+            {
+                transaction.CaptureException(e);
                 throw;
             }
             finally
             {
-                command.ExecutionTimeMillis = executionStopwatch.Elapsed.TotalMilliseconds;
-
-                if (success)
-                {
-                    _metricEvents.BreakerSuccessCount(breaker.Name, command.Name);
-                }
-                else
-                {
-                    _metricEvents.BreakerFailureCount(breaker.Name, command.Name);
-                }
+                transaction.End();
             }
-
-            return result;
         }
 
         public TResult ExecuteWithBreaker<TResult>(SyncCommand<TResult> command, CancellationToken ct)
