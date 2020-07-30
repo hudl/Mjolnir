@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Key;
 using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Clock;
+using Hudl.Mjolnir.Util;
 
 namespace Hudl.Mjolnir.Breaker
 {
@@ -79,10 +79,13 @@ namespace Hudl.Mjolnir.Breaker
             if (_state != State.Tripped || _clock.GetMillisecondTimestamp() - elapsedMillis < _lastTrippedTimestamp)
             {
                 // Ignore.
+                MjolnirEventSource.Log.CircuitBreakerExited(_key.Name);
                 return;
             }
 
             _log.Info($"Fixed Breaker={_key}");
+
+             MjolnirEventSource.Log.CircuitBreakerFixed(_key.Name);
 
             _state = State.Fixed;
             _metrics.Reset();
@@ -130,6 +133,7 @@ namespace Hudl.Mjolnir.Breaker
                 {
                     _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
                     _log.Info($"Allowing single test operation Breaker={_key}");
+                    MjolnirEventSource.Log.CircuitBreakerTest(_key.Name);
                     return true;
                 }
 
@@ -181,6 +185,7 @@ namespace Hudl.Mjolnir.Breaker
                 }
 
                 _state = State.Tripped;
+                MjolnirEventSource.Log.CircuitBreakerTripped(_key.Name);
                 _lastTrippedTimestamp = _clock.GetMillisecondTimestamp();
 
                 _metricEvents.BreakerTripped(Name);

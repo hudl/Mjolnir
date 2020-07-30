@@ -1,5 +1,6 @@
 ﻿using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
+using Hudl.Mjolnir.Util;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -35,6 +36,7 @@ namespace Hudl.Mjolnir.Command
 
             if (!breaker.IsAllowing())
             {
+                MjolnirEventSource.Log.CircuitBreakerRejection(breaker.Name, command.Name);
                 _metricEvents.RejectedByBreaker(breaker.Name, command.Name);
                 throw new CircuitBreakerRejectedException();
             }

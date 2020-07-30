@@ -5,6 +5,7 @@ using Hudl.Mjolnir.Events;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Log;
 using Hudl.Mjolnir.Metrics;
+using Hudl.Mjolnir.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -525,11 +526,14 @@ namespace Hudl.Mjolnir.Command
 
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
-
-                return _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
+                MjolnirEventSource.Log.CommandInvoked(command.Name);
+                var executionResult = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
+                MjolnirEventSource.Log.CommandSuccess(command.Name);
+                return executionResult
             }
             catch (Exception e)
             {
+                MjolnirEventSource.Log.CommandFailure(command.Name);
                 status = GetCompletionStatus(e, ct);
                 AttachCommandExceptionData(command, e, status, ct);
                 throw;
