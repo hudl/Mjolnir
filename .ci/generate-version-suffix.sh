@@ -5,6 +5,9 @@
 LOCAL_BRANCH=`git rev-parse --abbrev-ref HEAD | sed 's/[^a-zA-Z0-9]//g' | cut -c -14`
 GIT_COMMIT_SHA1=`git rev-parse --short=6 HEAD | sed 's/[^a-zA-Z0-9]//g'`
 
+echo "LOCAL_BRANCH: $LOCAL_BRANCH"
+echo "GIT_COMMIT_SHA1: $GIT_COMMIT_SHA1"
+echo "BUILD_NUMBER: $BUILD_NUMBER"
 
 if [[ -z "${LOCAL_BRANCH}" ]] || [[ -z "${GIT_COMMIT_SHA1}" ]]; then
     echo "Empty branch or git sha1, branch=$LOCAL_BRANCH commit=$GIT_COMMIT_SHA1" >&2
