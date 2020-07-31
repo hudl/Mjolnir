@@ -21,7 +21,7 @@ function main {
     trap exithandler EXIT
 
     set -x
-    docker build -f $REPOSITORY_DIR/.ci/Dockerfile.ci --target build --build-arg PUBLISH_OFFICIAL_VERSION_IF_MASTER=$IS_OFFICIAL -t $IMAGE_PREFIX-build:$IMAGE_TAG $REPOSITORY_DIR
+    docker build -f $REPOSITORY_DIR/.ci/Dockerfile.ci --target build --build-arg PUBLISH_OFFICIAL_VERSION_IF_MASTER=$IS_OFFICIAL --build-arg BUILD_NUMBER=$BUILD_NUMBER -t $IMAGE_PREFIX-build:$IMAGE_TAG $REPOSITORY_DIR
     mkdir -p $(pwd)/out
     docker run -v $(pwd)/out:/mount --rm $IMAGE_PREFIX-build:$IMAGE_TAG
 
