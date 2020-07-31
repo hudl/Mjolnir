@@ -30,7 +30,7 @@ RUN chmod +x ./.ci/generate-version-suffix.sh && dos2unix ./.ci/generate-version
 RUN BUILD_NUMBER=$BUILD_NUMBER ./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER
 
 # Publish the package
-RUN dotnet pack `./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER` -c Release --no-restore --no-build -o /out src/Hudl.Mjolnir/Hudl.Mjolnir.csproj
+RUN dotnet pack `BUILD_NUMBER=$BUILD_NUMBER ./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER` -c Release --no-restore --no-build -o /out src/Hudl.Mjolnir/Hudl.Mjolnir.csproj
 
 RUN ls -la /out
 ENTRYPOINT ["cp", "-Rv", "/out/.", "/mount"]
