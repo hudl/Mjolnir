@@ -35,7 +35,7 @@ namespace Hudl.Mjolnir.Command
         {
             var transaction = Elastic.Apm.Agent.Tracer.CurrentTransaction;
             var currentExecutionSegment = Elastic.Apm.Agent.Tracer.CurrentSpan ?? (IExecutionSegment)transaction;
-            var span = currentExecutionSegment.StartSpan("ExecuteWithBreakerAsync", ApiConstants.ActionExec, ApiConstants.TypeExternal);
+            var span = currentExecutionSegment?.StartSpan("ExecuteWithBreakerAsync", ApiConstants.ActionExec, ApiConstants.TypeExternal);
             try
             {
                 //application code that is captured as a transaction
