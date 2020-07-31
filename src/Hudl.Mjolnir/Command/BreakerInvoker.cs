@@ -33,7 +33,7 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            ISpan span = Elastic.Apm.Agent.Tracer.CurrentTransaction.StartSpan("ExecuteWithBreakerAsync", ApiConstants.TypeDb, ApiConstants.SubtypeMssql, ApiConstants.ActionQuery);
+            ISpan span = Elastic.Apm.Agent.Tracer.CurrentTransaction?.StartSpan("ExecuteWithBreakerAsync", ApiConstants.TypeDb, ApiConstants.SubtypeMssql, ApiConstants.ActionQuery);
             try
             {
                 //application code that is captured as a transaction
@@ -97,12 +97,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                span.CaptureException(e);
+                if (span != null) span.CaptureException(e);
                 throw;
             }
             finally
             {
-                span.End();
+                if (span != null) span.End();
             }
         }
 
