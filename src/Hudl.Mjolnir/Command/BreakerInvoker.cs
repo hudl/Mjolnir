@@ -1,4 +1,4 @@
-﻿using Elastic.Apm.Api;
+﻿using Amazon.XRay.Recorder.Core;
 using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Util;
@@ -33,13 +33,9 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            var transaction = Elastic.Apm.Agent.Tracer.CurrentTransaction;
-            var currentExecutionSegment = Elastic.Apm.Agent.Tracer.CurrentSpan ?? (IExecutionSegment)transaction;
-            var span = currentExecutionSegment?.StartSpan("ExecuteWithBreakerAsync", ApiConstants.ActionExec, ApiConstants.TypeExternal);
+            AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBreakerAsync");
             try
             {
-                //application code that is captured as a transaction
-
                 var breaker = _circuitBreakerFactory.GetCircuitBreaker(command.BreakerKey);
 
                 if (!breaker.IsAllowing())
@@ -99,12 +95,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                if (span != null) span.CaptureException(e);
+                AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                if (span != null) span.End();
+               AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
