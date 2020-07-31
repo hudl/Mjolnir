@@ -16,7 +16,7 @@ fi
 if [ $# -gt 0 ] && [ "$1" = "true" ] && [ "$LOCAL_BRANCH" = "master" ]; then
     exit 0
 fi
-if [ -z "${BUILD_NUMBER}" ]
+if [ -z "${BUILD_NUMBER}" ]; then
     echo "--version-suffix $LOCAL_BRANCH$GIT_COMMIT_SHA1"
 else
     echo "--version-suffix $LOCAL_BRANCH$BUILD_NUMBER"
