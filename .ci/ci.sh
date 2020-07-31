@@ -26,7 +26,7 @@ function main {
     docker run -v $(pwd)/out:/mount --rm $IMAGE_PREFIX-build:$IMAGE_TAG
 
     if [[ "$DO_PUBLISH" = true ]]; then
-        docker build -f $REPOSITORY_DIR/.ci/Dockerfile.ci --target publish --cache-from $IMAGE_PREFIX-build:$IMAGE_TAG --build-arg PUBLISH_OFFICIAL_VERSION_IF_MASTER=$IS_OFFICIAL -t $IMAGE_PREFIX-publish:$IMAGE_TAG $REPOSITORY_DIR
+        docker build -f $REPOSITORY_DIR/.ci/Dockerfile.ci --target publish --cache-from $IMAGE_PREFIX-build:$IMAGE_TAG --build-arg PUBLISH_OFFICIAL_VERSION_IF_MASTER=$IS_OFFICIAL  --build-arg BUILD_NUMBER=$BUILD_NUMBER -t $IMAGE_PREFIX-publish:$IMAGE_TAG $REPOSITORY_DIR
         docker run -e NUGET_API_KEY=$NUGET_API_KEY --rm $IMAGE_PREFIX-publish:$IMAGE_TAG
     else
         echo "Skipping NuGet publish, -p option was not used"
