@@ -43,5 +43,6 @@ RUN mkdir /out
 COPY --from=build /out /out
 
 COPY ./.ci/publish-to-nuget.sh /out
+RUN chmod +x /out/publish-to-nuget.sh
 WORKDIR /out
 ENTRYPOINT /out/publish-to-nuget.sh $NUGET_URL $NUGET_API_KEY
