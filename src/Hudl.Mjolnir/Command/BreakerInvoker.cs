@@ -33,7 +33,7 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBreakerAsync");
+            if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBreakerAsync");
             try
             {
                 var breaker = _circuitBreakerFactory.GetCircuitBreaker(command.BreakerKey);
@@ -95,12 +95,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-               AWSXRayRecorder.Instance.EndSubsegment();
+               if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
