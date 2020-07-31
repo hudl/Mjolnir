@@ -8,6 +8,8 @@
 FROM mcr.microsoft.com/dotnet/core/sdk:2.1 as build
 
 ARG PUBLISH_OFFICIAL_VERSION_IF_MASTER=false
+ARG BUILD_NUMBER # you could give this a default value as well
+ENV BUILD_NUMBER=$BUILD_NUMBER
 RUN apt-get update && apt-get install dos2unix
 
 RUN mkdir /src /out

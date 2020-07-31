@@ -5,6 +5,7 @@
 LOCAL_BRANCH=`git rev-parse --abbrev-ref HEAD | sed 's/[^a-zA-Z0-9]//g' | cut -c -14`
 GIT_COMMIT_SHA1=`git rev-parse --short=6 HEAD | sed 's/[^a-zA-Z0-9]//g'`
 
+
 if [[ -z "${LOCAL_BRANCH}" ]] || [[ -z "${GIT_COMMIT_SHA1}" ]]; then
     echo "Empty branch or git sha1, branch=$LOCAL_BRANCH commit=$GIT_COMMIT_SHA1" >&2
     echo "BROKEN_PUBLISH"
@@ -15,5 +16,8 @@ fi
 if [ $# -gt 0 ] && [ "$1" = "true" ] && [ "$LOCAL_BRANCH" = "master" ]; then
     exit 0
 fi
-
-echo "--version-suffix $LOCAL_BRANCH$GIT_COMMIT_SHA1"
+if [ -z "${BUILD_NUMBER}" ]
+    echo "--version-suffix $LOCAL_BRANCH$GIT_COMMIT_SHA1"
+else
+    echo "--version-suffix $LOCAL_BRANCH$BUILD_NUMBER"
+fi

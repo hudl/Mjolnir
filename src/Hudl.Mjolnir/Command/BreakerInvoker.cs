@@ -33,7 +33,9 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBreakerAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            ISpan span = Elastic.Apm.Agent.Tracer.CurrentTransaction?.StartSpan("ExecuteWithBreakerAsync", ApiConstants.TypeDb, ApiConstants.SubtypeMssql, ApiConstants.ActionQuery);
+            var transaction = Elastic.Apm.Agent.Tracer.CurrentTransaction;
+            var currentExecutionSegment = Elastic.Apm.Agent.Tracer.CurrentSpan ?? (IExecutionSegment)transaction;
+            var span = currentExecutionSegment.StartSpan("ExecuteWithBreakerAsync", ApiConstants.ActionExec, ApiConstants.TypeExternal);
             try
             {
                 //application code that is captured as a transaction
