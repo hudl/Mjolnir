@@ -13,6 +13,6 @@ while IFS= read -r NUGET_PACKAGE; do
     echo "Uploading package $NUGET_PACKAGE to nuget."
     echo ""
     
-    COMMAND_OUTPUT=`dotnet nuget push $NUGET_PACKAGE --skip-duplicate --source $NUGET_URL --api-key $NUGET_API_KEY`
+    COMMAND_OUTPUT=`dotnet nuget push $NUGET_PACKAGE --source $NUGET_URL --api-key $NUGET_API_KEY`
     echo "$COMMAND_OUTPUT"
 done <<< "$NUGET_PACKAGES"
