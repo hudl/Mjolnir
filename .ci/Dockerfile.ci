@@ -1,0 +1,52 @@
+# Dockerfile for continuous integration builds.
+# See corresponding ci.sh for example usage.
+
+# Default build behavior will always create a prerelease package. To create an official mainline
+# package, pass --build-arg PUBLISH_OFFICIAL_VERSION_IF_MASTER=true to the build commands
+
+# Using specific version since microsoft is introducing bugs in 3.1.300
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1.201 as build
+
+ARG PUBLISH_OFFICIAL_VERSION_IF_MASTER=false
+RUN apt-get update && apt-get install dos2unix
+
+RUN mkdir /src /out
+WORKDIR /src
+COPY . .
+RUN chmod +x ./.ci/validate-project-structure.sh && dos2unix ./.ci/validate-project-structure.sh && ./.ci/validate-project-structure.sh
+
+# Build
+RUN dotnet restore
+RUN dotnet build -c Release --no-restore
+
+# Run unit tests
+RUN dotnet test --no-build --configuration Release -l trx -r /out/test-results tests/unit/Hudl.Marvel.Platform.Tests/Hudl.Marvel.Platform.Tests.csproj
+
+RUN chmod +x ./.ci/generate-version-suffix.sh && dos2unix ./.ci/generate-version-suffix.sh
+
+# Run the generate-version-suffix script by itself first so it gets output to console for easier debugging
+RUN ./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER
+
+# Publish the package
+RUN dotnet pack `./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER` -c Release --no-restore --no-build -o /out src/Hudl.Marvel.Platform/Hudl.Marvel.Platform.csproj
+RUN dotnet pack `./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER` -c Release --no-restore --no-build -o /out src/Hudl.Marvel.Platform.Abstractions/Hudl.Marvel.Platform.Abstractions.csproj
+
+RUN ls -la /out
+ENTRYPOINT ["cp", "-Rv", "/out/.", "/mount"]
+
+# Integration tests
+FROM build as test
+ENTRYPOINT dotnet test --no-build --configuration Release -l trx -r /out/test-results tests/integration/Hudl.Marvel.Platform.IntegrationTests/Hudl.Marvel.Platform.IntegrationTests.csproj ; cp -r /out/test-results/. /mount/test-results
+
+#----
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 as publish
+
+ENV NUGET_URL http://nuget-push.hudltools.com
+ENV NUGET_API_KEY unset
+
+RUN mkdir /out
+COPY --from=build /out /out
+
+COPY ./.ci/publish-to-nuget.sh /out
+WORKDIR /out
+ENTRYPOINT /out/publish-to-nuget.sh $NUGET_URL $NUGET_API_KEY
