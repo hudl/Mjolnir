@@ -48,16 +48,17 @@ function parse_options {
 
     if [[ $# = 0 ]]; then usage_error; fi
     while getopts 'opd:i:t:k:' flag; do
+        LOWER_OPT_ARG=$(echo $OPTARG | tr '[:upper:]' '[:lower:]')
         case "${flag}" in
             o) IS_OFFICIAL="true" ;;
             p) DO_PUBLISH="true" ;;
-            i) IMAGE_PREFIX="${OPTARG}"; if [[ $IMAGE_PREFIX = -* ]]; then usage_error "Missing image_prefix argument for -i"; fi ;;
-            t) IMAGE_TAG="${OPTARG}"; if [[ $IMAGE_TAG = -* ]]; then usage_error "Missing image_tag argument for -t"; fi ;;
+            i) IMAGE_PREFIX="${LOWER_OPT_ARG}"; if [[ $IMAGE_PREFIX = -* ]]; then usage_error "Missing image_prefix argument for -i"; fi ;;
+            t) IMAGE_TAG="${LOWER_OPT_ARG}"; if [[ $IMAGE_TAG = -* ]]; then usage_error "Missing image_tag argument for -t"; fi ;;
             k) NUGET_API_KEY="${OPTARG}"; if [[ $NUGET_API_KEY = -* ]]; then usage_error "Missing nuget_api_key argument for -k"; fi ;;
             *) usage; exit 1 ;;
         esac
     done
-
+echo "Blah" | awk '{print tolower($0)}'
     echo "REPOSITORY_DIR=$REPOSITORY_DIR"
     echo "IS_OFFICIAL=$IS_OFFICIAL"
     echo "DO_PUBLISH=$DO_PUBLISH"
