@@ -1,636 +1,636 @@
-﻿using Hudl.Mjolnir.Breaker;
-using Hudl.Mjolnir.Tests.Helper;
-using System;
-using System.Collections.Generic;
-using Hudl.Mjolnir.Config;
-using Xunit;
+﻿// using Hudl.Mjolnir.Breaker;
+// using Hudl.Mjolnir.Tests.Helper;
+// using System;
+// using System.Collections.Generic;
+// using Hudl.Mjolnir.Config;
+// using Xunit;
 
-namespace Hudl.Mjolnir.Tests.Breaker
-{
-    public class FailurePercentageCircuitBreakerConfigTests : TestFixture
-    {
-        [Fact]
-        public void Constructor_ThrowsIfNullConfig()
-        {
-            // Arrange
+// namespace Hudl.Mjolnir.Tests.Breaker
+// {
+//     public class FailurePercentageCircuitBreakerConfigTests : TestFixture
+//     {
+//         [Fact]
+//         public void Constructor_ThrowsIfNullConfig()
+//         {
+//             // Arrange
 
-            // Act + Assert
+//             // Act + Assaert
 
-            var exception = Assert.Throws<ArgumentNullException>(() => new FailurePercentageCircuitBreakerConfig(null));
-            Assert.Equal("config", exception.ParamName);
-        }
+//             var exception = Assert.Throws<ArgumentNullException>(() => new FailurePercentageCircuitBreakerConfig(null));
+//             Assert.Equal("config", exception.ParamName);
+//         }
 
-        [Fact]
-        public void GetMinimumOperations_UsesSpecificValueIfConfigured()
-        {
-            // Arrange
-
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
-
-            var mockConfig = new MjolnirConfiguration
-            {
-                BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
-                {
-                    {
-                        groupKey.Name,
-                        new BreakerConfiguration
-                        {
-                            MinimumOperations = expectedConfigValue
-                        }
-                    }
-                }
-            };
+//         [Fact]
+//         public void GetMinimumOperations_UsesSpecificValueIfConfigured()
+//         {
+//             // Arrange
+
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
+
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
+//                 {
+//                     {
+//                         groupKey.Name,
+//                         new BreakerConfiguration
+//                         {
+//                             MinimumOperations = expectedConfigValue
+//                         }
+//                     }
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetMinimumOperations(groupKey);
+//             var value = config.GetMinimumOperations(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetMinimumOperations_UsesDefaultValueIfNoSpecificValueConfigured()
-        {
-            // Arrange
-
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//         [Fact]
+//         public void GetMinimumOperations_UsesDefaultValueIfNoSpecificValueConfigured()
+//         {
+//             // Arrange
+
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    MinimumOperations = expectedConfigValue
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     MinimumOperations = expectedConfigValue
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetMinimumOperations(groupKey);
+//             var value = config.GetMinimumOperations(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetMinimumOperations_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs10()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetMinimumOperations_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs10()
+//         {
+//             // Arrange
 
-            const long expectedDefaultMinimumOperations = 10;
+//             const long expectedDefaultMinimumOperations = 10;
 
-            var groupKey = AnyGroupKey;
-            const int expectedConfigValue = 10;
+//             var groupKey = AnyGroupKey;
+//             const int expectedConfigValue = 10;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    MinimumOperations = expectedConfigValue
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     MinimumOperations = expectedConfigValue
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetMinimumOperations(groupKey);
+//             var value = config.GetMinimumOperations(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedDefaultMinimumOperations, value);
-        }
+//             Assert.Equal(expectedDefaultMinimumOperations, value);
+//         }
 
-        [Fact]
-        public void GetWindowMillis_UsesSpecificValueIfConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetWindowMillis_UsesSpecificValueIfConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
-                {
-                    {
-                        groupKey.Name,
-                        new BreakerConfiguration
-                        {
-                            WindowMillis = expectedConfigValue
-                        }
-                    }
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
+//                 {
+//                     {
+//                         groupKey.Name,
+//                         new BreakerConfiguration
+//                         {
+//                             WindowMillis = expectedConfigValue
+//                         }
+//                     }
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetWindowMillis(groupKey);
+//             var value = config.GetWindowMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetWindowMillis_UsesDefaultValueIfNoSpecificValueConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetWindowMillis_UsesDefaultValueIfNoSpecificValueConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    WindowMillis = expectedConfigValue
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     WindowMillis = expectedConfigValue
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
 
-            // Act
+//             // Act
 
-            var value = config.GetWindowMillis(groupKey);
+//             var value = config.GetWindowMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetWindowMillis_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs30000()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetWindowMillis_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs30000()
+//         {
+//             // Arrange
 
-            const long expectedDefaultWindowMillis = 30000;
+//             const long expectedDefaultWindowMillis = 30000;
 
-            var groupKey = AnyGroupKey;
+//             var groupKey = AnyGroupKey;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    WindowMillis = expectedDefaultWindowMillis
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     WindowMillis = expectedDefaultWindowMillis
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetWindowMillis(groupKey);
+//             var value = config.GetWindowMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedDefaultWindowMillis, value);
-        }
+//             Assert.Equal(expectedDefaultWindowMillis, value);
+//         }
 
-        [Fact]
-        public void GetThresholdPercentage_UsesSpecificValueIfConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetThresholdPercentage_UsesSpecificValueIfConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
-                {
-                    {
-                        groupKey.Name,
-                        new BreakerConfiguration
-                        {
-                            ThresholdPercentage = expectedConfigValue
-                        }
-                    }
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
+//                 {
+//                     {
+//                         groupKey.Name,
+//                         new BreakerConfiguration
+//                         {
+//                             ThresholdPercentage = expectedConfigValue
+//                         }
+//                     }
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetThresholdPercentage(groupKey);
+//             var value = config.GetThresholdPercentage(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetThresholdPercentage_UsesDefaultValueIfNoSpecificValueConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetThresholdPercentage_UsesDefaultValueIfNoSpecificValueConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    ThresholdPercentage = expectedConfigValue
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     ThresholdPercentage = expectedConfigValue
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetThresholdPercentage(groupKey);
+//             var value = config.GetThresholdPercentage(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetThresholdPercentage_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs50()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetThresholdPercentage_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs50()
+//         {
+//             // Arrange
 
-            const int expectedDefaultThresholdPercentage = 50;
+//             const int expectedDefaultThresholdPercentage = 50;
 
-            var groupKey = AnyGroupKey;
+//             var groupKey = AnyGroupKey;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    ThresholdPercentage = expectedDefaultThresholdPercentage
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     ThresholdPercentage = expectedDefaultThresholdPercentage
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetThresholdPercentage(groupKey);
+//             var value = config.GetThresholdPercentage(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedDefaultThresholdPercentage, value);
-        }
+//             Assert.Equal(expectedDefaultThresholdPercentage, value);
+//         }
 
-        [Fact]
-        public void GetTrippedDurationMillis_UsesSpecificValueIfConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetTrippedDurationMillis_UsesSpecificValueIfConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
-                {
-                    {
-                        groupKey.Name,
-                        new BreakerConfiguration
-                        {
-                            TrippedDurationMillis = expectedConfigValue
-                        }
-                    }
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
+//                 {
+//                     {
+//                         groupKey.Name,
+//                         new BreakerConfiguration
+//                         {
+//                             TrippedDurationMillis = expectedConfigValue
+//                         }
+//                     }
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetTrippedDurationMillis(groupKey);
+//             var value = config.GetTrippedDurationMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetTrippedDurationMillis_UsesDefaultValueIfNoSpecificValueConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetTrippedDurationMillis_UsesDefaultValueIfNoSpecificValueConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    TrippedDurationMillis = expectedConfigValue
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     TrippedDurationMillis = expectedConfigValue
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetTrippedDurationMillis(groupKey);
+//             var value = config.GetTrippedDurationMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetTrippedDurationMillis_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs10000()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetTrippedDurationMillis_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs10000()
+//         {
+//             // Arrange
 
-            const long expectedDefaultTrippedDurationMillis = 10000;
-            var groupKey = AnyGroupKey;
+//             const long expectedDefaultTrippedDurationMillis = 10000;
+//             var groupKey = AnyGroupKey;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    TrippedDurationMillis = expectedDefaultTrippedDurationMillis
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     TrippedDurationMillis = expectedDefaultTrippedDurationMillis
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetTrippedDurationMillis(groupKey);
+//             var value = config.GetTrippedDurationMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedDefaultTrippedDurationMillis, value);
-        }
+//             Assert.Equal(expectedDefaultTrippedDurationMillis, value);
+//         }
 
-        [Fact]
-        public void GetForceTripped_UsesSpecificValueIfConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetForceTripped_UsesSpecificValueIfConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyBool;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
-                {
-                    {
-                        groupKey.Name,
-                        new BreakerConfiguration
-                        {
-                            ForceTripped = expectedConfigValue
-                        }
-                    }
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
+//                 {
+//                     {
+//                         groupKey.Name,
+//                         new BreakerConfiguration
+//                         {
+//                             ForceTripped = expectedConfigValue
+//                         }
+//                     }
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetForceTripped(groupKey);
+//             var value = config.GetForceTripped(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetForceTripped_UsesDefaultValueIfNoSpecificValueConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetForceTripped_UsesDefaultValueIfNoSpecificValueConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyBool;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    ForceTripped = expectedConfigValue
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     ForceTripped = expectedConfigValue
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetForceTripped(groupKey);
+//             var value = config.GetForceTripped(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetForceTripped_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIsFalse()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetForceTripped_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIsFalse()
+//         {
+//             // Arrange
 
-            const bool expectedDefaultForceTripped = false;
+//             const bool expectedDefaultForceTripped = false;
 
-            var groupKey = AnyGroupKey;
+//             var groupKey = AnyGroupKey;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    ForceTripped = expectedDefaultForceTripped
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     ForceTripped = expectedDefaultForceTripped
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetForceTripped(groupKey);
+//             var value = config.GetForceTripped(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedDefaultForceTripped, value);
-        }
+//             Assert.Equal(expectedDefaultForceTripped, value);
+//         }
 
-        [Fact]
-        public void GetForceFixed_UsesSpecificValueIfConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetForceFixed_UsesSpecificValueIfConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyBool;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
-                {
-                    {
-                        groupKey.Name,
-                        new BreakerConfiguration
-                        {
-                            ForceFixed = expectedConfigValue
-                        }
-                    }
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
+//                 {
+//                     {
+//                         groupKey.Name,
+//                         new BreakerConfiguration
+//                         {
+//                             ForceFixed = expectedConfigValue
+//                         }
+//                     }
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetForceFixed(groupKey);
+//             var value = config.GetForceFixed(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetForceFixed_UsesDefaultValueIfNoSpecificValueConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetForceFixed_UsesDefaultValueIfNoSpecificValueConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyBool;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyBool;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    ForceFixed = expectedConfigValue
-                }
-            };
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     ForceFixed = expectedConfigValue
+//                 }
+//             };
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetForceFixed(groupKey);
+//             var value = config.GetForceFixed(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetForceFixed_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIsFalse()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetForceFixed_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIsFalse()
+//         {
+//             // Arrange
 
-            const bool expectedDefaultForceFixed = false;
+//             const bool expectedDefaultForceFixed = false;
 
-            var groupKey = AnyGroupKey;
+//             var groupKey = AnyGroupKey;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    ForceFixed = expectedDefaultForceFixed
-                }
-            };
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     ForceFixed = expectedDefaultForceFixed
+//                 }
+//             };
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetForceFixed(groupKey);
+//             var value = config.GetForceFixed(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedDefaultForceFixed, value);
-        }
+//             Assert.Equal(expectedDefaultForceFixed, value);
+//         }
 
-        [Fact]
-        public void GetSnapshotTtlMillis_UsesSpecificValueIfConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetSnapshotTtlMillis_UsesSpecificValueIfConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
-                {
-                    {
-                        groupKey.Name,
-                        new BreakerConfiguration
-                        {
-                            SnapshotTtlMillis = expectedConfigValue
-                        }
-                    }
-                }
-            };
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 BreakerConfigurations = new Dictionary<string, BreakerConfiguration>
+//                 {
+//                     {
+//                         groupKey.Name,
+//                         new BreakerConfiguration
+//                         {
+//                             SnapshotTtlMillis = expectedConfigValue
+//                         }
+//                     }
+//                 }
+//             };
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetSnapshotTtlMillis(groupKey);
+//             var value = config.GetSnapshotTtlMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetSnapshotTtlMillis_UsesDefaultValueIfNoSpecificValueConfigured()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetSnapshotTtlMillis_UsesDefaultValueIfNoSpecificValueConfigured()
+//         {
+//             // Arrange
 
-            var groupKey = AnyGroupKey;
-            var expectedConfigValue = AnyPositiveInt;
+//             var groupKey = AnyGroupKey;
+//             var expectedConfigValue = AnyPositiveInt;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    SnapshotTtlMillis = expectedConfigValue
-                }
-            };
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     SnapshotTtlMillis = expectedConfigValue
+//                 }
+//             };
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetSnapshotTtlMillis(groupKey);
+//             var value = config.GetSnapshotTtlMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedConfigValue, value);
-        }
+//             Assert.Equal(expectedConfigValue, value);
+//         }
 
-        [Fact]
-        public void GetSnapshotTtlMillis_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs1000()
-        {
-            // Arrange
+//         [Fact]
+//         public void GetSnapshotTtlMillis_UsesDefaultValueIfNoSpecificValueOrDefaultValueConfigured_DefaultIs1000()
+//         {
+//             // Arrange
 
-            const long expectedDefaultSnapshotTtlMillis = 1000;
+//             const long expectedDefaultSnapshotTtlMillis = 1000;
 
-            var groupKey = AnyGroupKey;
+//             var groupKey = AnyGroupKey;
 
-            var mockConfig = new MjolnirConfiguration
-            {
-                DefaultBreakerConfiguration = new BreakerConfiguration
-                {
-                    SnapshotTtlMillis = expectedDefaultSnapshotTtlMillis
-                }
-            };
+//             var mockConfig = new MjolnirConfiguration
+//             {
+//                 DefaultBreakerConfiguration = new BreakerConfiguration
+//                 {
+//                     SnapshotTtlMillis = expectedDefaultSnapshotTtlMillis
+//                 }
+//             };
 
-            var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
+//             var config = new FailurePercentageCircuitBreakerConfig(mockConfig);
 
-            // Act
+//             // Act
 
-            var value = config.GetSnapshotTtlMillis(groupKey);
+//             var value = config.GetSnapshotTtlMillis(groupKey);
 
-            // Assert
+//             // Assert
 
-            Assert.Equal(expectedDefaultSnapshotTtlMillis, value);
-        }
-    }
-}
+//             Assert.Equal(expectedDefaultSnapshotTtlMillis, value);
+//         }
+//     }
+// }

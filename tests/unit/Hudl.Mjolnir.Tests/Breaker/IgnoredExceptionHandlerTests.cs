@@ -1,88 +1,88 @@
-﻿using Hudl.Mjolnir.Breaker;
-using System;
-using System.Collections.Generic;
-using Xunit;
+﻿// using Hudl.Mjolnir.Breaker;
+// using System;
+// using System.Collections.Generic;
+// using Xunit;
 
-namespace Hudl.Mjolnir.Tests.Breaker
-{
-    public class IgnoredExceptionHandlerTests
-    {
-        [Fact]
-        public void IsExceptionIgnored_IgnoresExceptionsFromSet()
-        {
-            // Arrange
+// namespace Hudl.Mjolnir.Tests.Breaker
+// {
+//     public class IgnoredExceptionHandlerTests
+//     {
+//         [Fact]
+//         public void IsExceptionIgnored_IgnoresExceptionsFromSet()
+//         {
+//             // Arrange
 
-            var ignored = new HashSet<Type>
-            {
-                typeof(ArgumentNullException)
-            };
-            var handler = new IgnoredExceptionHandler(ignored);
+//             var ignored = new HashSet<Type>
+//             {
+//                 typeof(ArgumentNullException)
+//             };
+//             var handler = new IgnoredExceptionHandler(ignored);
 
-            // Act
+//             // Act
 
-            var isIgnored = handler.IsExceptionIgnored(typeof(ArgumentNullException));
+//             var isIgnored = handler.IsExceptionIgnored(typeof(ArgumentNullException));
 
-            // Assert
+//             // Assert
 
-            Assert.True(isIgnored);
-        }
+//             Assert.True(isIgnored);
+//         }
 
-        [Fact]
-        public void IsExceptionIgnored_AllowsExceptionsNotInSet()
-        {
-            // Arrange
+//         [Fact]
+//         public void IsExceptionIgnored_AllowsExceptionsNotInSet()
+//         {
+//             // Arrange
 
-            var ignored = new HashSet<Type>
-            {
-                typeof(ArgumentNullException)
-            };
-            var handler = new IgnoredExceptionHandler(ignored);
+//             var ignored = new HashSet<Type>
+//             {
+//                 typeof(ArgumentNullException)
+//             };
+//             var handler = new IgnoredExceptionHandler(ignored);
 
-            // Act
+//             // Act
 
-            var isIgnored = handler.IsExceptionIgnored(typeof(InvalidOperationException));
+//             var isIgnored = handler.IsExceptionIgnored(typeof(InvalidOperationException));
 
-            // Assert
+//             // Assert
 
-            Assert.False(isIgnored);
-        }
+//             Assert.False(isIgnored);
+//         }
 
-        [Fact]
-        public void IsExceptionIgnored_RequiresSpecificExceptionsAndDoesntIgnoreInherited()
-        {
-            // Arrange
+//         [Fact]
+//         public void IsExceptionIgnored_RequiresSpecificExceptionsAndDoesntIgnoreInherited()
+//         {
+//             // Arrange
 
-            var ignored = new HashSet<Type>
-            {
-                typeof(ArgumentException)
-            };
-            var handler = new IgnoredExceptionHandler(ignored);
+//             var ignored = new HashSet<Type>
+//             {
+//                 typeof(ArgumentException)
+//             };
+//             var handler = new IgnoredExceptionHandler(ignored);
 
-            // Act
+//             // Act
 
-            var isIgnored = handler.IsExceptionIgnored(typeof(ArgumentNullException));
+//             var isIgnored = handler.IsExceptionIgnored(typeof(ArgumentNullException));
 
-            // Assert
+//             // Assert
 
-            Assert.False(isIgnored);
-        }
+//             Assert.False(isIgnored);
+//         }
 
-        [Fact]
-        public void Constructor_DerfensivelyCopiesSet()
-        {
-            // Arrange
+//         [Fact]
+//         public void Constructor_DerfensivelyCopiesSet()
+//         {
+//             // Arrange
 
-            var ignored = new HashSet<Type>();
-            var handler = new IgnoredExceptionHandler(ignored);
+//             var ignored = new HashSet<Type>();
+//             var handler = new IgnoredExceptionHandler(ignored);
 
-            // Act
+//             // Act
             
-            ignored.Add(typeof(ArgumentOutOfRangeException));
-            var isIgnored = handler.IsExceptionIgnored(typeof(ArgumentOutOfRangeException));
+//             ignored.Add(typeof(ArgumentOutOfRangeException));
+//             var isIgnored = handler.IsExceptionIgnored(typeof(ArgumentOutOfRangeException));
 
-            // Assert
+//             // Assert
 
-            Assert.False(isIgnored);
-        }
-    }
-}
+//             Assert.False(isIgnored);
+//         }
+//     }
+// }
