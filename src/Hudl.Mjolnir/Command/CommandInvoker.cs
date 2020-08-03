@@ -417,7 +417,7 @@ namespace Hudl.Mjolnir.Command
 
         private async Task<CommandResult<TResult>> InvokeAndWrapAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
-            AWSXRayRecorder.Instance.BeginSegment("InvokeAndWrapAsync"); // generates `TraceId` for you
+            AWSXRayRecorder.Instance.BeginSubsegment("InvokeAndWrapAsync"); // generates `TraceId` for you
             try
             {
                 // Even though we're in a "Return" method, multiple invokes are a bug on the calling
@@ -449,7 +449,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSegment();
+                AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 

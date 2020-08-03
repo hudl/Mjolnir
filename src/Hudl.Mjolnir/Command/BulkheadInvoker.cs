@@ -101,7 +101,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSegment();
+                AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
@@ -163,7 +163,7 @@ namespace Hudl.Mjolnir.Command
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSegment();
+                AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
     }
