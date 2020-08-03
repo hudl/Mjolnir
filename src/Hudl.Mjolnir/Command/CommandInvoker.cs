@@ -1,10 +1,10 @@
-﻿using Hudl.Mjolnir.Breaker;
+﻿using Amazon.XRay.Recorder.Core;
+using Hudl.Mjolnir.Breaker;
 using Hudl.Mjolnir.Bulkhead;
 using Hudl.Mjolnir.Config;
 using Hudl.Mjolnir.Events;
 using Hudl.Mjolnir.External;
 using Hudl.Mjolnir.Log;
-using Hudl.Mjolnir.Metrics;
 using Hudl.Mjolnir.Util;
 using System;
 using System.Collections.Generic;
@@ -321,41 +321,80 @@ namespace Hudl.Mjolnir.Command
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command)
         {
-            EnsureSingleInvoke(command);
-
-            if (!IsEnabled())
+            try
             {
-                return command.ExecuteAsync(CancellationToken.None);
-            }
+                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                EnsureSingleInvoke(command);
 
-            var token = GetCancellationTokenForCommand(command);
-            return InvokeAsync(command, token, OnFailure.Throw);
+                if (!IsEnabled())
+                {
+                    return command.ExecuteAsync(CancellationToken.None);
+                }
+
+                var token = GetCancellationTokenForCommand(command);
+                return InvokeAsync(command, token, OnFailure.Throw);
+            }
+            catch (Exception e)
+            {
+                AWSXRayRecorder.Instance.AddException(e);
+                throw;
+            }
+            finally
+            {
+                AWSXRayRecorder.Instance.EndSubsegment();
+            }
         }
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, long timeoutMillis)
         {
-            EnsureSingleInvoke(command);
-
-            if (!IsEnabled())
+            try
             {
-                return command.ExecuteAsync(CancellationToken.None);
-            }
+                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                EnsureSingleInvoke(command);
 
-            var token = GetCancellationTokenForCommand(command, timeoutMillis);
-            return InvokeAsync(command, token, OnFailure.Throw);
+                if (!IsEnabled())
+                {
+                    return command.ExecuteAsync(CancellationToken.None);
+                }
+
+                var token = GetCancellationTokenForCommand(command, timeoutMillis);
+                return InvokeAsync(command, token, OnFailure.Throw);
+            }
+            catch (Exception e)
+            {
+                AWSXRayRecorder.Instance.AddException(e);
+                throw;
+            }
+            finally
+            {
+                AWSXRayRecorder.Instance.EndSubsegment();
+            }
         }
 
         public Task<TResult> InvokeThrowAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            EnsureSingleInvoke(command);
-
-            if (!IsEnabled())
+            try
             {
-                return command.ExecuteAsync(CancellationToken.None);
-            }
+                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                EnsureSingleInvoke(command);
 
-            var token = GetCancellationTokenForCommand(ct);
-            return InvokeAsync(command, token, OnFailure.Throw);
+                if (!IsEnabled())
+                {
+                    return command.ExecuteAsync(CancellationToken.None);
+                }
+
+                var token = GetCancellationTokenForCommand(ct);
+                return InvokeAsync(command, token, OnFailure.Throw);
+            }
+            catch (Exception e)
+            {
+                AWSXRayRecorder.Instance.AddException(e);
+                throw;
+            }
+            finally
+            {
+                AWSXRayRecorder.Instance.EndSubsegment();
+            }
         }
 
         public Task<CommandResult<TResult>> InvokeReturnAsync<TResult>(AsyncCommand<TResult> command)
@@ -378,26 +417,39 @@ namespace Hudl.Mjolnir.Command
 
         private async Task<CommandResult<TResult>> InvokeAndWrapAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
-            // Even though we're in a "Return" method, multiple invokes are a bug on the calling
-            // side, hence the possible exception here for visibility so the caller can fix.
-            EnsureSingleInvoke(command);
-
+            AWSXRayRecorder.Instance.BeginSegment("InvokeAndWrapAsync"); // generates `TraceId` for you
             try
             {
-                TResult result;
-                if (!IsEnabled())
+                // Even though we're in a "Return" method, multiple invokes are a bug on the calling
+                // side, hence the possible exception here for visibility so the caller can fix.
+                EnsureSingleInvoke(command);
+
+                try
                 {
-                    result = await command.ExecuteAsync(CancellationToken.None);
+                    TResult result;
+                    if (!IsEnabled())
+                    {
+                        result = await command.ExecuteAsync(CancellationToken.None);
+                    }
+                    else
+                    {
+                        result = await InvokeAsync(command, ct, OnFailure.Return);
+                    }
+                    return new CommandResult<TResult>(result);
                 }
-                else
+                catch (Exception e)
                 {
-                    result = await InvokeAsync(command, ct, OnFailure.Return);
+                    return new CommandResult<TResult>(default(TResult), e);
                 }
-                return new CommandResult<TResult>(result);
             }
             catch (Exception e)
             {
-                return new CommandResult<TResult>(default(TResult), e);
+                AWSXRayRecorder.Instance.AddException(e);
+                throw;
+            }
+            finally
+            {
+                AWSXRayRecorder.Instance.EndSegment();
             }
         }
 
@@ -515,33 +567,46 @@ namespace Hudl.Mjolnir.Command
 
         private TResult Invoke<TResult>(SyncCommand<TResult> command, OnFailure failureAction, InformativeCancellationToken ct)
         {
-            var stopwatch = Stopwatch.StartNew();
-
-            var logName = $"Hudl.Mjolnir.Command.{command.Name}";
-            var status = CommandCompletionStatus.RanToCompletion;
-
             try
             {
-                _log.Debug($"[{logName}] Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
+                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                var stopwatch = Stopwatch.StartNew();
 
-                // If we've already timed out or been canceled, skip execution altogether.
-                ct.Token.ThrowIfCancellationRequested();
-                MjolnirEventSource.Log.CommandInvoked(command.Name);
-                var executionResult = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
-                MjolnirEventSource.Log.CommandSuccess(command.Name);
-                return executionResult;
+                var logName = $"Hudl.Mjolnir.Command.{command.Name}";
+                var status = CommandCompletionStatus.RanToCompletion;
+
+                try
+                {
+                    _log.Debug($"[{logName}] Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
+
+                    // If we've already timed out or been canceled, skip execution altogether.
+                    ct.Token.ThrowIfCancellationRequested();
+                    MjolnirEventSource.Log.CommandInvoked(command.Name);
+                    var executionResult = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
+                    MjolnirEventSource.Log.CommandSuccess(command.Name);
+                    return executionResult;
+                }
+                catch (Exception e)
+                {
+                    MjolnirEventSource.Log.CommandFailure(command.Name);
+                    status = GetCompletionStatus(e, ct);
+                    AttachCommandExceptionData(command, e, status, ct);
+                    throw;
+                }
+                finally
+                {
+                    stopwatch.Stop();
+                    _metricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
+                }
             }
             catch (Exception e)
             {
-                MjolnirEventSource.Log.CommandFailure(command.Name);
-                status = GetCompletionStatus(e, ct);
-                AttachCommandExceptionData(command, e, status, ct);
+                AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                stopwatch.Stop();
-                _metricEvents.CommandInvoked(command.Name, stopwatch.Elapsed.TotalMilliseconds, command.ExecutionTimeMillis, status.ToString(), failureAction.ToString().ToLowerInvariant());
+                AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 

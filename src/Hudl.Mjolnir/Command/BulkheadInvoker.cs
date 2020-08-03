@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Hudl.Mjolnir.Config;
+using Amazon.XRay.Recorder.Core;
 
 namespace Hudl.Mjolnir.Command
 {
@@ -44,99 +45,125 @@ namespace Hudl.Mjolnir.Command
 
         public async Task<TResult> ExecuteWithBulkheadAsync<TResult>(AsyncCommand<TResult> command, CancellationToken ct)
         {
-            var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
-            bool onlyMetrics = false;
-            if (!bulkhead.TryEnter())
-            {
-                onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
-                _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
-                if (!onlyMetrics) throw new BulkheadRejectedException();
-            }
-
-            if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
-
-            // This stopwatch should begin stopped (hence the constructor instead of the usual
-            // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
-            var stopwatch = new Stopwatch();
-
-            // If circuit breakers are enabled, the execution will happen down in the circuit
-            // breaker invoker. If they're disabled, it'll happen here. Since we want an accurate
-            // timing of the method execution, we'll use this to track where the execution happens
-            // and then set ExecutionTimeMillis in the finally block conditionally.
-            var executedHere = false;
             try
             {
-                if (_config.UseCircuitBreakers)
+                AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBulkheadAsync");
+                var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
+                bool onlyMetrics = false;
+                if (!bulkhead.TryEnter())
                 {
-                    return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
+                    onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
+                    _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
+                    if (!onlyMetrics) throw new BulkheadRejectedException();
                 }
 
-                executedHere = true;
-                stopwatch.Start();
-                return await command.ExecuteAsync(ct).ConfigureAwait(false);
+                if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+
+                // This stopwatch should begin stopped (hence the constructor instead of the usual
+                // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
+                var stopwatch = new Stopwatch();
+
+                // If circuit breakers are enabled, the execution will happen down in the circuit
+                // breaker invoker. If they're disabled, it'll happen here. Since we want an accurate
+                // timing of the method execution, we'll use this to track where the execution happens
+                // and then set ExecutionTimeMillis in the finally block conditionally.
+                var executedHere = false;
+                try
+                {
+                    if (_config.UseCircuitBreakers)
+                    {
+                        return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct).ConfigureAwait(false);
+                    }
+
+                    executedHere = true;
+                    stopwatch.Start();
+                    return await command.ExecuteAsync(ct).ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (!onlyMetrics)
+                    {
+                        bulkhead.Release();
+                        _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                    }
+                    // If not executed here, the circuit breaker invoker will set the execution time.
+                    if (executedHere)
+                    {
+                        stopwatch.Stop();
+                        command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                AWSXRayRecorder.Instance.AddException(e);
+                throw;
             }
             finally
             {
-                if (!onlyMetrics)
-                {
-                    bulkhead.Release();
-                    _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
-                }
-                // If not executed here, the circuit breaker invoker will set the execution time.
-                if (executedHere)
-                {
-                    stopwatch.Stop();
-                    command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
-                }
+                AWSXRayRecorder.Instance.EndSegment();
             }
         }
 
         public TResult ExecuteWithBulkhead<TResult>(SyncCommand<TResult> command, CancellationToken ct)
         {
-            var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
-            bool onlyMetrics = false;
-            if (!bulkhead.TryEnter())
-            {
-                onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
-                _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
-                if (!onlyMetrics) throw new BulkheadRejectedException();
-            }
-
-            if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
-
-            // This stopwatch should begin stopped (hence the constructor instead of the usual
-            // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
-            var stopwatch = new Stopwatch();
-
-            // If circuit breakers are enabled, the execution will happen down in the circuit
-            // breaker invoker. If they're disabled, it'll happen here. Since we want an accurate
-            // timing of the method execution, we'll use this to track where the execution happens
-            // and then set ExecutionTimeMillis in the finally block conditionally.
-            var executedHere = false;
             try
             {
-                if (_config.UseCircuitBreakers)
+                AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBulkhead");
+                var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
+                bool onlyMetrics = false;
+                if (!bulkhead.TryEnter())
                 {
-                    return _breakerInvoker.ExecuteWithBreaker(command, ct);
+                    onlyMetrics = _config.BulkheadMetricsOnly || _config.GetBulkheadConfiguration(command.BulkheadKey.Name).MetricsOnly;
+                    _metricEvents.RejectedByBulkhead(bulkhead.Name, command.Name);
+                    if (!onlyMetrics) throw new BulkheadRejectedException();
                 }
 
-                executedHere = true;
-                stopwatch.Start();
-                return command.Execute(ct);
+                if (!onlyMetrics) _metricEvents.EnterBulkhead(bulkhead.Name, command.Name);
+
+                // This stopwatch should begin stopped (hence the constructor instead of the usual
+                // Stopwatch.StartNew(). We'll only use it if we aren't using circuit breakers.
+                var stopwatch = new Stopwatch();
+
+                // If circuit breakers are enabled, the execution will happen down in the circuit
+                // breaker invoker. If they're disabled, it'll happen here. Since we want an accurate
+                // timing of the method execution, we'll use this to track where the execution happens
+                // and then set ExecutionTimeMillis in the finally block conditionally.
+                var executedHere = false;
+                try
+                {
+                    if (_config.UseCircuitBreakers)
+                    {
+                        return _breakerInvoker.ExecuteWithBreaker(command, ct);
+                    }
+
+                    executedHere = true;
+                    stopwatch.Start();
+                    return command.Execute(ct);
+                }
+                finally
+                {
+                    if (!onlyMetrics)
+                    {
+                        bulkhead.Release();
+                        _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
+                    }
+                    // If not executed here, the circuit breaker invoker will set the execution time.
+                    if (executedHere)
+                    {
+                        stopwatch.Stop();
+                        command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                AWSXRayRecorder.Instance.AddException(e);
+                throw;
             }
             finally
             {
-                if (!onlyMetrics)
-                {
-                    bulkhead.Release();
-                    _metricEvents.LeaveBulkhead(bulkhead.Name, command.Name);
-                }
-                // If not executed here, the circuit breaker invoker will set the execution time.
-                if (executedHere)
-                {
-                    stopwatch.Stop();
-                    command.ExecutionTimeMillis = stopwatch.Elapsed.TotalMilliseconds;
-                }
+                AWSXRayRecorder.Instance.EndSegment();
             }
         }
     }
