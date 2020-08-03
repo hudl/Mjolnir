@@ -47,7 +47,7 @@ namespace Hudl.Mjolnir.Command
         {
             try
             {
-                AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBulkheadAsync");
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBulkheadAsync");
                 var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
                 bool onlyMetrics = false;
                 if (!bulkhead.TryEnter())
@@ -96,12 +96,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSubsegment();
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
@@ -109,7 +109,7 @@ namespace Hudl.Mjolnir.Command
         {
             try
             {
-                AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBulkhead");
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("ExecuteWithBulkhead");
                 var bulkhead = _bulkheadFactory.GetBulkhead(command.BulkheadKey);
                 bool onlyMetrics = false;
                 if (!bulkhead.TryEnter())
@@ -158,12 +158,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSubsegment();
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
     }

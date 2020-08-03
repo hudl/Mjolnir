@@ -323,7 +323,7 @@ namespace Hudl.Mjolnir.Command
         {
             try
             {
-                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
                 EnsureSingleInvoke(command);
 
                 if (!IsEnabled())
@@ -336,12 +336,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSubsegment();
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
@@ -349,7 +349,7 @@ namespace Hudl.Mjolnir.Command
         {
             try
             {
-                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
                 EnsureSingleInvoke(command);
 
                 if (!IsEnabled())
@@ -362,12 +362,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSubsegment();
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
@@ -375,7 +375,7 @@ namespace Hudl.Mjolnir.Command
         {
             try
             {
-                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
                 EnsureSingleInvoke(command);
 
                 if (!IsEnabled())
@@ -388,12 +388,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSubsegment();
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
@@ -417,7 +417,7 @@ namespace Hudl.Mjolnir.Command
 
         private async Task<CommandResult<TResult>> InvokeAndWrapAsync<TResult>(AsyncCommand<TResult> command, InformativeCancellationToken ct)
         {
-            AWSXRayRecorder.Instance.BeginSubsegment("InvokeAndWrapAsync"); // generates `TraceId` for you
+            if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("InvokeAndWrapAsync"); // generates `TraceId` for you
             try
             {
                 // Even though we're in a "Return" method, multiple invokes are a bug on the calling
@@ -444,12 +444,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSubsegment();
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
@@ -569,7 +569,7 @@ namespace Hudl.Mjolnir.Command
         {
             try
             {
-                AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.BeginSubsegment("InvokeThrowAsync");
                 var stopwatch = Stopwatch.StartNew();
 
                 var logName = $"Hudl.Mjolnir.Command.{command.Name}";
@@ -601,12 +601,12 @@ namespace Hudl.Mjolnir.Command
             }
             catch (Exception e)
             {
-                AWSXRayRecorder.Instance.AddException(e);
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.AddException(e);
                 throw;
             }
             finally
             {
-                AWSXRayRecorder.Instance.EndSubsegment();
+                if (AWSXRayRecorder.Instance.IsEntityPresent()) AWSXRayRecorder.Instance.EndSubsegment();
             }
         }
 
