@@ -257,31 +257,22 @@ namespace Hudl.Mjolnir.Command
         private readonly IMjolnirLog<CommandInvoker> _log;
         private readonly IMetricEvents _metricEvents;
         private readonly IBreakerExceptionHandler _breakerExceptionHandler;
-        private readonly IBulkheadInvoker _bulkheadInvoker;
 
         private readonly ICircuitBreakerFactory _circuitBreakerFactory;
-        private readonly IBulkheadFactory _bulkheadFactory;
+        private BreakerInvoker _breakerInvoker;
         private static volatile int _constructorCount;
 
         public CommandInvoker()
-            : this(null, new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null, null)
+            : this(null, new DefaultMjolnirLogFactory(), new IgnoringMetricEvents(), null)
         { }
 
-        public CommandInvoker(
-            MjolnirConfiguration config = null,
-            IMjolnirLogFactory logFactory = null,
-            IMetricEvents metricEvents = null,
-            IBreakerExceptionHandler breakerExceptionHandler = null)
-            : this(config, logFactory, metricEvents, breakerExceptionHandler, null)
-        { }
 
         // Internal constructor with a few extra arguments used by tests to inject mocks.
         internal CommandInvoker(
             MjolnirConfiguration config = null,
             IMjolnirLogFactory logFactory = null,
             IMetricEvents metricEvents = null,
-            IBreakerExceptionHandler breakerExceptionHandler = null,
-            IBulkheadInvoker bulkheadInvoker = null)
+            IBreakerExceptionHandler breakerExceptionHandler = null)
         {
             _config = config ?? new MjolnirConfiguration
             {
@@ -304,13 +295,9 @@ namespace Hudl.Mjolnir.Command
                 new FailurePercentageCircuitBreakerConfig(_config),
                 _logFactory);
 
-            _bulkheadFactory = new BulkheadFactory(
-                _metricEvents,
-                _config,
-                _logFactory);
 
-            var breakerInvoker = new BreakerInvoker(_circuitBreakerFactory, _metricEvents, _breakerExceptionHandler);
-            _bulkheadInvoker = bulkheadInvoker ?? new BulkheadInvoker(breakerInvoker, _bulkheadFactory, _metricEvents, _config);
+            _breakerInvoker = new BreakerInvoker(_circuitBreakerFactory, _metricEvents, _breakerExceptionHandler);
+            
             _constructorCount++;
             if (_constructorCount > 1)
             {
@@ -462,12 +449,11 @@ namespace Hudl.Mjolnir.Command
             var status = CommandCompletionStatus.RanToCompletion;
             try
             {
-                _log.Debug($"[{logName}] Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog}");
-
+                _log.Debug($"[{logName}] Invoke Command={command.Name} Breaker={command.BreakerKey} Bulkhead={command.BulkheadKey} Timeout={ct.DescriptionForLog} CancelationRequested={ct.Token.IsCancellationRequested}");
                 // If we've already timed out or been canceled, skip execution altogether.
                 ct.Token.ThrowIfCancellationRequested();
 
-                return await _bulkheadInvoker.ExecuteWithBulkheadAsync(command, ct.Token).ConfigureAwait(false);
+                return await _breakerInvoker.ExecuteWithBreakerAsync(command, ct.Token).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -582,7 +568,7 @@ namespace Hudl.Mjolnir.Command
                     // If we've already timed out or been canceled, skip execution altogether.
                     ct.Token.ThrowIfCancellationRequested();
                     MjolnirEventSource.Log.CommandInvoked(command.Name);
-                    var executionResult = _bulkheadInvoker.ExecuteWithBulkhead(command, ct.Token);
+                    var executionResult = _breakerInvoker.ExecuteWithBreaker(command, ct.Token);
                     MjolnirEventSource.Log.CommandSuccess(command.Name);
                     return executionResult;
                 }
