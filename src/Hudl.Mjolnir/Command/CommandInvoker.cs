@@ -268,7 +268,7 @@ namespace Hudl.Mjolnir.Command
 
 
         // Internal constructor with a few extra arguments used by tests to inject mocks.
-        internal CommandInvoker(
+        public CommandInvoker(
             MjolnirConfiguration config = null,
             IMjolnirLogFactory logFactory = null,
             IMetricEvents metricEvents = null,
