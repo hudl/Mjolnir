@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <VersionPrefix>3.2.2</VersionPrefix>
-    <FileVersion>3.2.2</FileVersion>
+    <VersionPrefix>3.2.3</VersionPrefix>
+    <FileVersion>3.2.3</FileVersion>
     <AssemblyVersion>3.0.0.0</AssemblyVersion>
     <TargetFrameworks>netstandard1.2</TargetFrameworks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>

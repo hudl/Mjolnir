@@ -608,6 +608,8 @@ namespace Hudl.Mjolnir.Command
             exception.Data["MjolnirBulkhead"] = command.BulkheadKey.Name;
             exception.Data["MjolnirTimeoutMillis"] = ct.DescriptionForLog;
             exception.Data["MjolnirExecuteMillis"] = command.ExecutionTimeMillis;
+            exception.Data["MjolnirExecuteStartTime"] = ct.StartTime.ToString("’HH’:’mm’:’ss.fffffffK");
+            exception.Data["MjolnirCancelationTokenTimeMillis"] = (ct.StartTime - DateTime.UtcNow).TotalMilliseconds;
         }
 
         private static bool IsCancellationException(Exception e)
@@ -653,6 +655,8 @@ namespace Hudl.Mjolnir.Command
     /// </summary>
     internal struct InformativeCancellationToken
     {
+        private DateTime _startedTime;
+
         // Cancellation precedence
         // - Config toggle to disable timeouts/cancellation
         // - Cancellation token or timeout passed to Invoke()
@@ -662,7 +666,7 @@ namespace Hudl.Mjolnir.Command
         private readonly CancellationToken _token;
         private readonly TimeSpan? _timeout;
         private readonly bool _isIgnored;
-
+        public DateTime StartTime { get { return _startedTime; } }
         public CancellationToken Token { get { return _token; } }
         public TimeSpan? Timeout { get { return _timeout; } }
         public bool IsIgnored { get { return _isIgnored; } }
@@ -672,6 +676,7 @@ namespace Hudl.Mjolnir.Command
             _timeout = null;
             _isIgnored = ignored;
             _token = token;
+            _startedTime = DateTime.UtcNow;
         }
 
         private InformativeCancellationToken(TimeSpan timeout)
@@ -700,6 +705,7 @@ namespace Hudl.Mjolnir.Command
                 var source = new CancellationTokenSource(timeout);
                 _token = source.Token;
             }
+            _startedTime = DateTime.UtcNow;
         }
 
         public object DescriptionForLog
