@@ -35,7 +35,7 @@ function parse_options {
     IMAGE_TAG=""
 
     if [[ $# = 0 ]]; then usage_error; fi
-    while getopts 'opd:i:t:k:' flag; do
+    while getopts 'od:i:t:' flag; do
         case "${flag}" in
             o) IS_OFFICIAL="true" ;;
             i) IMAGE_PREFIX="${OPTARG}"; if [[ $IMAGE_PREFIX = -* ]]; then usage_error "Missing image_prefix argument for -i"; fi ;;
