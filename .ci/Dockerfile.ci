@@ -19,7 +19,7 @@ RUN chmod +x ./.ci/validate-project-structure.sh && dos2unix ./.ci/validate-proj
 
 RUN dotnet restore
 RUN dotnet build -c Release --no-restore
-RUN dotnet test --no-build --configuration Release -l trx -r /out/test-results tests/unit/**/*.csproj
+RUN dotnet test --no-build --configuration Release -l trx --results-directory /out/test-results tests/unit/**/*.csproj
 
 RUN chmod +x ./.ci/generate-version-suffix.sh && dos2unix ./.ci/generate-version-suffix.sh
 
