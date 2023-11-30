@@ -1,0 +1,33 @@
+# Dockerfile for continuous integration builds.
+# See corresponding ci.sh for example usage.
+
+# Default build behavior will always create a prerelease package. To create an official mainline
+# package, pass --build-arg PUBLISH_OFFICIAL_VERSION_IF_MASTER=true to the build commands
+
+FROM mcr.microsoft.com/dotnet/sdk:7.0 as build
+
+ARG PUBLISH_OFFICIAL_VERSION_IF_MASTER=false
+
+RUN apt-get update && apt-get install dos2unix
+
+RUN mkdir /src /out
+WORKDIR /src
+
+COPY . .
+
+RUN chmod +x ./.ci/validate-project-structure.sh && dos2unix ./.ci/validate-project-structure.sh && ./.ci/validate-project-structure.sh
+
+RUN dotnet restore
+RUN dotnet build -c Release --no-restore
+RUN dotnet test --no-build --configuration Release -l trx --results-directory /out/test-results tests/unit/**/*.csproj
+
+RUN chmod +x ./.ci/generate-version-suffix.sh && dos2unix ./.ci/generate-version-suffix.sh
+
+# Run the generate-version-suffix script by itself first so it gets output to console for easier debugging
+RUN ./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER
+
+RUN dotnet pack `./.ci/generate-version-suffix.sh $PUBLISH_OFFICIAL_VERSION_IF_MASTER` -c Release --no-restore --no-build -o /out
+
+RUN ls -la /out
+
+ENTRYPOINT ["cp", "-Rv", "/out/.", "/mount"]
